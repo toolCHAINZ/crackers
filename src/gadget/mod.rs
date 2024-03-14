@@ -1,7 +1,7 @@
-use jingle::modeling::ModeledBlock;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::context::SleighContext;
 use serde::{Deserialize, Serialize};
 use z3::Context;
 
@@ -36,14 +36,8 @@ impl GadgetLibrary {
         z3: &'ctx Context,
         gadget: &Gadget,
     ) -> Result<ModeledBlock<'ctx>, JingleError> {
-        for x in &gadget.instructions {
-            println!("{:x}: {}", x.address, x.disassembly);
-        }
-        dbg!(ModeledBlock::read(
-            z3,
-            self,
-            gadget.instructions.clone().into_iter()
-        ))
+        let instrs = gadget.instructions.clone();
+        ModeledBlock::read(z3, self, instrs.into_iter())
     }
 
     pub fn size(&self) -> usize {
@@ -70,11 +64,11 @@ impl GadgetLibrary {
             let mut curr = start;
 
             while curr < end {
-                let instrs: Vec<Instruction> = sleigh.read(curr, 10).collect();
+                let instrs: Vec<Instruction> = sleigh.read(curr, 4).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     lib.gadgets.push(Gadget {
-                        instructions: instrs[0..i].to_vec(),
-                    })
+                        instructions: instrs[0..=i].to_vec(),
+                    });
                 }
                 curr += 1
             }
@@ -102,8 +96,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::GadgetLibrary;

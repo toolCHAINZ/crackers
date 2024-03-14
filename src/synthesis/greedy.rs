@@ -69,17 +69,6 @@ impl<'ctx> GreedySynthesizer<'ctx> {
             .candidate_blocks
             .get_modeled_gadgets_for_instruction(self.z3, &instr.instr)
         {
-            println!("block {:?}", block.get_address());
-            for (i, x) in block.instructions.iter().enumerate() {
-                for _ in 0..depth {
-                    print!(" ");
-                }
-                if i == 0 {
-                    println!(" -> {}", x.disassembly)
-                } else {
-                    println!("    {}", x.disassembly)
-                }
-            }
             let can_substitute = trace
                 .solver
                 .check_assumptions(&[block.isolated()?.reaches(&instr.isolated()?)?]);
@@ -88,6 +77,16 @@ impl<'ctx> GreedySynthesizer<'ctx> {
                 if matches!(trace.push_for(&block, instr), Ok(()))
                     && matches!(trace.solver.check(), SatResult::Sat)
                 {
+                    for (i, x) in block.instructions.iter().enumerate() {
+                        for _ in 0..depth {
+                            print!(" ");
+                        }
+                        if i == 0 {
+                            println!(" -> {}", x.disassembly);
+                        } else {
+                            println!("    {}", x.disassembly);
+                        }
+                    }
                     if let Ok(r) = self.decide_internal(trace, depth + 1) {
                         return Ok(r);
                     }

@@ -1,4 +1,4 @@
-use jingle::sleigh::{GeneralizedVarNode, Instruction, VarNode};
+use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, VarNode};
 
 use crate::gadget::Gadget;
 
@@ -16,13 +16,17 @@ impl OutputSignature {
             .iter()
             .filter_map(|i| match i {
                 GeneralizedVarNode::Direct(d) => Some(d),
-                GeneralizedVarNode::Indirect(_) => None,
+                GeneralizedVarNode::Indirect(d) => None,
             })
             .collect();
-        let mut self_indirect = self.outputs.iter().filter_map(|i| match i {
-            GeneralizedVarNode::Indirect(d) => Some(d),
-            GeneralizedVarNode::Direct(_) => None,
-        });
+        let mut self_indirect: Vec<&IndirectVarNode> = self
+            .outputs
+            .iter()
+            .filter_map(|i| match i {
+                GeneralizedVarNode::Indirect(d) => Some(d),
+                GeneralizedVarNode::Direct(_) => None,
+            })
+            .collect();
         for other_output in &other.outputs {
             match other_output {
                 GeneralizedVarNode::Direct(d) => {
@@ -30,8 +34,11 @@ impl OutputSignature {
                         return false;
                     }
                 }
-                GeneralizedVarNode::Indirect(_i) => {
-                    if matches!(self_indirect.next(), None) {
+                GeneralizedVarNode::Indirect(i) => {
+                    if !self_indirect
+                        .iter()
+                        .any(|ii| ii.pointer_location.overlaps(&i.pointer_location))
+                    {
                         return false;
                     }
                 }

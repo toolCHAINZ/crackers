@@ -31,7 +31,7 @@ fn main() {
         .set_image(Image::from(TEST_BYTES.as_slice()))
         .build("x86:LE:64:default")
         .unwrap();
-    let path = Path::new("bin/vuln");
+    let path = Path::new("bin/httpd");
     let data = fs::read(path).unwrap();
     let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
 
@@ -77,11 +77,11 @@ fn naive_alg(z3: &Context, targets: Vec<ModeledInstruction>, gadgets: GadgetLibr
         .iter()
         .filter(|v| result.should_varnode_constrain(v))
     {
-        let bv = result.get_final_state().read_resolved(x).unwrap();
+        let bv = result.get_original_state().read_resolved(x).unwrap();
         match x {
             ResolvedVarnode::Direct(_) => println!(
                 "{} = {}",
-                x.display(result.get_final_state()).unwrap(),
+                x.display(result.get_original_state()).unwrap(),
                 model.eval(&bv, false).unwrap()
             ),
             ResolvedVarnode::Indirect(i) => {
