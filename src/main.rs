@@ -8,6 +8,8 @@ use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::sleigh::{create_varnode, varnode};
 use jingle::varnode::ResolvedVarnode;
 use jingle::{JingleError, SleighTranslator};
+use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
 use z3::ast::Ast;
 use z3::{Config, Context};
 
@@ -23,7 +25,10 @@ const TEST_BYTES: [u8; 37] = [
 
 fn main() {
     let z3 = Context::new(&Config::new());
-
+    let sub = FmtSubscriber::builder()
+        .with_max_level(Level::DEBUG)
+        .finish();
+    tracing::subscriber::set_global_default(sub).unwrap();
     let builder =
         SleighContextBuilder::load_ghidra_installation(Path::new("/Applications/ghidra")).unwrap();
     let target_sleigh = builder
@@ -31,7 +36,7 @@ fn main() {
         .set_image(Image::from(TEST_BYTES.as_slice()))
         .build("x86:LE:64:default")
         .unwrap();
-    let path = Path::new("bin/httpd");
+    let path = Path::new("bin/vuln");
     let data = fs::read(path).unwrap();
     let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
 
@@ -42,7 +47,7 @@ fn main() {
 
     let targets = get_target_instructions(&target_sleigh, &z3).unwrap();
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
-    println!("Built library with {} gadgets", library.size());
+    //library.write_to_file(&"gadgets.bin").unwrap();
     naive_alg(&z3, targets, library);
 }
 
@@ -132,5 +137,5 @@ fn naive_alg(z3: &Context, targets: Vec<ModeledInstruction>, gadgets: GadgetLibr
         let val = model.eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }
-    std::fs::write("smt.txt", result.solver.to_smt2()).unwrap();
+    std::fs::write("../../smt.txt", result.solver.to_smt2()).unwrap();
 }

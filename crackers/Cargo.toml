@@ -1,19 +1,19 @@
 [package]
-name = "crackers_bin"
+name = "crackers"
 version = "0.1.0"
 edition = "2021"
 
-[workspace]
-resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-members = ["crackers"]
 
 [dependencies]
 elf = "0.7.4"
-jingle = { path = "../../CLionProjects/jingle/jingle" }
-crackers = { path = "../crackers/crackers" }
+jingle = { path = "../../../CLionProjects/jingle/jingle" }
 z3 = { git = "https://github.com/prove-rs/z3.rs.git", rev = "247d308" }
+serde = { version = "1.0.197", features = ["derive"] }
 thiserror = "1.0.58"
-tracing-subscriber = "0.3.18"
+rmp-serde = "1.1.2"
 tracing = "0.1.40"
+
+
+[profile.dev]
+opt-level = 3

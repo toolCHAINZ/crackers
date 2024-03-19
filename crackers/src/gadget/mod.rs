@@ -1,10 +1,17 @@
+use std::fmt::{Debug, Display};
+use std::fs::File;
+use std::path::Path;
+
 use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use serde::{Deserialize, Serialize};
+use tracing::{event, instrument, Level};
 use z3::Context;
 
+use crate::error::CrackersError;
+use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::signature::OutputSignature;
 
@@ -58,6 +65,7 @@ impl GadgetLibrary {
             spaces: sleigh.get_all_space_info().to_vec(),
             default_code_space_index: sleigh.get_code_space_idx(),
         };
+        event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.image.sections.iter().filter(|s| s.perms.exec) {
             let start = section.base_address as u64;
             let end = start + section.data.len() as u64;
@@ -72,8 +80,30 @@ impl GadgetLibrary {
                 }
                 curr += 1
             }
+            event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
         Ok(lib)
+    }
+
+    #[instrument(skip_all, fields(%path))]
+    pub fn load_from_file<T: AsRef<Path> + Display>(path: &T) -> Result<Self, CrackersError> {
+        if let Ok(r) = File::options().read(true).open(path) {
+            event!(Level::INFO, "Loading gadget library...");
+            return rmp_serde::from_read(r).map_err(|_| LibraryDeserialization);
+        }
+        Err(LibraryDeserialization)
+    }
+
+    #[instrument(skip_all, fields(%path))]
+    pub fn write_to_file<T: AsRef<Path> + Display>(&self, path: &T) -> Result<(), CrackersError> {
+        if let Ok(r) = File::options().create(true).write(true).open(path) {
+            event!(Level::INFO, "Writing gadget library...");
+
+            return self
+                .serialize(&mut rmp_serde::Serializer::new(&r))
+                .map_err(|_| LibrarySerialization);
+        }
+        Err(LibrarySerialization)
     }
 }
 
@@ -107,7 +137,7 @@ mod tests {
         let builder =
             SleighContextBuilder::load_ghidra_installation(Path::new("/Applications/ghidra"))
                 .unwrap();
-        let path = Path::new("bin/vuln");
+        let path = Path::new("../bin/vuln");
         let data = fs::read(path).unwrap();
         let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
 
