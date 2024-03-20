@@ -47,21 +47,4 @@ impl<'ctx> AssignmentProblem<'ctx> {
     pub fn decision_level(&self) -> usize {
         self.decisions.len()
     }
-
-    fn is_slot_decided(&self, slot: usize) -> bool {
-        self.decisions.iter().any(|i| i.index == slot)
-    }
-
-    fn make_assignment(&self) -> Option<Decision> {
-        for (_, x) in self
-            .gadget_candidates
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| self.is_slot_decided(i.clone()))
-        {
-            // todo:
-            Some(x)
-        }
-        None
-    }
 }

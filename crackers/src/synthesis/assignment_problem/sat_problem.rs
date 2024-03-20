@@ -1,6 +1,7 @@
 use z3::ast::Bool;
 use z3::{Context, Model, SatResult, Solver};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlotAssignments {
     choices: Vec<usize>,
 }
@@ -38,7 +39,7 @@ pub struct SatProblem<'ctx> {
 }
 
 impl<'ctx> SatProblem<'ctx> {
-    fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) {
+    fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
@@ -51,10 +52,11 @@ impl<'ctx> SatProblem<'ctx> {
             }
             prob.variables.push(vars);
         }
-        for slot in prob.variables {
+        for slot in &prob.variables {
             let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
             prob.solver.assert(&Bool::pb_eq(z3, &pbs, 1))
         }
+        prob
     }
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
         format!("i{}_g{}", target_index, gadget_index)
@@ -69,6 +71,27 @@ impl<'ctx> SatProblem<'ctx> {
             SatResult::Sat => {
                 let model = self.solver.get_model()?;
                 SlotAssignments::create_from_model(model, self.variables.as_slice())
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use z3::{Config, Context};
+
+    use crate::synthesis::assignment_problem::sat_problem::SatProblem;
+
+    #[test]
+    fn test_assignment() {
+        let z3 = Context::new(&Config::new());
+        let thing = vec![vec![1, 2, 3, 4], vec![2, 3, 4], vec![3, 4, 5]];
+        let prob = SatProblem::initialize(&z3, &thing);
+        let assignments = prob.get_assignments();
+        assert!(assignments.is_some());
+        if let Some(a) = assignments {
+            for (i, x) in a.choices.iter().enumerate() {
+                assert!(x < &thing[i].len())
             }
         }
     }
