@@ -1,19 +1,20 @@
 use std::fs;
 use std::path::Path;
 
-use elf::endian::AnyEndian;
 use elf::ElfBytes;
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
-use jingle::sleigh::{create_varnode, varnode};
-use jingle::varnode::ResolvedVarnode;
+use elf::endian::AnyEndian;
 use jingle::{JingleError, SleighTranslator};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::sleigh::{create_varnode, varnode};
+use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
+use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::ast::Ast;
 use z3::{Config, Context};
+use z3::ast::Ast;
 
 use crackers::gadget::GadgetLibrary;
+use crackers::synthesis::assignment_problem::AssignmentProblem;
 use crackers::synthesis::greedy::GreedySynthesizer;
 
 #[allow(unused)]
@@ -48,7 +49,8 @@ fn main() {
     let targets = get_target_instructions(&target_sleigh, &z3).unwrap();
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
-    naive_alg(&z3, targets, library);
+    //naive_alg(&z3, targets, library);
+    let p = AssignmentProblem::new(&z3, target_sleigh.read(0, 10).collect(), library);
 }
 
 fn get_target_instructions<'ctx>(
