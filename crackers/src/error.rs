@@ -1,11 +1,15 @@
 use std::fmt::{Display, Formatter};
 
+use jingle::JingleError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum CrackersError {
     LibraryDeserialization,
     LibrarySerialization,
+    TheoryTimeout,
+    BooleanAssignmentTimeout,
+    Jingle(#[from] JingleError),
 }
 
 impl Display for CrackersError {

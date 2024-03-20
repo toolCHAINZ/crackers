@@ -1,6 +1,9 @@
 use z3::ast::Bool;
 use z3::{Context, Model, SatResult, Solver};
 
+use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
+use crate::synthesis::assignment_problem::Decision;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlotAssignments {
     choices: Vec<usize>,
@@ -74,25 +77,73 @@ impl<'ctx> SatProblem<'ctx> {
             }
         }
     }
+
+    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
+        &self.variables[var.index][var.choice]
+    }
+
+    fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+        for clause in clauses {
+            match clause {
+                ConflictClause::Unit(d) => {
+                    let var = self.get_decision_variable(d);
+                    self.solver.assert(&var.not());
+                }
+                ConflictClause::Conjunction(v) => {
+                    let choices: Vec<&Bool<'ctx>> =
+                        v.iter().map(|b| self.get_decision_variable(b)).collect();
+                    self.solver.assert(&Bool::and(self.z3, &choices.as_slice()));
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use z3::{Config, Context};
 
+    use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
     use crate::synthesis::assignment_problem::sat_problem::SatProblem;
+    use crate::synthesis::assignment_problem::Decision;
 
     #[test]
     fn test_assignment() {
         let z3 = Context::new(&Config::new());
-        let thing = vec![vec![1, 2, 3, 4], vec![2, 3, 4], vec![3, 4, 5]];
-        let prob = SatProblem::initialize(&z3, &thing);
+        let thing = vec![vec![1, 2, 3], vec![2, 3, 4], vec![3, 4, 5]];
+        let mut prob = SatProblem::initialize(&z3, &thing);
         let assignments = prob.get_assignments();
+        // Verify that an unconstrained problem returns a model
         assert!(assignments.is_some());
-        if let Some(a) = assignments {
-            for (i, x) in a.choices.iter().enumerate() {
-                assert!(x < &thing[i].len())
-            }
+        let a = assignments.unwrap();
+        for (i, x) in a.choices.iter().enumerate() {
+            // verify that all model outputs are sane
+            assert!(x < &thing[i].len())
         }
+
+        prob.add_theory_clauses(&[ConflictClause::Unit(Decision {
+            index: 0,
+            choice: 0,
+        })]);
+        let assignments2 = prob.get_assignments();
+        // verify that adding a constraint still returns a model
+        assert!(assignments2.is_some());
+        let a2 = assignments2.unwrap();
+        // verify that the new constraint has caused the model to change
+        assert_ne!(a, a2);
+        // now add clauses to make the problem UNSAT
+        prob.add_theory_clauses(&[
+            ConflictClause::Unit(Decision {
+                index: 0,
+                choice: 1,
+            }),
+            ConflictClause::Unit(Decision {
+                index: 0,
+                choice: 2,
+            }),
+        ]);
+        let assignments3 = prob.get_assignments();
+        // verify that we do not get a model back
+        assert!(assignments3.is_none());
     }
 }

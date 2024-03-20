@@ -4,6 +4,7 @@ use z3::{Context, Solver};
 
 use crate::gadget::GadgetLibrary;
 
+mod pcode_theory;
 mod sat_problem;
 
 #[derive(Debug, Clone)]
@@ -17,8 +18,8 @@ pub struct AssignmentProblem<'ctx> {
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     decisions: Vec<Decision>,
-    templates: Vec<ModeledInstruction<'ctx>>,
     library: GadgetLibrary,
+    templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
 }
 
