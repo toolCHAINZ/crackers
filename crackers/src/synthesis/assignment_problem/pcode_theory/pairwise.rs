@@ -1,20 +1,18 @@
 use z3::ast::Bool;
 
-use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
+use crate::synthesis::assignment_problem::Decision;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PairwiseConstraint<'ctx> {
-    decision_a: Decision,
-    decision_b: Decision,
+pub struct ConjunctiveConstraint<'ctx> {
+    pub decisions: Vec<Decision>,
     boolean: Bool<'ctx>,
 }
 
-impl<'ctx> PairwiseConstraint<'ctx> {
-    pub fn new(decision_a: Decision, decision_b: Decision, boolean: Bool<'ctx>) -> Self {
+impl<'ctx> ConjunctiveConstraint<'ctx> {
+    pub fn new(decisions: &[Decision], boolean: Bool<'ctx>) -> Self {
         Self {
-            decision_a,
-            decision_b,
+            decisions: decisions.to_vec(),
             boolean,
         }
     }
@@ -23,6 +21,6 @@ impl<'ctx> PairwiseConstraint<'ctx> {
     }
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
-        ConflictClause::Conjunction(vec![self.decision_a.clone(), self.decision_b.clone()])
+        ConflictClause::Conjunction(self.decisions.clone())
     }
 }

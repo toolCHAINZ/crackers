@@ -45,7 +45,8 @@ impl<'ctx> AssignmentProblem<'ctx> {
                 .push(ModeledInstruction::new(template.clone(), &library, z3).unwrap());
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
-                .take(11)
+                // todo: just here to make testing faster. Remove this later
+                .take(10)
                 .collect();
             event!(
                 Level::DEBUG,

@@ -10,6 +10,16 @@ pub struct SlotAssignments {
 }
 
 impl SlotAssignments {
+    pub fn to_decisions(&self) -> Vec<Decision> {
+        let mut vec = Vec::with_capacity(self.choices.len());
+        for (index, choice) in self.choices.iter().enumerate() {
+            vec.push(Decision {
+                index,
+                choice: *choice,
+            })
+        }
+        vec
+    }
     pub fn choices(&self) -> &[usize] {
         self.choices.as_slice()
     }
