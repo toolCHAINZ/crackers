@@ -7,10 +7,12 @@ use crate::error::CrackersError::TheoryTimeout;
 use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
 
+#[derive(Debug, Clone)]
 pub enum ConflictClause {
     Unit(Decision),
     Conjunction(Vec<Decision>),
 }
+#[derive(Debug, Clone)]
 pub struct PcodeTheory<'ctx> {
     solver: Solver<'ctx>,
     templates: Vec<ModeledInstruction<'ctx>>,
@@ -31,7 +33,7 @@ impl<'ctx> PcodeTheory<'ctx> {
     }
     pub fn check_assignment(
         &self,
-        slot_assignments: SlotAssignments,
+        slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         let mut conflicts: Vec<ConflictClause> = Vec::new();
         let mut assertions: Vec<Bool> = Vec::new();
@@ -51,15 +53,14 @@ impl<'ctx> PcodeTheory<'ctx> {
                 SatResult::Unknown => return Err(TheoryTimeout),
                 SatResult::Sat => {}
             }
-            if index > 1 {
-                assertions
-                    .push(self.gadget_candidates[index][choice.clone() - 1].assert_concat(gadget)?);
-                // todo: do this with the [BranchConstraint] object
-                assertions.push(
-                    self.gadget_candidates[index][choice.clone() - 1]
-                        .can_branch_to_address(gadget.get_address())?,
-                );
-            }
+        }
+        for (index, w) in slot_assignments.choices().windows(2).enumerate() {
+            let block1 = &self.gadget_candidates[index][w[0]];
+            let block2 = &self.gadget_candidates[index + 1][w[1]];
+            assertions.push(block1.assert_concat(block2)?);
+            // todo: do this with the [BranchConstraint] object
+
+            assertions.push(block1.can_branch_to_address(block2.get_address())?)
         }
         if conflicts.len() == 0 {
             match self.solver.check_assumptions(&assertions.as_slice()) {

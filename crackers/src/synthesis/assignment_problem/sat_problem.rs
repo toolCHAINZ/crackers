@@ -35,6 +35,7 @@ impl SlotAssignments {
         Some(Self { choices })
     }
 }
+#[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
     variables: Vec<Vec<Bool<'ctx>>>,
     z3: &'ctx Context,
@@ -42,7 +43,7 @@ pub struct SatProblem<'ctx> {
 }
 
 impl<'ctx> SatProblem<'ctx> {
-    fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
+    pub fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
@@ -65,7 +66,7 @@ impl<'ctx> SatProblem<'ctx> {
         format!("i{}_g{}", target_index, gadget_index)
     }
 
-    fn get_assignments(&self) -> Option<SlotAssignments> {
+    pub fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check() {
             SatResult::Unsat => None,
             SatResult::Unknown => {
@@ -82,7 +83,7 @@ impl<'ctx> SatProblem<'ctx> {
         &self.variables[var.index][var.choice]
     }
 
-    fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+    pub fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
         for clause in clauses {
             match clause {
                 ConflictClause::Unit(d) => {
