@@ -93,7 +93,8 @@ impl<'ctx> SatProblem<'ctx> {
                 ConflictClause::Conjunction(v) => {
                     let choices: Vec<&Bool<'ctx>> =
                         v.iter().map(|b| self.get_decision_variable(b)).collect();
-                    self.solver.assert(&Bool::and(self.z3, &choices.as_slice()));
+                    self.solver
+                        .assert(&Bool::and(self.z3, &choices.as_slice()).not());
                 }
             }
         }

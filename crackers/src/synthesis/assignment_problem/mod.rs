@@ -11,7 +11,7 @@ use crate::synthesis::assignment_problem::sat_problem::{SatProblem, SlotAssignme
 mod pcode_theory;
 mod sat_problem;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Decision {
     pub index: usize,
     pub choice: usize,
@@ -89,16 +89,11 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let res = self.single_decision_iteration()?;
             match res {
                 DecisionResult::ConflictsFound(a, c) => {
-                    event!(
-                        Level::DEBUG,
-                        "Assignment {:?} found {} conflicts",
-                        a,
-                        c.len()
-                    );
+                    event!(Level::DEBUG, "{:?} has {} conflicts", a, c.len());
                     continue;
                 }
                 DecisionResult::AssignmentFound(a) => {
-                    event!(Level::DEBUG, "Assignment {:?} is feasible", a);
+                    event!(Level::DEBUG, "{:?} is feasible", a);
                     return Ok(DecisionResult::AssignmentFound(a));
                 }
                 DecisionResult::Unsat => {
