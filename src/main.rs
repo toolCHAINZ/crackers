@@ -50,7 +50,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 6).collect(), library);
+    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library);
     p.decide().unwrap();
 }
 

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 elf = "0.7.4"
-jingle = { path = "../../../CLionProjects/jingle/jingle" }
+jingle = { path = "../../../RustroverProjects/jingle/jingle" }
 z3 = { git = "https://github.com/prove-rs/z3.rs.git", rev = "247d308" }
 serde = { version = "1.0.197", features = ["derive"] }
 thiserror = "1.0.58"

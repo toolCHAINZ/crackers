@@ -94,20 +94,21 @@ impl<'ctx> SatProblem<'ctx> {
     }
 
     pub fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+        let mut terms = Vec::new();
         for clause in clauses {
             match clause {
                 ConflictClause::Unit(d) => {
                     let var = self.get_decision_variable(d);
-                    self.solver.assert(&var.not());
+                    terms.push(var.clone());
                 }
                 ConflictClause::Conjunction(v) => {
                     let choices: Vec<&Bool<'ctx>> =
                         v.iter().map(|b| self.get_decision_variable(b)).collect();
-                    self.solver
-                        .assert(&Bool::and(self.z3, &choices.as_slice()).not());
+                    terms.push(Bool::and(self.z3, choices.as_slice()));
                 }
             }
         }
+        self.solver.assert(&Bool::and(self.z3, &terms).not());
     }
 }
 

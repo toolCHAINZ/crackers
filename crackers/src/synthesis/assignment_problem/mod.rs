@@ -46,7 +46,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(10)
+                .skip(2).take(10)
                 .collect();
             event!(
                 Level::DEBUG,
