@@ -46,7 +46,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .skip(2).take(10)
+                .take(200)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -69,16 +69,25 @@ impl<'ctx> AssignmentProblem<'ctx> {
         }
     }
     fn single_decision_iteration(&mut self) -> Result<DecisionResult, CrackersError> {
+        event!(Level::TRACE, "checking SAT problem");
         let assignment = self.sat_problem.get_assignments();
         if let Some(a) = assignment {
+            event!(Level::TRACE, "checking theory problem");
+
             let conflicts = self.theory_problem.check_assignment(&a)?;
             if let Some(c) = conflicts {
+                event!(Level::TRACE, "theory returned {} conjunctions", c.len());
+
                 self.sat_problem.add_theory_clauses(&c);
                 Ok(DecisionResult::ConflictsFound(a, c))
             } else {
+                event!(Level::TRACE, "theory returned SAT");
+
                 Ok(DecisionResult::AssignmentFound(a))
             }
         } else {
+            event!(Level::TRACE, "SAT problem returned UNSAT");
+
             Ok(DecisionResult::Unsat)
         }
     }

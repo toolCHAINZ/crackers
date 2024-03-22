@@ -25,7 +25,8 @@ const TEST_BYTES: [u8; 37] = [
 ];
 
 fn main() {
-    let z3 = Context::new(&Config::new());
+    let cfg = Config::new();
+    let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
         .with_max_level(Level::DEBUG)
         .finish();

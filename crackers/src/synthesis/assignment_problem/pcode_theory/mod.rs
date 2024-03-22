@@ -1,5 +1,5 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use tracing::{event, Level};
+use tracing::{event, instrument, Level};
 use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
@@ -39,18 +39,25 @@ impl<'ctx> PcodeTheory<'ctx> {
             gadget_candidates: gadget_candidates.to_vec(),
         }
     }
+    #[instrument(skip_all)]
     pub fn check_assignment(
         &self,
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+        event!(Level::TRACE, "Resetting solver");
         self.solver.reset();
         let mut assertions = Vec::new();
+        event!(Level::TRACE, "Evaluating unit semantics");
         let unit_conflicts = self.eval_unit_semantics(&mut assertions, slot_assignments)?;
         if unit_conflicts.is_some() {
+            event!(Level::TRACE, "Unit semantics returned conflicts");
             return Ok(unit_conflicts);
         }
+        event!(Level::TRACE, "Evaluating combined semantics");
         let mem_and_branch_conflicts = self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;
         if mem_and_branch_conflicts.is_some() {
+            event!(Level::TRACE, "combined semantics returned conflicts");
+
             return Ok(mem_and_branch_conflicts);
         }
 /*        let combined_semantics_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
