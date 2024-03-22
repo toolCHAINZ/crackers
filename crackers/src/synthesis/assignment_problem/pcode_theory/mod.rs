@@ -1,6 +1,6 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use tracing::{event, instrument, Level};
-use z3::{Context, SatResult, Solver};
+use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
 use crate::error::CrackersError;
@@ -167,4 +167,9 @@ impl<'ctx> PcodeTheory<'ctx> {
         }
         self.collect_conflicts(assertions)
     }
+
+    pub fn get_model(&self) -> Option<Model<'ctx>>{
+        self.solver.get_model()
+    }
+
 }

@@ -1,15 +1,18 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
-use z3::{Context, Solver};
+use z3::{Context, Model, Solver};
 
 use crate::error::CrackersError;
+use crate::error::CrackersError::ModelGenerationError;
 use crate::gadget::GadgetLibrary;
+use crate::synthesis::assignment_problem::assignment_model::AssignmentModel;
 use crate::synthesis::assignment_problem::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::assignment_problem::sat_problem::{SatProblem, SlotAssignments};
 
 mod pcode_theory;
 mod sat_problem;
+pub mod assignment_model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Decision {
@@ -17,17 +20,16 @@ pub struct Decision {
     pub choice: usize,
 }
 
-#[derive(Debug, Clone)]
-pub enum DecisionResult {
+#[derive(Debug)]
+pub enum DecisionResult<'ctx> {
     ConflictsFound(SlotAssignments, Vec<ConflictClause>),
-    AssignmentFound(SlotAssignments),
+    AssignmentFound(AssignmentModel<'ctx>),
     Unsat,
 }
 
 #[derive(Debug, Clone)]
 pub struct AssignmentProblem<'ctx> {
     z3: &'ctx Context,
-    solver: Solver<'ctx>,
     library: GadgetLibrary,
     templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
@@ -46,7 +48,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(200)
+                .take(150)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -60,7 +62,6 @@ impl<'ctx> AssignmentProblem<'ctx> {
         let theory_problem = PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates);
         AssignmentProblem {
             z3,
-            solver: Solver::new(z3),
             library,
             templates: modeled_templates,
             gadget_candidates,
@@ -68,7 +69,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             theory_problem,
         }
     }
-    fn single_decision_iteration(&mut self) -> Result<DecisionResult, CrackersError> {
+    fn single_decision_iteration(&mut self) -> Result<DecisionResult<'ctx>, CrackersError> {
         event!(Level::TRACE, "checking SAT problem");
         let assignment = self.sat_problem.get_assignments();
         if let Some(a) = assignment {
@@ -82,8 +83,12 @@ impl<'ctx> AssignmentProblem<'ctx> {
                 Ok(DecisionResult::ConflictsFound(a, c))
             } else {
                 event!(Level::TRACE, "theory returned SAT");
-
-                Ok(DecisionResult::AssignmentFound(a))
+                let model = self.theory_problem.get_model().ok_or(ModelGenerationError)?;
+                let mut gadgets = Vec::with_capacity(a.choices().len());
+                for (index, &choice) in a.choices().iter().enumerate() {
+                    gadgets.push(self.gadget_candidates[index][choice].clone());
+                }
+                Ok(DecisionResult::AssignmentFound(AssignmentModel::new(a, model,gadgets)))
             }
         } else {
             event!(Level::TRACE, "SAT problem returned UNSAT");
@@ -103,7 +108,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
                     continue;
                 }
                 DecisionResult::AssignmentFound(a) => {
-                    event!(Level::DEBUG, "{:?} is feasible", a);
+                    event!(Level::DEBUG, "{:?} is feasible", a.assignments);
                     return Ok(DecisionResult::AssignmentFound(a));
                 }
                 DecisionResult::Unsat => {
@@ -114,4 +119,5 @@ impl<'ctx> AssignmentProblem<'ctx> {
         }
         unreachable!()
     }
+
 }

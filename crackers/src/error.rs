@@ -8,6 +8,7 @@ pub enum CrackersError {
     LibraryDeserialization,
     LibrarySerialization,
     TheoryTimeout,
+    ModelGenerationError,
     BooleanAssignmentTimeout,
     Jingle(#[from] JingleError),
 }

@@ -14,7 +14,8 @@ use z3::ast::Ast;
 use z3::{Config, Context};
 
 use crackers::gadget::GadgetLibrary;
-use crackers::synthesis::assignment_problem::AssignmentProblem;
+use crackers::synthesis::assignment_problem::assignment_model::AssignmentModel;
+use crackers::synthesis::assignment_problem::{AssignmentProblem, DecisionResult};
 use crackers::synthesis::greedy::GreedySynthesizer;
 
 #[allow(unused)]
@@ -52,7 +53,11 @@ fn main() {
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
     let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library);
-    p.decide().unwrap();
+    match p.decide().unwrap(){
+        DecisionResult::ConflictsFound(_, _) => {}
+        DecisionResult::AssignmentFound(a) => {naive_alg(a)}
+        DecisionResult::Unsat => {}
+    };
 }
 
 fn get_target_instructions<'ctx>(
@@ -70,64 +75,56 @@ fn get_target_instructions<'ctx>(
     Ok(instrs)
 }
 
-fn naive_alg(z3: &Context, targets: Vec<ModeledInstruction>, gadgets: GadgetLibrary) {
-    let spec = ModeledBlock::try_from(targets.as_slice()).unwrap();
-    let greedy = GreedySynthesizer::new(z3, targets.clone(), gadgets);
-    let result = greedy.decide().unwrap();
-    result.solver.check_assumptions(&[
-        result.reaches(&spec).unwrap(),
-        result.refines(&spec).unwrap(),
-    ]);
-    let model = result.solver.get_model().unwrap();
+fn naive_alg(result: AssignmentModel) {
+
     println!("inputs:");
 
-    for x in result
-        .get_inputs()
+    for x in result.gadgets.as_slice().get_inputs()
         .iter()
-        .filter(|v| result.should_varnode_constrain(v))
+        .filter(|v| result.gadgets.as_slice().should_varnode_constrain(v))
     {
-        let bv = result.get_original_state().read_resolved(x).unwrap();
+        let bv = result.read_resolved(x).unwrap();
         match x {
             ResolvedVarnode::Direct(_) => println!(
                 "{} = {}",
-                x.display(result.get_original_state()).unwrap(),
-                model.eval(&bv, false).unwrap()
+                x.display(result.initial_state().unwrap()).unwrap(),
+                result.model().eval(&bv, false).unwrap()
             ),
             ResolvedVarnode::Indirect(i) => {
-                let ptr = model.eval(&i.pointer, false).unwrap().simplify();
+                let ptr = result.model().eval(&i.pointer, false).unwrap().simplify();
                 println!(
                     "{}[{}] = {}",
                     i.pointer_space_idx,
                     ptr,
-                    model.eval(&bv, false).unwrap()
+                    result.model().eval(&bv, false).unwrap()
                 )
             }
         }
     }
     println!("outputs:");
-    for x in spec
+    for x in result.gadgets.as_slice()
         .get_outputs()
         .iter()
-        .filter(|v| result.should_varnode_constrain(v))
+        .filter(|v| result.gadgets.as_slice().should_varnode_constrain(v))
     {
-        let bv = result.get_final_state().read_resolved(x).unwrap();
+        let bv = result.final_state().unwrap().read_resolved(x).unwrap();
         println!(
             "{} = {}",
-            x.display(result.get_final_state()).unwrap(),
-            model.eval(&bv, false).unwrap()
+            x.display(result.final_state().unwrap()).unwrap(),
+            result.model().eval(&bv, false).unwrap()
         )
     }
     println!("stack");
-    let final_state = result.get_final_state();
-    let reg = varnode!(result.get_original_state(), "register"[0x20]:8).unwrap();
+    let final_state = result.final_state().unwrap();
+    let reg = varnode!(result.initial_state().unwrap(), "register"[0x20]:8).unwrap();
     let stack_reg = final_state.read_varnode(&reg).unwrap().simplify();
-    let ptr = model.eval(&stack_reg, false).unwrap().as_u64().unwrap();
+    let ptr = result.model().eval(&stack_reg, false).unwrap().as_u64().unwrap();
     for i in -32i32..0i32 {
         let addr = ptr.wrapping_add((i as u64).wrapping_mul(8));
         let varnode = varnode!(final_state, "ram"[addr]:8).unwrap();
         let display = varnode.display(final_state).unwrap();
-        let read = result.get_original_state().read_varnode(&varnode).unwrap();
-        let val = model.eval(&read, false).unwrap();
+        let read = result.initial_state().unwrap().read_varnode(&varnode).unwrap();
+        let val = result.model().eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }
     // buffer stuff
@@ -138,8 +135,7 @@ fn naive_alg(z3: &Context, targets: Vec<ModeledInstruction>, gadgets: GadgetLibr
         let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
         let display = varnode.display(final_state).unwrap();
         let read = final_state.read_varnode(&varnode).unwrap();
-        let val = model.eval(&read, false).unwrap();
+        let val = result.model().eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }
-    std::fs::write("../../smt.txt", result.solver.to_smt2()).unwrap();
 }
