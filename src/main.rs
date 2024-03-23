@@ -52,7 +52,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library);
+    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 10).collect(), library);
     match p.decide().unwrap(){
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => {naive_alg(a)}
@@ -76,7 +76,12 @@ fn get_target_instructions<'ctx>(
 }
 
 fn naive_alg(result: AssignmentModel) {
-
+    for b in &result.gadgets {
+        for x in &b.instructions {
+            println!("{:x} {}", x.address, x.disassembly);
+        }
+        println!();
+    }
     println!("inputs:");
 
     for x in result.gadgets.as_slice().get_inputs()
@@ -116,6 +121,7 @@ fn naive_alg(result: AssignmentModel) {
     }
     println!("stack");
     let final_state = result.final_state().unwrap();
+    let initial_state = result.initial_state().unwrap();
     let reg = varnode!(result.initial_state().unwrap(), "register"[0x20]:8).unwrap();
     let stack_reg = final_state.read_varnode(&reg).unwrap().simplify();
     let ptr = result.model().eval(&stack_reg, false).unwrap().as_u64().unwrap();
@@ -135,6 +141,16 @@ fn naive_alg(result: AssignmentModel) {
         let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
         let display = varnode.display(final_state).unwrap();
         let read = final_state.read_varnode(&varnode).unwrap();
+        let val = result.model().eval(&read, false).unwrap();
+        println!("{} = {}", display, val);
+    }
+    println!("buffer");
+    let ptr = 0x9d060u64;
+    for i in 0i32..8i32 {
+        let addr = ptr.wrapping_add(i as u64 * 4);
+        let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
+        let display = varnode.display(final_state).unwrap();
+        let read = initial_state.read_varnode(&varnode).unwrap();
         let val = result.model().eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }

@@ -23,4 +23,8 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     pub fn gen_conflict_clause(&self) -> ConflictClause {
         ConflictClause::Conjunction(self.decisions.clone())
     }
+
+    pub fn is_unit(&self) -> bool{
+        self.decisions.len() == 1
+    }
 }

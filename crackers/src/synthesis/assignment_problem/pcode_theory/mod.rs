@@ -60,10 +60,13 @@ impl<'ctx> PcodeTheory<'ctx> {
 
             return Ok(mem_and_branch_conflicts);
         }
-/*        let combined_semantics_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
-        if combined_semantics_conflicts.is_some() {
-            return Ok(combined_semantics_conflicts);
-        }*/
+        event!(Level::TRACE, "Evaluating combined semantics2");
+        let mem_and_branch_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
+        if mem_and_branch_conflicts.is_some() {
+            event!(Level::TRACE, "combined semantics returned conflicts");
+
+            return Ok(mem_and_branch_conflicts);
+        }
         Ok(None)
     }
 
@@ -80,7 +83,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         let template_block = ModeledBlock::try_from(self.templates.as_slice())?;
         let sem_bool = Bool::fresh_const(self.z3, "sem");
         self.solver
-            .assert_and_track(&gadgets.as_slice().refines(&template_block)?, &sem_bool);
+            .assert_and_track(&gadgets.as_slice().reaches(&template_block)?, &sem_bool);
         assertions.push(ConjunctiveConstraint::new(
             &slot_assignments.to_decisions(),
             sem_bool,
@@ -109,13 +112,19 @@ impl<'ctx> PcodeTheory<'ctx> {
                 let unsat_core = self.solver.get_unsat_core();
                 for b in unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
-                        event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
-                        conflicts.push(m.gen_conflict_clause())
+                        event!(Level::TRACE, "{:?}: {:?}", b, m.decisions);
+                        conflicts.push(m)
                     } else {
-                        event!(Level::DEBUG, "MISSED");
+                        event!(Level::TRACE, "MISSED");
                     }
                 }
-                Ok(Some(conflicts))
+                if conflicts.iter().any(|f| f.is_unit()) {
+                    let conflicts: Vec<ConflictClause> = conflicts.iter().filter(|p| p.is_unit()).map(|f| f.gen_conflict_clause()).collect();
+                    Ok(Some(conflicts))
+                } else {
+                    let conflicts: Vec<ConflictClause> = conflicts.iter().map(|f| f.gen_conflict_clause()).collect();
+                    Ok(Some(conflicts))
+                }
             }
             SatResult::Unknown => Err(TheoryTimeout),
             SatResult::Sat => Ok(None)
@@ -168,8 +177,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.collect_conflicts(assertions)
     }
 
-    pub fn get_model(&self) -> Option<Model<'ctx>>{
+    pub fn get_model(&self) -> Option<Model<'ctx>> {
         self.solver.get_model()
     }
-
 }
