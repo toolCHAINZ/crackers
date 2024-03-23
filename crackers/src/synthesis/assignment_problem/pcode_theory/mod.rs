@@ -118,7 +118,14 @@ impl<'ctx> PcodeTheory<'ctx> {
                         event!(Level::TRACE, "MISSED");
                     }
                 }
-                if conflicts.iter().any(|f| f.is_unit()) {
+                let count_unit = conflicts.iter().map(|f| {
+                    match f.is_unit() {
+                        false => 0,
+                        true => 1
+                    }
+                }).reduce(|a, b| a + b).unwrap();
+
+                if count_unit >= 2 {
                     let conflicts: Vec<ConflictClause> = conflicts.iter().filter(|p| p.is_unit()).map(|f| f.gen_conflict_clause()).collect();
                     Ok(Some(conflicts))
                 } else {
