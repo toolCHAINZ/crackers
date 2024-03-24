@@ -17,7 +17,6 @@ use crackers::gadget::GadgetLibrary;
 use crackers::synthesis::assignment_problem::assignment_model::AssignmentModel;
 use crackers::synthesis::assignment_problem::{AssignmentProblem, DecisionResult};
 
-
 #[allow(unused)]
 const TEST_BYTES: [u8; 41] = [
     0xba, 0x60, 0xd0, 0x09, 0x00, 0x89, 0xd3, 0xb8, 0x2f, 0x62, 0x69, 0x6e, 0x89, 0x02, 0x83, 0xc3,
@@ -39,7 +38,7 @@ fn main() {
         .set_image(Image::from(TEST_BYTES.as_slice()))
         .build("x86:LE:64:default")
         .unwrap();
-    let path = Path::new("bin/vuln");
+    let path = Path::new("bin/httpd");
     let data = fs::read(path).unwrap();
     let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
 
@@ -52,7 +51,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 11).collect(), library);
+    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library);
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),

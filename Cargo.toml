@@ -11,7 +11,7 @@ members = ["crackers"]
 
 [dependencies]
 elf = "0.7.4"
-jingle = { path = "../../RustroverProjects/jingle/jingle" }
+jingle = { path = "../../CLionProjects/jingle/jingle" }
 crackers = { path = "../crackers/crackers" }
 z3 = { git = "https://github.com/prove-rs/z3.rs.git", rev = "247d308" }
 thiserror = "1.0.58"
