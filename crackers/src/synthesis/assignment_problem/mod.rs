@@ -1,7 +1,7 @@
-use std::fs;
-use std::io::Write;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
+use std::fs;
+use std::io::Write;
 use tracing::{event, instrument, Level};
 use z3::{Context, Model, Solver};
 
@@ -12,9 +12,9 @@ use crate::synthesis::assignment_problem::assignment_model::AssignmentModel;
 use crate::synthesis::assignment_problem::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::assignment_problem::sat_problem::{SatProblem, SlotAssignments};
 
+pub mod assignment_model;
 mod pcode_theory;
 mod sat_problem;
-pub mod assignment_model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Decision {
@@ -78,7 +78,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             event!(Level::TRACE, "checking theory problem");
 
             let conflicts = self.theory_problem.check_assignment(&a);
-            match conflicts{
+            match conflicts {
                 Ok(conflicts) => {
                     if let Some(c) = conflicts {
                         event!(Level::TRACE, "theory returned {} conjunctions", c.len());
@@ -87,28 +87,34 @@ impl<'ctx> AssignmentProblem<'ctx> {
                         Ok(DecisionResult::ConflictsFound(a, c))
                     } else {
                         event!(Level::TRACE, "theory returned SAT");
-                        let model = self.theory_problem.get_model().ok_or(ModelGenerationError)?;
+                        let model = self
+                            .theory_problem
+                            .get_model()
+                            .ok_or(ModelGenerationError)?;
                         let gadgets = self.gadgets_for_assignment(&a);
-                        Ok(DecisionResult::AssignmentFound(AssignmentModel::new(a, model,gadgets)))
+                        Ok(DecisionResult::AssignmentFound(AssignmentModel::new(
+                            a, model, gadgets,
+                        )))
                     }
                 }
-                Err(err) => {
-                    match err {
-                        CrackersError::TheoryTimeout => {
-                            event!(Level::WARN, "{:?} timed out", &a);
-                            let c = a.as_conflict_clause();
-                            self.sat_problem.add_theory_clauses(&[a.as_conflict_clause()]);
-                            let mut f = fs::File::create(format!("dumps/gadgets_{:?}.txt",a.choices())).unwrap();
-                            for b in self.gadgets_for_assignment(&a) {
-                                f.write(format!("{}", b).as_ref()).expect("TODO: panic message");
-                            }
-                            Ok(DecisionResult::ConflictsFound(a, vec![c]))
+                Err(err) => match err {
+                    CrackersError::TheoryTimeout => {
+                        event!(Level::WARN, "{:?} timed out", &a);
+                        let c = a.as_conflict_clause();
+                        self.sat_problem
+                            .add_theory_clauses(&[a.as_conflict_clause()]);
+                        let mut f =
+                            fs::File::create(format!("dumps/gadgets_{:?}.txt", a.choices()))
+                                .unwrap();
+                        for b in self.gadgets_for_assignment(&a) {
+                            f.write(format!("{}", b).as_ref())
+                                .expect("TODO: panic message");
                         }
-                        _ => {return Err(err)}
+                        Ok(DecisionResult::ConflictsFound(a, vec![c]))
                     }
-                }
+                    _ => return Err(err),
+                },
             }
-
         } else {
             event!(Level::TRACE, "SAT problem returned UNSAT");
 
@@ -116,11 +122,12 @@ impl<'ctx> AssignmentProblem<'ctx> {
         }
     }
 
-    fn gadgets_for_assignment(&self, a: &SlotAssignments) -> Vec<ModeledBlock<'ctx>>{
+    fn gadgets_for_assignment(&self, a: &SlotAssignments) -> Vec<ModeledBlock<'ctx>> {
         let mut gadgets = Vec::with_capacity(a.choices().len());
         for (index, &choice) in a.choices().iter().enumerate() {
             gadgets.push(self.gadget_candidates[index][choice].clone());
-        }gadgets
+        }
+        gadgets
     }
 
     #[instrument(skip_all)]
@@ -145,5 +152,4 @@ impl<'ctx> AssignmentProblem<'ctx> {
         }
         unreachable!()
     }
-
 }

@@ -19,11 +19,10 @@ use crackers::synthesis::assignment_problem::{AssignmentProblem, DecisionResult}
 use crackers::synthesis::greedy::GreedySynthesizer;
 
 #[allow(unused)]
-const TEST_BYTES: [u8; 41] =
-[
-0xba, 0x60, 0xd0, 0x09, 0x00, 0x89, 0xd3, 0xb8, 0x2f, 0x62, 0x69, 0x6e, 0x89, 0x02, 0x83, 0xc3,
-0x04, 0xb8, 0x2f, 0x73, 0x68, 0x00, 0x89, 0x03, 0xba, 0x00, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00,
-0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80
+const TEST_BYTES: [u8; 41] = [
+    0xba, 0x60, 0xd0, 0x09, 0x00, 0x89, 0xd3, 0xb8, 0x2f, 0x62, 0x69, 0x6e, 0x89, 0x02, 0x83, 0xc3,
+    0x04, 0xb8, 0x2f, 0x73, 0x68, 0x00, 0x89, 0x03, 0xba, 0x00, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00,
+    0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80,
 ];
 
 fn main() {
@@ -54,9 +53,9 @@ fn main() {
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
     let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 11).collect(), library);
-    match p.decide().unwrap(){
+    match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
-        DecisionResult::AssignmentFound(a) => {naive_alg(a)}
+        DecisionResult::AssignmentFound(a) => naive_alg(a),
         DecisionResult::Unsat => {}
     };
 }
@@ -85,7 +84,10 @@ fn naive_alg(result: AssignmentModel) {
     }
     println!("inputs:");
 
-    for x in result.gadgets.as_slice().get_inputs()
+    for x in result
+        .gadgets
+        .as_slice()
+        .get_inputs()
         .iter()
         .filter(|v| result.gadgets.as_slice().should_varnode_constrain(v))
     {
@@ -108,7 +110,9 @@ fn naive_alg(result: AssignmentModel) {
         }
     }
     println!("outputs:");
-    for x in result.gadgets.as_slice()
+    for x in result
+        .gadgets
+        .as_slice()
         .get_outputs()
         .iter()
         .filter(|v| result.gadgets.as_slice().should_varnode_constrain(v))
@@ -125,12 +129,21 @@ fn naive_alg(result: AssignmentModel) {
     let initial_state = result.initial_state().unwrap();
     let reg = varnode!(result.initial_state().unwrap(), "register"[0x20]:8).unwrap();
     let stack_reg = final_state.read_varnode(&reg).unwrap().simplify();
-    let ptr = result.model().eval(&stack_reg, false).unwrap().as_u64().unwrap();
+    let ptr = result
+        .model()
+        .eval(&stack_reg, false)
+        .unwrap()
+        .as_u64()
+        .unwrap();
     for i in -32i32..0i32 {
         let addr = ptr.wrapping_add((i as u64).wrapping_mul(8));
         let varnode = varnode!(final_state, "ram"[addr]:8).unwrap();
         let display = varnode.display(final_state).unwrap();
-        let read = result.initial_state().unwrap().read_varnode(&varnode).unwrap();
+        let read = result
+            .initial_state()
+            .unwrap()
+            .read_varnode(&varnode)
+            .unwrap();
         let val = result.model().eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }

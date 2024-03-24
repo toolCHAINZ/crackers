@@ -2,10 +2,10 @@ use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::path::Path;
 
-use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::JingleError;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
@@ -126,8 +126,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::GadgetLibrary;

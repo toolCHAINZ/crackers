@@ -10,8 +10,7 @@ pub struct SlotAssignments {
 }
 
 impl SlotAssignments {
-
-    pub fn as_conflict_clause(&self) -> ConflictClause{
+    pub fn as_conflict_clause(&self) -> ConflictClause {
         ConflictClause::Conjunction(self.to_decisions())
     }
     pub fn to_decisions(&self) -> Vec<Decision> {

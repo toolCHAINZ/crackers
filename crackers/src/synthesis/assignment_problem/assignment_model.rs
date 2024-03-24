@@ -1,10 +1,10 @@
-use std::fmt::{Display, Formatter};
+use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
-use z3::{Model, Solver};
+use std::fmt::{Display, Formatter};
 use z3::ast::BV;
-use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
+use z3::{Model, Solver};
 
 #[derive(Debug)]
 pub struct AssignmentModel<'ctx> {
@@ -14,7 +14,11 @@ pub struct AssignmentModel<'ctx> {
 }
 
 impl<'ctx> AssignmentModel<'ctx> {
-    pub fn new(assignments: SlotAssignments, model: Model<'ctx>, gadgets: Vec<ModeledBlock<'ctx>>) -> Self {
+    pub fn new(
+        assignments: SlotAssignments,
+        model: Model<'ctx>,
+        gadgets: Vec<ModeledBlock<'ctx>>,
+    ) -> Self {
         Self {
             assignments,
             model,
@@ -42,11 +46,13 @@ impl<'ctx> AssignmentModel<'ctx> {
     }
 
     pub fn read_resolved(&'ctx self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
-        self.final_state().map(|f| f.read_resolved(&vn).ok()).flatten()
+        self.final_state()
+            .map(|f| f.read_resolved(&vn).ok())
+            .flatten()
     }
 }
 
-impl<'ctx> Display for AssignmentModel <'ctx>{
+impl<'ctx> Display for AssignmentModel<'ctx> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Gadgets:\n")?;
         for block in &self.gadgets {

@@ -1,5 +1,5 @@
-use jingle::JingleError;
 use jingle::modeling::{ModeledInstruction, ModelingContext};
+use jingle::JingleError;
 use thiserror::Error;
 use z3::{Context, SatResult};
 

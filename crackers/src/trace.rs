@@ -1,11 +1,11 @@
-use std::collections::HashSet;
-use jingle::modeling::{BranchConstraint, ModeledBlock, ModelingContext, State};
+use crate::synthesis::greedy::GreedySynthesizerError;
 use jingle::modeling::BlockEndBehavior::Fallthrough;
+use jingle::modeling::{BranchConstraint, ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{PcodeOperation, SpaceInfo, SpaceManager};
 use jingle::varnode::ResolvedVarnode;
+use std::collections::HashSet;
 use z3::ast::Ast;
 use z3::{Context, SatResult, Solver};
-use crate::synthesis::greedy::GreedySynthesizerError;
 
 #[derive(Debug)]
 pub struct TraceModel<'ctx> {
@@ -33,9 +33,7 @@ impl<'ctx> TraceModel<'ctx> {
             .get_branch_constraint()
             .is_plausible_match(spec.get_branch_constraint())
         {
-            return Err(
-                GreedySynthesizerError::BlockChoiceError
-            );
+            return Err(GreedySynthesizerError::BlockChoiceError);
         } else if !matches!(spec.get_branch_constraint().last, Fallthrough(_)) {
             // TODO: we need to come up with constraints to make things like syscalls "unreachable"
             // by any other means
@@ -54,9 +52,7 @@ impl<'ctx> TraceModel<'ctx> {
             SatResult::Unsat
         ) {
             self.blocks.push(block);
-            return Err(
-                GreedySynthesizerError::BlockChoiceError,
-            );
+            return Err(GreedySynthesizerError::BlockChoiceError);
         }
         self.blocks.push(block);
         Ok(())

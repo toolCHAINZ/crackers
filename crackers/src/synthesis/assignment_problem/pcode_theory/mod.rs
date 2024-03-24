@@ -1,14 +1,14 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
-use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool, BV};
+use z3::{Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
-use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::pairwise::ConjunctiveConstraint;
 use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
+use crate::synthesis::assignment_problem::Decision;
 
 mod pairwise;
 
@@ -55,14 +55,16 @@ impl<'ctx> PcodeTheory<'ctx> {
             return Ok(unit_conflicts);
         }
         event!(Level::TRACE, "Evaluating combined semantics");
-        let mem_and_branch_conflicts = self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;
+        let mem_and_branch_conflicts =
+            self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;
         if mem_and_branch_conflicts.is_some() {
             event!(Level::TRACE, "combined semantics returned conflicts");
 
             return Ok(mem_and_branch_conflicts);
         }
         event!(Level::TRACE, "Evaluating combined semantics2");
-        let mem_and_branch_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
+        let mem_and_branch_conflicts =
+            self.eval_combined_semantics(&mut assertions, slot_assignments)?;
         if mem_and_branch_conflicts.is_some() {
             event!(Level::TRACE, "combined semantics returned conflicts");
 
@@ -93,20 +95,28 @@ impl<'ctx> PcodeTheory<'ctx> {
     }
 
     fn eval_unit_semantics(
-        &self, assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        &self,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
             let refines = Bool::fresh_const(self.z3, "refines");
-            self.solver.assert_and_track(&gadget.refines(spec)?, &refines);
-            assertions.push(ConjunctiveConstraint::new(&[Decision { index, choice }], refines))
+            self.solver
+                .assert_and_track(&gadget.refines(spec)?, &refines);
+            assertions.push(ConjunctiveConstraint::new(
+                &[Decision { index, choice }],
+                refines,
+            ))
         }
         self.collect_conflicts(assertions)
     }
 
-    fn collect_conflicts(&self, assertions: &mut Vec<ConjunctiveConstraint<'ctx>>) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+    fn collect_conflicts(
+        &self,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         let mut conflicts = Vec::new();
         match self.solver.check() {
             SatResult::Unsat => {
@@ -119,28 +129,36 @@ impl<'ctx> PcodeTheory<'ctx> {
                         event!(Level::TRACE, "MISSED");
                     }
                 }
-                let count_unit = conflicts.iter().map(|f| {
-                    match f.is_unit() {
+                let count_unit = conflicts
+                    .iter()
+                    .map(|f| match f.is_unit() {
                         false => 0,
-                        true => 1
-                    }
-                }).reduce(|a, b| a + b).unwrap_or(0);
+                        true => 1,
+                    })
+                    .reduce(|a, b| a + b)
+                    .unwrap_or(0);
 
                 if count_unit >= 2 {
-                    let conflicts: Vec<ConflictClause> = conflicts.iter().filter(|p| p.is_unit()).map(|f| f.gen_conflict_clause()).collect();
+                    let conflicts: Vec<ConflictClause> = conflicts
+                        .iter()
+                        .filter(|p| p.is_unit())
+                        .map(|f| f.gen_conflict_clause())
+                        .collect();
                     Ok(Some(conflicts))
                 } else {
-                    let conflicts: Vec<ConflictClause> = conflicts.iter().map(|f| f.gen_conflict_clause()).collect();
+                    let conflicts: Vec<ConflictClause> =
+                        conflicts.iter().map(|f| f.gen_conflict_clause()).collect();
                     Ok(Some(conflicts))
                 }
             }
             SatResult::Unknown => Err(TheoryTimeout),
-            SatResult::Sat => Ok(None)
+            SatResult::Sat => Ok(None),
         }
     }
 
     fn eval_memory_conflict_and_branching(
-        &self, assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        &self,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         for (index, w) in slot_assignments.choices().windows(2).enumerate() {
