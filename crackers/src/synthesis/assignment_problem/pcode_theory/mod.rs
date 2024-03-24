@@ -1,7 +1,6 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
-use z3::ast::{Ast, Bool, BV};
+use z3::ast::{ Bool};
 use z3::{Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;

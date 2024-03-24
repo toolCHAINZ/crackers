@@ -4,7 +4,7 @@ use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
 use std::fmt::{Display, Formatter};
 use z3::ast::BV;
-use z3::{Model, Solver};
+use z3::{Model};
 
 #[derive(Debug)]
 pub struct AssignmentModel<'ctx> {

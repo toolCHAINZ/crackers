@@ -3,7 +3,7 @@ use std::path::Path;
 
 use elf::endian::AnyEndian;
 use elf::ElfBytes;
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::sleigh::{create_varnode, varnode};
 use jingle::varnode::ResolvedVarnode;
@@ -16,7 +16,7 @@ use z3::{Config, Context};
 use crackers::gadget::GadgetLibrary;
 use crackers::synthesis::assignment_problem::assignment_model::AssignmentModel;
 use crackers::synthesis::assignment_problem::{AssignmentProblem, DecisionResult};
-use crackers::synthesis::greedy::GreedySynthesizer;
+
 
 #[allow(unused)]
 const TEST_BYTES: [u8; 41] = [
@@ -26,7 +26,7 @@ const TEST_BYTES: [u8; 41] = [
 ];
 
 fn main() {
-    let mut cfg = Config::new();
+    let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
         .with_max_level(Level::DEBUG)
@@ -48,7 +48,7 @@ fn main() {
         .build("x86:LE:64:default")
         .unwrap();
 
-    let targets = get_target_instructions(&target_sleigh, &z3).unwrap();
+    let _targets = get_target_instructions(&target_sleigh, &z3).unwrap();
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
@@ -64,7 +64,7 @@ fn get_target_instructions<'ctx>(
     sleigh: &'ctx SleighContext,
     z3: &'ctx Context,
 ) -> Result<Vec<ModeledInstruction<'ctx>>, JingleError> {
-    let modeler = SleighTranslator::new(&sleigh, &z3);
+    let modeler = SleighTranslator::new(sleigh, z3);
     let mut instrs = vec![];
     let mut i = 0;
     while i < TEST_BYTES.len() {

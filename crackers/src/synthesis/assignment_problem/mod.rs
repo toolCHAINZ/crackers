@@ -3,7 +3,7 @@ use jingle::sleigh::Instruction;
 use std::fs;
 use std::io::Write;
 use tracing::{event, instrument, Level};
-use z3::{Context, Model, Solver};
+use z3::{Context};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
@@ -31,9 +31,6 @@ pub enum DecisionResult<'ctx> {
 
 #[derive(Debug, Clone)]
 pub struct AssignmentProblem<'ctx> {
-    z3: &'ctx Context,
-    library: GadgetLibrary,
-    templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
     sat_problem: SatProblem<'ctx>,
     theory_problem: PcodeTheory<'ctx>,
@@ -63,9 +60,6 @@ impl<'ctx> AssignmentProblem<'ctx> {
         let sat_problem = SatProblem::initialize(z3, &gadget_candidates);
         let theory_problem = PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates);
         AssignmentProblem {
-            z3,
-            library,
-            templates: modeled_templates,
             gadget_candidates,
             sat_problem,
             theory_problem,
@@ -132,8 +126,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
 
     #[instrument(skip_all)]
     pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
-        let mut keep_going = true;
-        while keep_going {
+        loop {
             let res = self.single_decision_iteration()?;
             match res {
                 DecisionResult::ConflictsFound(a, c) => {
@@ -150,6 +143,5 @@ impl<'ctx> AssignmentProblem<'ctx> {
                 }
             }
         }
-        unreachable!()
     }
 }

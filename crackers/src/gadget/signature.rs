@@ -16,10 +16,10 @@ impl OutputSignature {
             .iter()
             .filter_map(|i| match i {
                 GeneralizedVarNode::Direct(d) => Some(d),
-                GeneralizedVarNode::Indirect(d) => None,
+                GeneralizedVarNode::Indirect(_) => None,
             })
             .collect();
-        let mut self_indirect: Vec<&IndirectVarNode> = self
+        let self_indirect: Vec<&IndirectVarNode> = self
             .outputs
             .iter()
             .filter_map(|i| match i {
