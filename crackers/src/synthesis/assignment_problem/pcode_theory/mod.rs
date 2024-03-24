@@ -1,7 +1,8 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
 use z3::{Context, Model, SatResult, Solver};
-use z3::ast::{Ast, Bool};
+use z3::ast::{Ast, Bool, BV};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
@@ -31,7 +32,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         templates: &[ModeledInstruction<'ctx>],
         gadget_candidates: &[Vec<ModeledBlock<'ctx>>],
     ) -> Self {
-        let solver = Solver::new(z3);
+        let solver = Solver::new_for_logic(z3, "QF_AUFBV").unwrap();
         Self {
             z3,
             solver,
@@ -123,7 +124,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                         false => 0,
                         true => 1
                     }
-                }).reduce(|a, b| a + b).unwrap();
+                }).reduce(|a, b| a + b).unwrap_or(0);
 
                 if count_unit >= 2 {
                     let conflicts: Vec<ConflictClause> = conflicts.iter().filter(|p| p.is_unit()).map(|f| f.gen_conflict_clause()).collect();
@@ -161,7 +162,6 @@ impl<'ctx> PcodeTheory<'ctx> {
                 ],
                 concat_var,
             ));
-            // todo: do this with the [BranchConstraint] object
             let branch_var = Bool::fresh_const(self.z3, &"branch");
             self.solver.assert_and_track(
                 &block1.can_branch_to_address(block2.get_address())?,

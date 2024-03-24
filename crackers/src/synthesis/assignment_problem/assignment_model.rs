@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
@@ -21,7 +22,7 @@ impl<'ctx> AssignmentModel<'ctx> {
         }
     }
 
-    pub fn model(&self) -> &Model<'ctx>{
+    pub fn model(&self) -> &Model<'ctx> {
         &self.model
     }
     pub fn initial_state(&'ctx self) -> Option<&'ctx State<'ctx>> {
@@ -42,5 +43,15 @@ impl<'ctx> AssignmentModel<'ctx> {
 
     pub fn read_resolved(&'ctx self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
         self.final_state().map(|f| f.read_resolved(&vn).ok()).flatten()
+    }
+}
+
+impl<'ctx> Display for AssignmentModel <'ctx>{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Gadgets:\n")?;
+        for block in &self.gadgets {
+            writeln!(f, "{}\n", block)?;
+        }
+        Ok(())
     }
 }

@@ -10,6 +10,10 @@ pub struct SlotAssignments {
 }
 
 impl SlotAssignments {
+
+    pub fn as_conflict_clause(&self) -> ConflictClause{
+        ConflictClause::Conjunction(self.to_decisions())
+    }
     pub fn to_decisions(&self) -> Vec<Decision> {
         let mut vec = Vec::with_capacity(self.choices.len());
         for (index, choice) in self.choices.iter().enumerate() {
@@ -57,7 +61,7 @@ impl<'ctx> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
-            solver: Solver::new(z3),
+            solver: Solver::new_for_logic(z3, "QF_FD").unwrap(),
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -108,7 +112,7 @@ impl<'ctx> SatProblem<'ctx> {
                 }
             }
         }
-        self.solver.assert(&Bool::and(self.z3, &terms).not());
+        self.solver.assert(&Bool::or(self.z3, &terms).not());
     }
 }
 

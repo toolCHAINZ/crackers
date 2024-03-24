@@ -1,3 +1,5 @@
+use std::fs;
+use std::io::Write;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
@@ -75,26 +77,50 @@ impl<'ctx> AssignmentProblem<'ctx> {
         if let Some(a) = assignment {
             event!(Level::TRACE, "checking theory problem");
 
-            let conflicts = self.theory_problem.check_assignment(&a)?;
-            if let Some(c) = conflicts {
-                event!(Level::TRACE, "theory returned {} conjunctions", c.len());
+            let conflicts = self.theory_problem.check_assignment(&a);
+            match conflicts{
+                Ok(conflicts) => {
+                    if let Some(c) = conflicts {
+                        event!(Level::TRACE, "theory returned {} conjunctions", c.len());
 
-                self.sat_problem.add_theory_clauses(&c);
-                Ok(DecisionResult::ConflictsFound(a, c))
-            } else {
-                event!(Level::TRACE, "theory returned SAT");
-                let model = self.theory_problem.get_model().ok_or(ModelGenerationError)?;
-                let mut gadgets = Vec::with_capacity(a.choices().len());
-                for (index, &choice) in a.choices().iter().enumerate() {
-                    gadgets.push(self.gadget_candidates[index][choice].clone());
+                        self.sat_problem.add_theory_clauses(&c);
+                        Ok(DecisionResult::ConflictsFound(a, c))
+                    } else {
+                        event!(Level::TRACE, "theory returned SAT");
+                        let model = self.theory_problem.get_model().ok_or(ModelGenerationError)?;
+                        let gadgets = self.gadgets_for_assignment(&a);
+                        Ok(DecisionResult::AssignmentFound(AssignmentModel::new(a, model,gadgets)))
+                    }
                 }
-                Ok(DecisionResult::AssignmentFound(AssignmentModel::new(a, model,gadgets)))
+                Err(err) => {
+                    match err {
+                        CrackersError::TheoryTimeout => {
+                            event!(Level::WARN, "{:?} timed out", &a);
+                            let c = a.as_conflict_clause();
+                            self.sat_problem.add_theory_clauses(&[a.as_conflict_clause()]);
+                            let mut f = fs::File::create(format!("dumps/gadgets_{:?}.txt",a.choices())).unwrap();
+                            for b in self.gadgets_for_assignment(&a) {
+                                f.write(format!("{}", b).as_ref()).expect("TODO: panic message");
+                            }
+                            Ok(DecisionResult::ConflictsFound(a, vec![c]))
+                        }
+                        _ => {return Err(err)}
+                    }
+                }
             }
+
         } else {
             event!(Level::TRACE, "SAT problem returned UNSAT");
 
             Ok(DecisionResult::Unsat)
         }
+    }
+
+    fn gadgets_for_assignment(&self, a: &SlotAssignments) -> Vec<ModeledBlock<'ctx>>{
+        let mut gadgets = Vec::with_capacity(a.choices().len());
+        for (index, &choice) in a.choices().iter().enumerate() {
+            gadgets.push(self.gadget_candidates[index][choice].clone());
+        }gadgets
     }
 
     #[instrument(skip_all)]
