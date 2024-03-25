@@ -71,9 +71,9 @@ impl<'ctx> GreedySynthesizer<'ctx> {
         {
             let can_substitute = trace
                 .solver
-                .check_assumptions(&[block.isolated()?.reaches(&instr.isolated()?)?]);
+                .check_assumptions(&[block.fresh()?.reaches(&instr.fresh()?)?]);
             if matches!(can_substitute, SatResult::Sat) {
-                let block = block.isolated()?;
+                let block = block.fresh()?;
                 if matches!(trace.push_for(&block, instr), Ok(()))
                     && matches!(trace.solver.check(), SatResult::Sat)
                 {
