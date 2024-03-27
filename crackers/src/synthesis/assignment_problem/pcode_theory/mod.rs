@@ -1,8 +1,9 @@
 use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::sleigh::{create_varnode, varnode};
 use tracing::{event, instrument, Level};
 use z3::{Context, Model, SatResult, Solver};
-use z3::ast::Bool;
+use z3::ast::{Ast, Bool, BV};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
@@ -10,7 +11,7 @@ use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::pairwise::{
     ConjunctiveConstraint, TheoryStage,
 };
-use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
+use crate::synthesis::assignment_problem::sat_problem::slot_assignments::SlotAssignments;
 
 mod pairwise;
 

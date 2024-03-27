@@ -1,18 +1,19 @@
 use std::fs;
 use std::io::Write;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
 use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
+use sat_problem::slot_assignments::SlotAssignments;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::gadget::GadgetLibrary;
 use crate::synthesis::assignment_problem::assignment_model::AssignmentModel;
 use crate::synthesis::assignment_problem::pcode_theory::{ConflictClause, PcodeTheory};
-use crate::synthesis::assignment_problem::sat_problem::{SatProblem, SlotAssignments};
+use crate::synthesis::assignment_problem::sat_problem::SatProblem;
 
 pub mod assignment_model;
 mod pcode_theory;
@@ -53,7 +54,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(200)
+                .take(2000)
                 .collect();
             event!(
                 Level::DEBUG,

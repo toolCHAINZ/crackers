@@ -1,4 +1,4 @@
-use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
+use crate::synthesis::assignment_problem::sat_problem::slot_assignments::SlotAssignments;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
