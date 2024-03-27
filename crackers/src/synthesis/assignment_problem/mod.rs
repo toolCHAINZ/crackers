@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::Write;
 
+use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
@@ -39,7 +40,11 @@ pub struct AssignmentProblem<'ctx> {
 
 impl<'ctx> AssignmentProblem<'ctx> {
     #[instrument(skip_all)]
-    pub fn new(z3: &'ctx Context, templates: Vec<Instruction>, library: GadgetLibrary) -> Self {
+    pub fn new(
+        z3: &'ctx Context,
+        templates: Vec<Instruction>,
+        library: GadgetLibrary,
+    ) -> Result<Self, JingleError> {
         let mut modeled_templates = vec![];
         let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
         for template in templates.iter() {
@@ -48,7 +53,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(2000)
+                .take(200)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -59,12 +64,13 @@ impl<'ctx> AssignmentProblem<'ctx> {
             gadget_candidates.push(candidates);
         }
         let sat_problem = SatProblem::initialize(z3, &gadget_candidates);
-        let theory_problem = PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates);
-        AssignmentProblem {
+        let theory_problem =
+            PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates)?;
+        Ok(AssignmentProblem {
             gadget_candidates,
             sat_problem,
             theory_problem,
-        }
+        })
     }
     fn single_decision_iteration(&mut self) -> Result<DecisionResult<'ctx>, CrackersError> {
         event!(Level::TRACE, "checking SAT problem");
@@ -81,7 +87,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
                         self.sat_problem.add_theory_clauses(&c);
                         Ok(DecisionResult::ConflictsFound(a, c))
                     } else {
-                        event!(Level::TRACE, "theory returned SAT");
+                        event!(Level::DEBUG, "theory returned SAT");
                         let model = self
                             .theory_problem
                             .get_model()

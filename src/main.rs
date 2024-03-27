@@ -38,7 +38,7 @@ fn main() {
         .set_image(Image::from(TEST_BYTES.as_slice()))
         .build("x86:LE:64:default")
         .unwrap();
-    let path = Path::new("bin/httpd");
+    let path = Path::new("bin/vuln");
     let data = fs::read(path).unwrap();
     let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
 
@@ -51,7 +51,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library);
+    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 7).collect(), library).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),
