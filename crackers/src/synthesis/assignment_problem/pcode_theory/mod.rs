@@ -1,16 +1,16 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::JingleError;
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use tracing::{event, instrument, Level};
-use z3::ast::Bool;
 use z3::{Context, Model, SatResult, Solver};
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
+use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::pairwise::{
     ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::assignment_problem::sat_problem::SlotAssignments;
-use crate::synthesis::assignment_problem::Decision;
 
 mod pairwise;
 
@@ -78,16 +78,14 @@ impl<'ctx> PcodeTheory<'ctx> {
             self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;
         if mem_and_branch_conflicts.is_some() {
             event!(Level::DEBUG, "memory and branching returned conflicts");
-
             return Ok(mem_and_branch_conflicts);
         }
-        event!(Level::TRACE, "Evaluating combined semantics2");
-        let mem_and_branch_conflicts =
-            self.eval_combined_semantics(&mut assertions, slot_assignments)?;
-        if mem_and_branch_conflicts.is_some() {
+        event!(Level::TRACE, "Evaluating combined semantics");
+        let combined_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
+        if combined_conflicts.is_some() {
             event!(Level::DEBUG, "combined semantics returned conflicts");
 
-            return Ok(mem_and_branch_conflicts);
+            return Ok(combined_conflicts);
         }
         Ok(None)
     }
@@ -124,7 +122,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             let spec = &self.templates[index];
             let refines = Bool::fresh_const(self.z3, "refines");
             self.solver
-                .assert_and_track(&gadget.reaches(&spec.fresh()?)?, &refines);
+                .assert_and_track(&gadget.fresh()?.reaches(&spec.fresh()?)?, &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
@@ -158,13 +156,10 @@ impl<'ctx> PcodeTheory<'ctx> {
                         _ => combined_conflicts.push(x.gen_conflict_clause()),
                     }
                 }
-                let mut conflicts = vec![];
-                conflicts.extend(unit_conflicts);
                 if combined_conflicts.len() > 0 {
-                    conflicts.push(ConflictClause::combine(&combined_conflicts));
-                }
-                if conflicts.len() > 0 {
-                    Ok(Some(conflicts))
+                    Ok(Some(vec![ConflictClause::combine(&combined_conflicts)]))
+                } else if unit_conflicts.len() > 0 {
+                    Ok(Some(unit_conflicts))
                 } else {
                     Ok(None)
                 }

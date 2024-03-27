@@ -1,8 +1,8 @@
-use z3::ast::Bool;
 use z3::{Context, Model, SatResult, Solver};
+use z3::ast::{Ast, Bool};
 
-use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
 use crate::synthesis::assignment_problem::Decision;
+use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlotAssignments {
@@ -107,7 +107,7 @@ impl<'ctx> SatProblem<'ctx> {
                     let choices: Vec<&Bool<'ctx>> =
                         v.iter().map(|b| self.get_decision_variable(b)).collect();
                     self.solver
-                        .assert(&Bool::and(self.z3, choices.as_slice()).not());
+                        .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
                 }
             }
         }
@@ -118,9 +118,9 @@ impl<'ctx> SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
+    use crate::synthesis::assignment_problem::Decision;
     use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
     use crate::synthesis::assignment_problem::sat_problem::SatProblem;
-    use crate::synthesis::assignment_problem::Decision;
 
     #[test]
     fn test_assignment() {
