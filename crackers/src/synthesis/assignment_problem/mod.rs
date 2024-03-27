@@ -1,9 +1,9 @@
 use std::fs;
 use std::io::Write;
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
 
