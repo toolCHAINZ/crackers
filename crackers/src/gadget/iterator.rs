@@ -28,7 +28,7 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
     fn next(&mut self) -> Option<Self::Item> {
         for x in self.library.gadgets[0..self.offset].iter().rev() {
             self.offset -= 1;
-            if OutputSignature::from(x).may_cover(&self.spec_signature) {
+            if OutputSignature::from(x).covers(&self.spec_signature) {
                 if let Ok(block) = self.library.model_gadget(self.z3, x) {
                     return Some(block);
                 }
