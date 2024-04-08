@@ -10,7 +10,7 @@ pub struct OutputSignature {
 impl OutputSignature {
     /// For now this is very naive; just want a very rough filter to make sure we aren't
     /// throwing completely pointless work at z3
-    pub fn may_cover(&self, other: &OutputSignature) -> bool {
+    pub fn covers(&self, other: &OutputSignature) -> bool {
         let self_direct: Vec<&VarNode> = self
             .outputs
             .iter()
@@ -30,14 +30,14 @@ impl OutputSignature {
         for other_output in &other.outputs {
             match other_output {
                 GeneralizedVarNode::Direct(d) => {
-                    if !self_direct.iter().any(|dd| dd.overlaps(d)) {
+                    if !self_direct.iter().any(|dd| dd.covers(d)) {
                         return false;
                     }
                 }
                 GeneralizedVarNode::Indirect(i) => {
                     if !self_indirect
                         .iter()
-                        .any(|ii| ii.pointer_location.overlaps(&i.pointer_location))
+                        .any(|ii| ii.pointer_location.covers(&i.pointer_location) && ii.access_size_bytes >= i.access_size_bytes)
                     {
                         return false;
                     }
@@ -94,8 +94,8 @@ mod tests {
                 offset: 0,
             })],
         };
-        assert!(o1.may_cover(&o2));
-        assert!(o2.may_cover(&o1));
+        assert!(o1.covers(&o2));
+        assert!(o2.covers(&o1));
     }
 
     #[test]
@@ -114,8 +114,8 @@ mod tests {
                 offset: 3,
             })],
         };
-        assert!(o1.may_cover(&o2));
-        assert!(o2.may_cover(&o1));
+        assert!(o1.covers(&o2));
+        assert!(o2.covers(&o1));
     }
 
     #[test]
@@ -134,8 +134,8 @@ mod tests {
                 offset: 4,
             })],
         };
-        assert!(!o1.may_cover(&o2));
-        assert!(!o2.may_cover(&o1));
+        assert!(!o1.covers(&o2));
+        assert!(!o2.covers(&o1));
     }
 
     #[test]
@@ -171,7 +171,7 @@ mod tests {
                 }),
             ],
         };
-        assert!(o2.may_cover(&o1));
-        assert!(!o1.may_cover(&o2));
+        assert!(o2.covers(&o1));
+        assert!(!o1.covers(&o2));
     }
 }

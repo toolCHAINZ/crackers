@@ -1,9 +1,8 @@
 use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use jingle::sleigh::{create_varnode, varnode};
 use tracing::{event, instrument, Level};
 use z3::{Context, Model, SatResult, Solver};
-use z3::ast::{Ast, Bool, BV};
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
@@ -50,7 +49,7 @@ impl<'ctx> PcodeTheory<'ctx> {
     ) -> Result<Self, JingleError> {
         let solver = Solver::new_for_logic(z3, "QF_AUFBV").unwrap();
         for instruction in templates.windows(2) {
-            instruction[0].assert_concat(&instruction[1])?;
+            solver.assert(&instruction[0].assert_concat(&instruction[1])?);
         }
         solver.push();
         Ok(Self {
@@ -99,7 +98,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
-            let refines = Bool::fresh_const(self.z3, "refines");
+            let refines = Bool::fresh_const(self.z3, "combine");
             self.solver
                 .assert_and_track(&gadget.refines(spec)?, &refines);
             assertions.push(ConjunctiveConstraint::new(
@@ -121,7 +120,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
-            let refines = Bool::fresh_const(self.z3, "refines");
+            let refines = Bool::fresh_const(self.z3, "unit");
             self.solver
                 .assert_and_track(&gadget.fresh()?.reaches(&spec.fresh()?)?, &refines);
             assertions.push(ConjunctiveConstraint::new(

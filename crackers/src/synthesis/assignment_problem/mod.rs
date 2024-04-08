@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::Write;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use jingle::JingleError;
 use tracing::{event, instrument, Level};
