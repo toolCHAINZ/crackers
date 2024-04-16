@@ -51,7 +51,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 8).collect(), library).unwrap();
+    let mut p = AssignmentProblem::new(&z3, target_sleigh.read(0, 11).collect(), library).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),

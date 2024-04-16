@@ -1,11 +1,12 @@
 use std::fs;
 use std::io::Write;
 
+use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
-use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
+
 use sat_problem::slot_assignments::SlotAssignments;
 
 use crate::error::CrackersError;
@@ -54,7 +55,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(2000)
+                .take(20)
                 .collect();
             event!(
                 Level::DEBUG,

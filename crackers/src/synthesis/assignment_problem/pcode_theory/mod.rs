@@ -1,16 +1,17 @@
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::sleigh::{create_varnode, varnode};
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
+use z3::ast::{Ast, Bool, BV};
 use z3::{Context, Model, SatResult, Solver};
-use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
-use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::pairwise::{
     ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::assignment_problem::sat_problem::slot_assignments::SlotAssignments;
+use crate::synthesis::assignment_problem::Decision;
 
 mod pairwise;
 
@@ -67,11 +68,24 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.solver.pop(1);
         self.solver.push();
         let mut assertions = Vec::new();
+        let first_gadget = &self.gadget_candidates[0][slot_assignments.choices()[0]];
+        let sp = first_gadget
+            .get_original_state()
+            .read_varnode(&varnode!(first_gadget, "register"[0x20]:8).unwrap())?;
+        self.solver
+            .assert(&sp._eq(&BV::from_u64(self.z3, 0xDEAD_BEEF_DEAD_BEEF, 64)));
         event!(Level::TRACE, "Evaluating unit semantics");
         let unit_conflicts = self.eval_unit_semantics(&mut assertions, slot_assignments)?;
         if unit_conflicts.is_some() {
             event!(Level::DEBUG, "Unit semantics returned conflicts");
             return Ok(unit_conflicts);
+        }
+        event!(Level::TRACE, "Evaluating branch destination semantics");
+        let branch_semantics_conflicts =
+            self.eval_branching_semantics(&mut assertions, slot_assignments)?;
+        if branch_semantics_conflicts.is_some() {
+            event!(Level::DEBUG, "Branch semantics returned conflicts");
+            return Ok(branch_semantics_conflicts);
         }
         event!(Level::TRACE, "Evaluating memory and branching");
         let mem_and_branch_conflicts =
@@ -111,7 +125,6 @@ impl<'ctx> PcodeTheory<'ctx> {
     }
 
     #[instrument(skip_all)]
-
     fn eval_unit_semantics(
         &self,
         assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
@@ -128,6 +141,37 @@ impl<'ctx> PcodeTheory<'ctx> {
                 refines,
                 TheoryStage::UnitSemantics,
             ))
+        }
+        self.collect_conflicts(assertions)
+    }
+
+    #[instrument(skip_all)]
+    fn eval_branching_semantics(
+        &self,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        slot_assignments: &SlotAssignments,
+    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+        for (index, &choice) in slot_assignments.choices().iter().enumerate() {
+            let gadget = &self.gadget_candidates[index][choice];
+            let spec = &self.templates[index];
+            if spec.get_branch_constraint().has_branch() {
+                let branch = Bool::fresh_const(self.z3, "branch_dest");
+                let branch_meta = Bool::fresh_const(self.z3, "branch_meta");
+                let spec_branch_dest = spec.get_branch_constraint().build_bv(spec)?;
+                let gadget_branch_dest = gadget.get_branch_constraint().build_bv(gadget)?;
+
+                let spec_branch_meta = spec.get_branch_constraint().build_bv(spec)?;
+                let gadget_branch_meta = gadget.get_branch_constraint().build_bv(gadget)?;
+                self.solver
+                    .assert_and_track(&spec_branch_dest._eq(&gadget_branch_dest), &branch);
+                self.solver
+                    .assert_and_track(&spec_branch_meta._eq(&gadget_branch_meta), &branch);
+                assertions.push(ConjunctiveConstraint::new(
+                    &[Decision { index, choice }],
+                    branch,
+                    TheoryStage::UnitSemantics,
+                ))
+            }
         }
         self.collect_conflicts(assertions)
     }
