@@ -1,5 +1,3 @@
-use std::cmp::{max, min};
-
 use z3::ast::Bool;
 
 use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
@@ -10,6 +8,7 @@ pub enum TheoryStage {
     UnitSemantics,
     CombinedSemantics,
     Consistency,
+    Branch,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConjunctiveConstraint<'ctx> {
@@ -45,7 +44,7 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
 pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Vec<ConflictClause> {
     let mut result = Vec::new();
     let mut combined_semantics = Vec::new();
-    let mut consistency = Vec::new();
+    let mut branch = Vec::new();
     for x in constraints {
         match x.constraint_type {
             TheoryStage::UnitSemantics => {
@@ -54,9 +53,10 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
             TheoryStage::CombinedSemantics => {
                 combined_semantics.push(x.gen_conflict_clause());
             }
-            TheoryStage::Consistency => {
-                consistency.push(x.gen_conflict_clause());
+            TheoryStage::Branch => {
+                branch.push(x.gen_conflict_clause());
             }
+            _ => {}
         }
     }
 
@@ -65,15 +65,9 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
         result.push(clause);
     }
 
-    let branch = consistency.into_iter().reduce(|a, b| {
-        let max_a = a.decisions().iter().max().unwrap();
-        let max_b = b.decisions().iter().max().unwrap();
-        let min_a = a.decisions().iter().min().unwrap();
-        let min_b = b.decisions().iter().min().unwrap();
-        ConflictClause::Conjunction(vec![min(min_a, min_b).clone(), max(max_a, max_b).clone()])
-    });
-    if let Some(b) = branch {
-        result.push(b)
+    if branch.len() > 0 {
+        let clause = ConflictClause::combine(branch.as_slice());
+        result.push(clause);
     }
     result
 }

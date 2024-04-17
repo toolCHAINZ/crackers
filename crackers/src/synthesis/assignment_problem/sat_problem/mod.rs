@@ -1,11 +1,9 @@
 use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
-use slot_assignments::SlotAssignments;
 
 use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
-
-pub mod slot_assignments;
+use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {

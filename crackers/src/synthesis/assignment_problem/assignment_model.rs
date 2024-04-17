@@ -1,10 +1,12 @@
-use crate::synthesis::assignment_problem::sat_problem::slot_assignments::SlotAssignments;
+use std::fmt::{Display, Formatter};
+
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
-use std::fmt::{Display, Formatter};
 use z3::ast::BV;
 use z3::Model;
+
+use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
 
 #[derive(Debug)]
 pub struct AssignmentModel<'ctx> {

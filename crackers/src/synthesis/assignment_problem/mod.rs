@@ -2,24 +2,27 @@ use std::cmp::Ordering;
 use std::fs;
 use std::io::Write;
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
-
-use sat_problem::slot_assignments::SlotAssignments;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::gadget::GadgetLibrary;
 use crate::synthesis::assignment_problem::assignment_model::AssignmentModel;
+use crate::synthesis::assignment_problem::optimization_problem::OptimizationProblem;
 use crate::synthesis::assignment_problem::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::assignment_problem::sat_problem::SatProblem;
+use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
+// mod optimization_problem;
+mod optimization_problem;
 mod pcode_theory;
 mod sat_problem;
+pub mod slot_assignments;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub struct Decision {
@@ -40,10 +43,10 @@ pub enum DecisionResult<'ctx> {
     Unsat,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AssignmentProblem<'ctx> {
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    sat_problem: SatProblem<'ctx>,
+    sat_problem: OptimizationProblem<'ctx>,
     theory_problem: PcodeTheory<'ctx>,
 }
 
@@ -62,7 +65,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(70)
+                .take(200)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -72,7 +75,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let sat_problem = SatProblem::initialize(z3, &gadget_candidates);
+        let sat_problem = OptimizationProblem::initialize(z3, &gadget_candidates);
         let theory_problem =
             PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates)?;
         Ok(AssignmentProblem {
