@@ -130,6 +130,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+        self.solver.push();
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
@@ -142,7 +143,11 @@ impl<'ctx> PcodeTheory<'ctx> {
                 TheoryStage::UnitSemantics,
             ))
         }
-        self.collect_conflicts(assertions)
+        // these assertions are used as a pre-filtering step before evaluating a gadget in context
+        // so we do not need to keep them around after this check.
+        let c = self.collect_conflicts(assertions);
+        self.solver.pop(1);
+        c
     }
 
     #[instrument(skip_all)]
@@ -214,7 +219,6 @@ impl<'ctx> PcodeTheory<'ctx> {
     }
 
     #[instrument(skip_all)]
-
     fn eval_memory_conflict_and_branching(
         &self,
         assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,

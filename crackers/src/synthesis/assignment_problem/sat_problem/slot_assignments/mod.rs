@@ -1,3 +1,5 @@
+mod display;
+
 use z3::Model;
 use z3::ast::Bool;
 use crate::synthesis::assignment_problem::Decision;
