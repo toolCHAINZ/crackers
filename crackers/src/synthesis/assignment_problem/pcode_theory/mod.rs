@@ -1,3 +1,5 @@
+use std::slice;
+
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::{create_varnode, varnode};
 use jingle::JingleError;
@@ -8,7 +10,7 @@ use z3::{Context, Model, SatResult, Solver};
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
 use crate::synthesis::assignment_problem::pcode_theory::pairwise::{
-    ConjunctiveConstraint, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::assignment_problem::sat_problem::slot_assignments::SlotAssignments;
 use crate::synthesis::assignment_problem::Decision;
@@ -31,6 +33,13 @@ impl ConflictClause {
             }
         }
         ConflictClause::Conjunction(result)
+    }
+
+    pub fn decisions(&self) -> &[Decision] {
+        match self {
+            ConflictClause::Unit(decision) => slice::from_ref(decision),
+            ConflictClause::Conjunction(d) => d.as_slice(),
+        }
     }
 }
 
@@ -170,7 +179,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 self.solver
                     .assert_and_track(&spec_branch_dest._eq(&gadget_branch_dest), &branch);
                 self.solver
-                    .assert_and_track(&spec_branch_meta._eq(&gadget_branch_meta), &branch);
+                    .assert_and_track(&spec_branch_meta._eq(&gadget_branch_meta), &branch_meta);
                 assertions.push(ConjunctiveConstraint::new(
                     &[Decision { index, choice }],
                     branch,
@@ -197,21 +206,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                         event!(Level::WARN, "Unsat Core returned unrecognized variable");
                     }
                 }
-                let mut unit_conflicts = vec![];
-                let mut combined_conflicts = vec![];
-                for x in constraints {
-                    match x.get_type() {
-                        TheoryStage::UnitSemantics => unit_conflicts.push(x.gen_conflict_clause()),
-                        _ => combined_conflicts.push(x.gen_conflict_clause()),
-                    }
-                }
-                if combined_conflicts.len() > 0 {
-                    Ok(Some(vec![ConflictClause::combine(&combined_conflicts)]))
-                } else if unit_conflicts.len() > 0 {
-                    Ok(Some(unit_conflicts))
-                } else {
-                    Ok(None)
-                }
+                Ok(Some(gen_conflict_clauses(constraints.as_slice())))
             }
             SatResult::Unknown => Err(TheoryTimeout),
             SatResult::Sat => Ok(None),

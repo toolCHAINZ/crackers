@@ -1,9 +1,11 @@
-mod display;
-
-use z3::Model;
 use z3::ast::Bool;
+use z3::Model;
+
 use crate::synthesis::assignment_problem::Decision;
 use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
+use crate::synthesis::assignment_problem::sat_problem::slot_assignments::display::SlotAssignmentConflictDisplay;
+
+mod display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlotAssignments {
@@ -47,5 +49,15 @@ impl SlotAssignments {
             }
         }
         Some(Self { choices })
+    }
+
+    pub(crate) fn display_conflict<'a>(
+        &'a self,
+        conflicts: &'a [ConflictClause],
+    ) -> SlotAssignmentConflictDisplay {
+        SlotAssignmentConflictDisplay {
+            assignment: self,
+            conflicts,
+        }
     }
 }

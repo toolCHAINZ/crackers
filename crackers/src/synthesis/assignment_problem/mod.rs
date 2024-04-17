@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs;
 use std::io::Write;
 
@@ -20,10 +21,16 @@ pub mod assignment_model;
 mod pcode_theory;
 mod sat_problem;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub struct Decision {
     pub index: usize,
     pub choice: usize,
+}
+
+impl PartialOrd for Decision {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.index.partial_cmp(&other.index)
+    }
 }
 
 #[derive(Debug)]
@@ -55,7 +62,7 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
                 // todo: just here to make testing faster. Remove this later
-                .take(20)
+                .take(70)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -139,15 +146,19 @@ impl<'ctx> AssignmentProblem<'ctx> {
             let res = self.single_decision_iteration()?;
             match res {
                 DecisionResult::ConflictsFound(a, c) => {
-                    event!(Level::DEBUG, "{:?} has {} conflicts", a, c.len());
+                    event!(
+                        Level::INFO,
+                        "{} has conflicts",
+                        a.display_conflict(c.as_slice())
+                    );
                     continue;
                 }
                 DecisionResult::AssignmentFound(a) => {
-                    event!(Level::DEBUG, "{:?} is feasible", a.assignments);
+                    event!(Level::INFO, "{:?} is feasible", a.assignments);
                     return Ok(DecisionResult::AssignmentFound(a));
                 }
                 DecisionResult::Unsat => {
-                    event!(Level::DEBUG, "No assignment exists");
+                    event!(Level::WARN, "No assignment exists");
                     return Ok(DecisionResult::Unsat);
                 }
             }
