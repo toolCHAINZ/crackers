@@ -19,7 +19,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
 mod pcode_theory;
-mod selection_strategy;
+pub mod selection_strategy;
 pub mod slot_assignments;
 mod config;
 

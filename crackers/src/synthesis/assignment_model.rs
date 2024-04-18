@@ -12,7 +12,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 pub struct AssignmentModel<'ctx> {
     assignments: SlotAssignments,
     model: Model<'ctx>,
-    gadgets: Vec<ModeledBlock<'ctx>>,
+    pub gadgets: Vec<ModeledBlock<'ctx>>,
 }
 
 impl<'ctx> AssignmentModel<'ctx> {

@@ -16,6 +16,7 @@ use z3::ast::Ast;
 use crackers::gadget::GadgetLibrary;
 use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 use crackers::synthesis::assignment_model::AssignmentModel;
+use crackers::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 
 #[allow(unused)]
 const TEST_BYTES: [u8; 41] = [
@@ -51,7 +52,7 @@ fn main() {
     let library = GadgetLibrary::build_from_image(&bin_sleigh).unwrap();
     //library.write_to_file(&"gadgets.bin").unwrap();
     //naive_alg(&z3, targets, library);
-    let mut p = AssignmentSynthesis::new(&z3, target_sleigh.read(0, 11).collect(), library).unwrap();
+    let mut p: AssignmentSynthesis<OptimizationProblem> = AssignmentSynthesis::new(&z3, target_sleigh.read(0, 11).collect(), library).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),

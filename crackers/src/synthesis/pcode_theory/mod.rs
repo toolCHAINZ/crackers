@@ -57,7 +57,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         templates: &[ModeledInstruction<'ctx>],
         gadget_candidates: &[Vec<ModeledBlock<'ctx>>],
     ) -> Result<Self, JingleError> {
-        let solver = Solver::new_for_logic(z3, "QF_AUFBV").unwrap();
+        let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         for instruction in templates.windows(2) {
             solver.assert(&instruction[0].assert_concat(&instruction[1])?);
         }
@@ -145,7 +145,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             let spec = &self.templates[index];
             let refines = Bool::fresh_const(self.z3, "unit");
             self.solver
-                .assert_and_track(&gadget.fresh()?.reaches(&spec.fresh()?)?, &refines);
+                .assert_and_track(&gadget.fresh()?.refines(spec)?, &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
