@@ -10,9 +10,9 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug)]
 pub struct AssignmentModel<'ctx> {
-    pub assignments: SlotAssignments,
+    assignments: SlotAssignments,
     model: Model<'ctx>,
-    pub gadgets: Vec<ModeledBlock<'ctx>>,
+    gadgets: Vec<ModeledBlock<'ctx>>,
 }
 
 impl<'ctx> AssignmentModel<'ctx> {
