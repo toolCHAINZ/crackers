@@ -21,6 +21,7 @@ pub mod assignment_model;
 mod pcode_theory;
 mod selection_strategy;
 pub mod slot_assignments;
+mod config;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub struct Decision {
@@ -42,13 +43,13 @@ pub enum DecisionResult<'ctx> {
 }
 
 #[derive(Debug)]
-pub struct AssignmentSynthesis<'ctx> {
+pub struct AssignmentSynthesis<'ctx, T: SelectionStrategy<'ctx>> {
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    sat_problem: OptimizationProblem<'ctx>,
+    sat_problem: T,
     theory_problem: PcodeTheory<'ctx>,
 }
 
-impl<'ctx> AssignmentSynthesis<'ctx> {
+impl<'ctx, T: SelectionStrategy<'ctx>> AssignmentSynthesis<'ctx, T> {
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
@@ -73,7 +74,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let sat_problem = OptimizationProblem::initialize(z3, &gadget_candidates);
+        let sat_problem = T::initialize(z3, &gadget_candidates);
         let theory_problem =
             PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates)?;
         Ok(AssignmentSynthesis {
@@ -155,7 +156,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                     continue;
                 }
                 DecisionResult::AssignmentFound(a) => {
-                    event!(Level::INFO, "{:?} is feasible", a.assignments);
+                    event!(Level::INFO, "{:?} is feasible", a.get_assignments());
                     return Ok(DecisionResult::AssignmentFound(a));
                 }
                 DecisionResult::Unsat => {

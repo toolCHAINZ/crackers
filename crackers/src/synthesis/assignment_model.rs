@@ -31,6 +31,10 @@ impl<'ctx> AssignmentModel<'ctx> {
     pub fn model(&self) -> &Model<'ctx> {
         &self.model
     }
+
+    pub fn get_assignments(&self) -> &SlotAssignments {
+        &self.assignments
+    }
     pub fn initial_state(&'ctx self) -> Option<&'ctx State<'ctx>> {
         self.gadgets.first().map(|f| f.get_original_state())
     }
