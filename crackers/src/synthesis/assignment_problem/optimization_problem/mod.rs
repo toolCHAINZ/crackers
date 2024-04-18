@@ -24,7 +24,7 @@ impl<'ctx> OptimizationProblem<'ctx> {
             for (j, _) in slot.iter().enumerate() {
                 let var = Bool::new_const(prob.z3, Self::derive_var_name(i, j));
                 prob.solver
-                    .assert_soft(&var.not(), gadgets[i][j].instructions.len(), None);
+                    .assert_soft(&var.not(), gadgets[i][j].instructions.len().pow(2), None);
                 vars.push(var)
             }
             prob.variables.push(vars);
