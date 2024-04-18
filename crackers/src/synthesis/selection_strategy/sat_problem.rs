@@ -1,9 +1,11 @@
+use jingle::modeling::ModeledBlock;
 use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
-use crate::synthesis::assignment_problem::Decision;
-use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
-use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::ConflictClause;
+use crate::synthesis::selection_strategy::SelectionStrategy;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
@@ -12,8 +14,8 @@ pub struct SatProblem<'ctx> {
     solver: Solver<'ctx>,
 }
 
-impl<'ctx> SatProblem<'ctx> {
-    pub fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
+impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
+    fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
@@ -32,11 +34,8 @@ impl<'ctx> SatProblem<'ctx> {
         }
         prob
     }
-    fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
-        format!("i{}_g{}", target_index, gadget_index)
-    }
 
-    pub fn get_assignments(&self) -> Option<SlotAssignments> {
+    fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check() {
             SatResult::Unsat => None,
             SatResult::Unknown => {
@@ -53,7 +52,7 @@ impl<'ctx> SatProblem<'ctx> {
         &self.variables[var.index][var.choice]
     }
 
-    pub fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+    fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
         for clause in clauses {
             match clause {
                 ConflictClause::Unit(d) => {
@@ -75,9 +74,10 @@ impl<'ctx> SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
-    use crate::synthesis::assignment_problem::Decision;
-    use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
-    use crate::synthesis::assignment_problem::sat_problem::SatProblem;
+    use crate::synthesis::Decision;
+    use crate::synthesis::pcode_theory::ConflictClause;
+    use crate::synthesis::sat_problem::SatProblem;
+    use crate::synthesis::selection_strategy::SelectionStrategy;
 
     #[test]
     fn test_assignment() {

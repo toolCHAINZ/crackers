@@ -6,7 +6,7 @@ use jingle::varnode::ResolvedVarnode;
 use z3::ast::BV;
 use z3::Model;
 
-use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug)]
 pub struct AssignmentModel<'ctx> {

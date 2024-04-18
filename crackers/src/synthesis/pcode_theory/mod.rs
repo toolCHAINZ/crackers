@@ -9,11 +9,11 @@ use z3::ast::{Ast, Bool, BV};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
-use crate::synthesis::assignment_problem::Decision;
-use crate::synthesis::assignment_problem::pcode_theory::theory_constraint::{
+use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::theory_constraint::{
     ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
-use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 mod theory_constraint;
 

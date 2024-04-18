@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::assignment_problem::pcode_theory::ConflictClause;
-use crate::synthesis::assignment_problem::Decision;
+use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::ConflictClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
