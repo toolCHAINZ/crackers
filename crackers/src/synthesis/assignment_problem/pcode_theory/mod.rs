@@ -10,12 +10,12 @@ use z3::ast::{Ast, Bool, BV};
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
 use crate::synthesis::assignment_problem::Decision;
-use crate::synthesis::assignment_problem::pcode_theory::pairwise::{
+use crate::synthesis::assignment_problem::pcode_theory::theory_constraint::{
     ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::assignment_problem::slot_assignments::SlotAssignments;
 
-mod pairwise;
+mod theory_constraint;
 
 #[derive(Debug, Clone)]
 pub enum ConflictClause {
