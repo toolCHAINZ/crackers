@@ -5,17 +5,17 @@ use elf::ElfBytes;
 use elf::endian::AnyEndian;
 use jingle::{JingleError, SleighTranslator};
 use jingle::modeling::{ModeledInstruction, ModelingContext};
-use jingle::sleigh::{create_varnode, varnode};
+use jingle::sleigh::{SpaceManager, varnode};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
-use z3::ast::{Ast, Bool};
+use z3::ast::{Ast, BV};
 
 use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
-use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
+use crackers::synthesis::builder::SynthesisSelectionStrategy::SatStrategy;
 use crackers::synthesis::DecisionResult;
 
 #[allow(unused)]
@@ -24,7 +24,6 @@ const TEST_BYTES: [u8; 41] = [
     0x04, 0xb8, 0x2f, 0x73, 0x68, 0x00, 0x89, 0x03, 0xba, 0x00, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00,
     0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80,
 ];
-
 fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
@@ -48,10 +47,14 @@ fn main() {
         .build("x86:LE:64:default")
         .unwrap();
     let mut p = SynthesisBuilder::default()
-        .max_gadget_length(2)
-        .with_selection_strategy(OptimizeStrategy)
+        .max_gadget_length(4)
+        .candidates_per_slot(50)
+        .with_selection_strategy(SatStrategy)
         .specification(target_sleigh.read(0, 5))
-        .with_precondition(|z3, state| Ok(Bool::from_bool(z3,false)))
+        .with_precondition(|z3, state| {
+            let reg = state.read_varnode(&varnode!(state, "register"[0]:20).unwrap())?;
+            Ok(reg._eq(&BV::from_u64(z3, 0, reg.get_size())))
+        })
         .build(&z3, &bin_sleigh)
         .unwrap();
     match p.decide().unwrap() {

@@ -84,8 +84,6 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.solver.push();
         let mut assertions = Vec::new();
 
-        self.assert_preconditions(slot_assignments)?;
-        self.assert_postconditions(slot_assignments)?;
         event!(Level::TRACE, "Evaluating unit semantics");
         let unit_conflicts = self.eval_unit_semantics(&mut assertions, slot_assignments)?;
         if unit_conflicts.is_some() {
@@ -107,6 +105,8 @@ impl<'ctx> PcodeTheory<'ctx> {
             return Ok(mem_and_branch_conflicts);
         }
         event!(Level::TRACE, "Evaluating combined semantics");
+        self.assert_preconditions(slot_assignments)?;
+        self.assert_postconditions(slot_assignments)?;
         let combined_conflicts = self.eval_combined_semantics(&mut assertions, slot_assignments)?;
         if combined_conflicts.is_some() {
             event!(Level::DEBUG, "combined semantics returned conflicts");
