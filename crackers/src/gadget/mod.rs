@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 mod error;
 mod iterator;
-pub mod signature;
 pub mod library;
+pub mod signature;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gadget {

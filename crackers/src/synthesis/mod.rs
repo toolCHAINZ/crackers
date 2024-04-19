@@ -1,10 +1,10 @@
-use std::{fs, mem};
 use std::cmp::Ordering;
 use std::io::Write;
+use std::{fs, mem};
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
 
@@ -15,9 +15,9 @@ use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
-use crate::synthesis::selection_strategy::{sat_problem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::{sat_problem, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -95,6 +95,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             &gadget_candidates,
             builder.preconditions,
             builder.postconditions,
+            builder.pointer_invariants,
         )?;
         Ok(AssignmentSynthesis {
             gadget_candidates,

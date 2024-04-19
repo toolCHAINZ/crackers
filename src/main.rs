@@ -1,22 +1,22 @@
 use std::fs;
 use std::path::Path;
 
-use elf::ElfBytes;
+use crackers::error::CrackersError;
 use elf::endian::AnyEndian;
-use jingle::{JingleError, SleighTranslator};
+use elf::ElfBytes;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
-use jingle::sleigh::{create_varnode, SpaceManager, varnode};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
+use jingle::sleigh::{create_varnode, varnode, SpaceManager};
 use jingle::varnode::ResolvedVarnode;
+use jingle::{JingleError, SleighTranslator};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::{Config, Context};
 use z3::ast::{Ast, Bool, BV};
-use crackers::error::CrackersError;
+use z3::{Config, Context};
 
 use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
-use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
+use crackers::synthesis::builder::SynthesisSelectionStrategy::{OptimizeStrategy, SatStrategy};
 use crackers::synthesis::DecisionResult;
 
 #[allow(unused)]
@@ -50,8 +50,9 @@ fn main() {
         .unwrap();
     let mut p = SynthesisBuilder::default()
         .max_gadget_length(4)
-        .with_selection_strategy(OptimizeStrategy)
-        .specification(target_sleigh.read(0, 5))
+        .with_selection_strategy(SatStrategy)
+        .specification(target_sleigh.read(0, 8))
+        .candidates_per_slot(30)
         .with_precondition(some_constraint)
         .with_precondition(some_other_constraint)
         .build(&z3, &bin_sleigh)
@@ -63,17 +64,21 @@ fn main() {
     };
 }
 
-fn some_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError>{
-    let data = state.read_varnode(&state.varnode("register", 0, 20).unwrap())?;
+fn some_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
+    let data = state.read_varnode(&state.varnode("register", 0, 40).unwrap())?;
     let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
     Ok(constraint)
 }
 
-fn some_other_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError>{
-    let data = state.read_varnode(&state.varnode("ram", 0x9d060,4).unwrap())?;
+fn some_other_constraint<'a>(
+    z3: &'a Context,
+    state: &State<'a>,
+) -> Result<Bool<'a>, CrackersError> {
+    let data = state.read_varnode(&state.varnode("ram", 0x9d060, 4).unwrap())?;
     let constraint = data._eq(&BV::from_u64(z3, 0xdeadbeef, data.get_size()));
     Ok(constraint)
 }
+
 fn get_target_instructions<'ctx>(
     sleigh: &'ctx SleighContext,
     z3: &'ctx Context,
@@ -88,6 +93,7 @@ fn get_target_instructions<'ctx>(
     }
     Ok(instrs)
 }
+
 fn naive_alg(result: AssignmentModel) {
     for b in &result.gadgets {
         for x in &b.instructions {

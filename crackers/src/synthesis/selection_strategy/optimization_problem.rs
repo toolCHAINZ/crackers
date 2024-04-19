@@ -1,11 +1,11 @@
 use jingle::modeling::ModeledBlock;
-use z3::{Context, Optimize, SatResult};
 use z3::ast::{Ast, Bool};
+use z3::{Context, Optimize, SatResult};
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -14,7 +14,7 @@ pub struct OptimizationProblem<'ctx> {
     solver: Optimize<'ctx>,
 }
 
-impl<'ctx> OptimizationProblem<'ctx>{
+impl<'ctx> OptimizationProblem<'ctx> {
     pub(crate) fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> Self {
         let mut prob = Self {
             variables: Default::default(),
@@ -43,7 +43,6 @@ impl<'ctx> OptimizationProblem<'ctx>{
 }
 
 impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
-
     fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check(&[]) {
             SatResult::Unsat => None,

@@ -1,20 +1,22 @@
 use std::slice;
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::{create_varnode, varnode};
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
-use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool, BV};
+use z3::{Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::synthesis::builder::{StateConstraintGenerator, SynthesisBuilder};
-use crate::synthesis::Decision;
+use crate::synthesis::builder::{
+    PointerConstraintGenerator, StateConstraintGenerator, SynthesisBuilder,
+};
 use crate::synthesis::pcode_theory::theory_constraint::{
-    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 mod theory_constraint;
 
@@ -51,6 +53,7 @@ pub struct PcodeTheory<'ctx> {
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
     preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
+    pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
 }
 
 impl<'ctx> PcodeTheory<'ctx> {
@@ -60,6 +63,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         gadget_candidates: &[Vec<ModeledBlock<'ctx>>],
         preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
         postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
+        pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
     ) -> Result<Self, JingleError> {
         let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         for instruction in templates.windows(2) {
@@ -73,6 +77,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             gadget_candidates: gadget_candidates.to_vec(),
             preconditions,
             postconditions,
+            pointer_invariants,
         })
     }
     pub fn check_assignment(
@@ -147,7 +152,6 @@ impl<'ctx> PcodeTheory<'ctx> {
         }
         Ok(())
     }
-
 
     #[instrument(skip_all)]
     fn eval_combined_semantics(
