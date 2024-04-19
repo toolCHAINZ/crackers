@@ -7,7 +7,7 @@ use elf::ElfBytes;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::sleigh::{create_varnode, varnode, SpaceManager};
-use jingle::varnode::ResolvedVarnode;
+use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::{JingleError, SleighTranslator};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -50,11 +50,11 @@ fn main() {
         .unwrap();
     let mut p = SynthesisBuilder::default()
         .max_gadget_length(4)
-        .with_selection_strategy(SatStrategy)
-        .specification(target_sleigh.read(0, 8))
-        .candidates_per_slot(30)
-        .with_precondition(some_constraint)
+        .with_selection_strategy(OptimizeStrategy)
+        .specification(target_sleigh.read(0, 6))
+        .candidates_per_slot(100)
         .with_precondition(some_other_constraint)
+        .with_pointer_invariant(pointer_invariant)
         .build(&z3, &bin_sleigh)
         .unwrap();
     match p.decide().unwrap() {
@@ -77,6 +77,15 @@ fn some_other_constraint<'a>(
     let data = state.read_varnode(&state.varnode("ram", 0x9d060, 4).unwrap())?;
     let constraint = data._eq(&BV::from_u64(z3, 0xdeadbeef, data.get_size()));
     Ok(constraint)
+}
+
+fn pointer_invariant<'a>(
+    z3: &'a Context,
+    input: &ResolvedIndirectVarNode<'a>,
+) -> Result<Option<Bool<'a>>, CrackersError> {
+    let constraint = input.pointer.bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
+    let constraint2 = input.pointer.bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
+    Ok(Some(Bool::and(z3, &[constraint, constraint2])))
 }
 
 fn get_target_instructions<'ctx>(

@@ -3,6 +3,7 @@ use std::slice;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::{create_varnode, varnode};
 use jingle::JingleError;
+use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
 use z3::ast::{Ast, Bool, BV};
 use z3::{Context, Model, SatResult, Solver};
@@ -162,7 +163,24 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
+            for x in gadget.get_inputs().iter().filter_map(|f| match f {
+                ResolvedVarnode::Direct(_) => None,
+                ResolvedVarnode::Indirect(i) => Some(i),
+            }) {
+                for invariant in &self.pointer_invariants {
+                    if let Ok(Some(b)) = invariant(self.z3, x){
+                        let refines = Bool::fresh_const(self.z3, "combine");
+                        self.solver.assert_and_track(&b, &refines);
+                        assertions.push(ConjunctiveConstraint::new(
+                            &[Decision { index, choice }],
+                            refines,
+                            TheoryStage::CombinedSemantics,
+                        ))
+                    }
+                }
+            }
             let refines = Bool::fresh_const(self.z3, "combine");
+
             self.solver
                 .assert_and_track(&gadget.refines(spec)?, &refines);
             assertions.push(ConjunctiveConstraint::new(
