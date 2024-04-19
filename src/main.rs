@@ -4,14 +4,15 @@ use std::path::Path;
 use elf::ElfBytes;
 use elf::endian::AnyEndian;
 use jingle::{JingleError, SleighTranslator};
-use jingle::modeling::{ModeledInstruction, ModelingContext};
-use jingle::sleigh::{create_varnode, varnode};
+use jingle::modeling::{ModeledInstruction, ModelingContext, State};
+use jingle::sleigh::{create_varnode, SpaceManager, varnode};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
-use z3::ast::{Ast, Bool};
+use z3::ast::{Ast, Bool, BV};
+use crackers::error::CrackersError;
 
 use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
@@ -29,7 +30,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let builder =
@@ -48,10 +49,11 @@ fn main() {
         .build("x86:LE:64:default")
         .unwrap();
     let mut p = SynthesisBuilder::default()
-        .max_gadget_length(2)
+        .max_gadget_length(4)
         .with_selection_strategy(OptimizeStrategy)
         .specification(target_sleigh.read(0, 5))
-        .with_precondition(|z3, state| Ok(Bool::from_bool(z3,false)))
+        .with_precondition(some_constraint)
+        .with_precondition(some_other_constraint)
         .build(&z3, &bin_sleigh)
         .unwrap();
     match p.decide().unwrap() {
@@ -61,6 +63,17 @@ fn main() {
     };
 }
 
+fn some_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError>{
+    let data = state.read_varnode(&state.varnode("register", 0, 20).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
+    Ok(constraint)
+}
+
+fn some_other_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError>{
+    let data = state.read_varnode(&state.varnode("ram", 0x9d060,4).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0xdeadbeef, data.get_size()));
+    Ok(constraint)
+}
 fn get_target_instructions<'ctx>(
     sleigh: &'ctx SleighContext,
     z3: &'ctx Context,
@@ -75,7 +88,6 @@ fn get_target_instructions<'ctx>(
     }
     Ok(instrs)
 }
-
 fn naive_alg(result: AssignmentModel) {
     for b in &result.gadgets {
         for x in &b.instructions {

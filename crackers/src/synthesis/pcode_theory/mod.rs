@@ -141,7 +141,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             .last()
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
-        for x in &self.preconditions {
+        for x in &self.postconditions {
             let assertion = x(self.z3, last_gadget.get_final_state())?;
             self.solver.assert(&assertion);
         }
