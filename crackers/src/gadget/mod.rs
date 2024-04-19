@@ -2,10 +2,10 @@ use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::path::Path;
 
-use jingle::modeling::ModeledBlock;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::context::SleighContext;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
@@ -72,7 +72,7 @@ impl GadgetLibrary {
             let mut curr = start;
 
             while curr < end {
-                let instrs: Vec<Instruction> = sleigh.read(curr, 4).collect();
+                let instrs: Vec<Instruction> = sleigh.read(curr, 3).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     lib.gadgets.push(Gadget {
                         instructions: instrs[0..=i].to_vec(),
@@ -126,8 +126,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::GadgetLibrary;

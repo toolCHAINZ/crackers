@@ -21,7 +21,7 @@ pub mod assignment_model;
 mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
-mod config;
+mod builder;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub struct Decision {
