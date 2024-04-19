@@ -1,5 +1,5 @@
+use std::{fs, mem};
 use std::cmp::Ordering;
-use std::fs;
 use std::io::Write;
 
 use jingle::JingleError;
@@ -9,10 +9,11 @@ use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::error::CrackersError::ModelGenerationError;
+use crate::error::CrackersError::{EmptySpecification, ModelGenerationError};
+use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::SynthesisSelectionStrategy;
+use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::selection_strategy::{sat_problem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
@@ -20,7 +21,7 @@ use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
-mod builder;
+pub mod builder;
 mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
@@ -46,7 +47,7 @@ pub enum DecisionResult<'ctx> {
 
 pub struct AssignmentSynthesis<'ctx> {
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    sat_problem: Box<dyn SelectionStrategy>,
+    sat_problem: Box<dyn SelectionStrategy<'ctx> + 'ctx>,
     theory_problem: PcodeTheory<'ctx>,
 }
 
@@ -54,19 +55,22 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
-        templates: Vec<Instruction>,
         library: GadgetLibrary,
-        sat_problem: SynthesisSelectionStrategy,
-    ) -> Result<Self, JingleError> {
+        builder: SynthesisBuilder<'ctx>,
+    ) -> Result<Self, CrackersError> {
+        let instrs: Vec<Instruction> = builder.instructions.collect();
+        if instrs.len() == 0 {
+            return Err(EmptySpecification);
+        }
+
         let mut modeled_templates = vec![];
         let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
-        for template in templates.iter() {
+        for template in instrs.iter() {
             modeled_templates
                 .push(ModeledInstruction::new(template.clone(), &library, z3).unwrap());
             let candidates: Vec<ModeledBlock<'ctx>> = library
                 .get_modeled_gadgets_for_instruction(z3, &template)
-                // todo: just here to make testing faster. Remove this later
-                .take(200)
+                .take(builder.candidates_per_slot)
                 .collect();
             event!(
                 Level::DEBUG,
@@ -76,8 +80,8 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let outer: Box<dyn SelectionStrategy>;
-        match sat_problem {
+        let outer: Box<dyn SelectionStrategy<'ctx>>;
+        match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
                 outer = Box::new(SatProblem::initialize(z3, &gadget_candidates));
             }
@@ -85,8 +89,13 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 outer = Box::new(OptimizationProblem::initialize(z3, &gadget_candidates));
             }
         };
-        let theory_problem =
-            PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates)?;
+        let theory_problem = PcodeTheory::new(
+            z3,
+            modeled_templates.as_slice(),
+            &gadget_candidates,
+            builder.preconditions,
+            builder.postconditions,
+        )?;
         Ok(AssignmentSynthesis {
             gadget_candidates,
             sat_problem: outer,

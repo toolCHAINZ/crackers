@@ -38,7 +38,7 @@ impl<'ctx> SatProblem<'ctx>{
     }
 }
 
-impl<'ctx> SelectionStrategy for SatProblem<'ctx> {
+impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check() {

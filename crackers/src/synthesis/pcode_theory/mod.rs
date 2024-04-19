@@ -8,7 +8,8 @@ use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool, BV};
 
 use crate::error::CrackersError;
-use crate::error::CrackersError::TheoryTimeout;
+use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
+use crate::synthesis::builder::{StateConstraintGenerator, SynthesisBuilder};
 use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::theory_constraint::{
     ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
@@ -43,12 +44,13 @@ impl ConflictClause {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct PcodeTheory<'ctx> {
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
+    preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
+    postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
 }
 
 impl<'ctx> PcodeTheory<'ctx> {
@@ -56,6 +58,8 @@ impl<'ctx> PcodeTheory<'ctx> {
         z3: &'ctx Context,
         templates: &[ModeledInstruction<'ctx>],
         gadget_candidates: &[Vec<ModeledBlock<'ctx>>],
+        preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
+        postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     ) -> Result<Self, JingleError> {
         let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         for instruction in templates.windows(2) {
@@ -67,6 +71,8 @@ impl<'ctx> PcodeTheory<'ctx> {
             solver,
             templates: templates.to_vec(),
             gadget_candidates: gadget_candidates.to_vec(),
+            preconditions,
+            postconditions,
         })
     }
     pub fn check_assignment(
@@ -77,12 +83,9 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.solver.pop(1);
         self.solver.push();
         let mut assertions = Vec::new();
-        let first_gadget = &self.gadget_candidates[0][slot_assignments.choices()[0]];
-        let sp = first_gadget
-            .get_original_state()
-            .read_varnode(&varnode!(first_gadget, "register"[0x20]:8).unwrap())?;
-        self.solver
-            .assert(&sp._eq(&BV::from_u64(self.z3, 0xDEAD_BEEF_DEAD_BEEF, 64)));
+
+        self.assert_preconditions(slot_assignments)?;
+        self.assert_postconditions(slot_assignments)?;
         event!(Level::TRACE, "Evaluating unit semantics");
         let unit_conflicts = self.eval_unit_semantics(&mut assertions, slot_assignments)?;
         if unit_conflicts.is_some() {
@@ -112,6 +115,40 @@ impl<'ctx> PcodeTheory<'ctx> {
         }
         Ok(None)
     }
+
+    fn assert_preconditions(
+        &self,
+        slot_assignments: &SlotAssignments,
+    ) -> Result<(), CrackersError> {
+        let first_gadget = &self
+            .gadget_candidates
+            .first()
+            .map(|f| &f[slot_assignments.choice(0)])
+            .ok_or(EmptyAssignment)?;
+        for x in &self.preconditions {
+            let assertion = x(self.z3, first_gadget.get_original_state())?;
+            self.solver.assert(&assertion);
+        }
+        Ok(())
+    }
+
+    fn assert_postconditions(
+        &self,
+        slot_assignments: &SlotAssignments,
+    ) -> Result<(), CrackersError> {
+        let last_gadget = &self
+            .gadget_candidates
+            .last()
+            .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
+            .ok_or(EmptyAssignment)?;
+        for x in &self.preconditions {
+            let assertion = x(self.z3, last_gadget.get_final_state())?;
+            self.solver.assert(&assertion);
+        }
+        Ok(())
+    }
+
+
     #[instrument(skip_all)]
     fn eval_combined_semantics(
         &self,
@@ -190,29 +227,6 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.collect_conflicts(assertions)
     }
 
-    fn collect_conflicts(
-        &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
-    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
-        let mut constraints = Vec::new();
-        match self.solver.check() {
-            SatResult::Unsat => {
-                let unsat_core = self.solver.get_unsat_core();
-                for b in unsat_core {
-                    if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
-                        event!(Level::TRACE, "{:?}: {:?}", b, m.decisions);
-                        constraints.push(m)
-                    } else {
-                        event!(Level::WARN, "Unsat Core returned unrecognized variable");
-                    }
-                }
-                Ok(Some(gen_conflict_clauses(constraints.as_slice())))
-            }
-            SatResult::Unknown => Err(TheoryTimeout),
-            SatResult::Sat => Ok(None),
-        }
-    }
-
     #[instrument(skip_all)]
     fn eval_memory_conflict_and_branching(
         &self,
@@ -262,6 +276,28 @@ impl<'ctx> PcodeTheory<'ctx> {
         self.collect_conflicts(assertions)
     }
 
+    fn collect_conflicts(
+        &self,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+        let mut constraints = Vec::new();
+        match self.solver.check() {
+            SatResult::Unsat => {
+                let unsat_core = self.solver.get_unsat_core();
+                for b in unsat_core {
+                    if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
+                        event!(Level::TRACE, "{:?}: {:?}", b, m.decisions);
+                        constraints.push(m)
+                    } else {
+                        event!(Level::WARN, "Unsat Core returned unrecognized variable");
+                    }
+                }
+                Ok(Some(gen_conflict_clauses(constraints.as_slice())))
+            }
+            SatResult::Unknown => Err(TheoryTimeout),
+            SatResult::Sat => Ok(None),
+        }
+    }
     pub fn get_model(&self) -> Option<Model<'ctx>> {
         self.solver.get_model()
     }

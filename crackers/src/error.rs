@@ -5,6 +5,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum CrackersError {
+    EmptySpecification,
+    EmptyAssignment,
     LibraryDeserialization,
     LibrarySerialization,
     TheoryTimeout,

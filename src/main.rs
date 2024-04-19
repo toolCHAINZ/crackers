@@ -11,12 +11,12 @@ use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
-use z3::ast::Ast;
+use z3::ast::{Ast, Bool};
 
-use crackers::gadget::library::builder::GadgetLibraryBuilder;
-use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 use crackers::synthesis::assignment_model::AssignmentModel;
-use crackers::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crackers::synthesis::builder::SynthesisBuilder;
+use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
+use crackers::synthesis::DecisionResult;
 
 #[allow(unused)]
 const TEST_BYTES: [u8; 41] = [
@@ -47,12 +47,13 @@ fn main() {
         .set_image(Image::try_from(elf).unwrap())
         .build("x86:LE:64:default")
         .unwrap();
-
-    let _targets = get_target_instructions(&target_sleigh, &z3).unwrap();
-    let library = GadgetLibraryBuilder::default().max_gadget_length(6).build(&bin_sleigh).unwrap();
-    //library.write_to_file(&"gadgets.bin").unwrap();
-    //naive_alg(&z3, targets, library);
-    let mut p: AssignmentSynthesis<OptimizationProblem> = AssignmentSynthesis::new(&z3, target_sleigh.read(0, 11).collect(), library).unwrap();
+    let mut p = SynthesisBuilder::default()
+        .max_gadget_length(2)
+        .with_selection_strategy(OptimizeStrategy)
+        .specification(target_sleigh.read(0, 5))
+        .with_precondition(|z3, state| Ok(Bool::from_bool(z3,false)))
+        .build(&z3, &bin_sleigh)
+        .unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),

@@ -26,6 +26,10 @@ impl SlotAssignments {
         }
         vec
     }
+    
+    pub fn choice(&self, idx: usize) -> usize{
+        self.choices[idx]
+    }
     pub fn choices(&self) -> &[usize] {
         self.choices.as_slice()
     }

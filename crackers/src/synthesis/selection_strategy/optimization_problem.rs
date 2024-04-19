@@ -42,7 +42,7 @@ impl<'ctx> OptimizationProblem<'ctx>{
     }
 }
 
-impl<'ctx> SelectionStrategy for OptimizationProblem<'ctx> {
+impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check(&[]) {

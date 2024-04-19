@@ -8,11 +8,11 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 pub mod optimization_problem;
 pub mod sat_problem;
 
-pub trait SelectionStrategy {
+pub trait SelectionStrategy<'ctx> {
 
     fn get_assignments(&self) -> Option<SlotAssignments>;
 
-    fn get_decision_variable<'ctx>(&self, var: &Decision) -> &Bool<'ctx>;
+    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx>;
 
     fn add_theory_clauses(&mut self, clauses: &[ConflictClause]);
 }
