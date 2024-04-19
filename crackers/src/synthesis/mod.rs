@@ -10,18 +10,20 @@ use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
-use crate::gadget::GadgetLibrary;
+use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
+use crate::synthesis::builder::SynthesisSelectionStrategy;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
+use crate::synthesis::selection_strategy::{sat_problem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::SelectionStrategy;
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
+mod builder;
 mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
-mod builder;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub struct Decision {
@@ -42,19 +44,19 @@ pub enum DecisionResult<'ctx> {
     Unsat,
 }
 
-#[derive(Debug)]
-pub struct AssignmentSynthesis<'ctx, T: SelectionStrategy<'ctx>> {
+pub struct AssignmentSynthesis<'ctx> {
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    sat_problem: T,
+    sat_problem: Box<dyn SelectionStrategy>,
     theory_problem: PcodeTheory<'ctx>,
 }
 
-impl<'ctx, T: SelectionStrategy<'ctx>> AssignmentSynthesis<'ctx, T> {
+impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
         templates: Vec<Instruction>,
         library: GadgetLibrary,
+        sat_problem: SynthesisSelectionStrategy,
     ) -> Result<Self, JingleError> {
         let mut modeled_templates = vec![];
         let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
@@ -74,12 +76,20 @@ impl<'ctx, T: SelectionStrategy<'ctx>> AssignmentSynthesis<'ctx, T> {
             );
             gadget_candidates.push(candidates);
         }
-        let sat_problem = T::initialize(z3, &gadget_candidates);
+        let outer: Box<dyn SelectionStrategy>;
+        match sat_problem {
+            SynthesisSelectionStrategy::SatStrategy => {
+                outer = Box::new(SatProblem::initialize(z3, &gadget_candidates));
+            }
+            SynthesisSelectionStrategy::OptimizeStrategy => {
+                outer = Box::new(OptimizationProblem::initialize(z3, &gadget_candidates));
+            }
+        };
         let theory_problem =
             PcodeTheory::new(z3, modeled_templates.as_slice(), &gadget_candidates)?;
         Ok(AssignmentSynthesis {
             gadget_candidates,
-            sat_problem,
+            sat_problem: outer,
             theory_problem,
         })
     }

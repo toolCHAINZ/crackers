@@ -1,8 +1,8 @@
 use jingle::modeling::ModeledBlock;
 use z3::Context;
 
+use crate::gadget::library::GadgetLibrary;
 use crate::gadget::signature::OutputSignature;
-use crate::gadget::GadgetLibrary;
 
 pub struct GadgetIterator<'a, 'ctx> {
     z3: &'ctx Context,

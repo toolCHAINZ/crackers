@@ -1,9 +1,15 @@
+use jingle::JingleError;
 use jingle::modeling::State;
+use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedIndirectVarNode;
 use z3::ast::Bool;
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::gadget::library::builder::GadgetLibraryBuilder;
+use crate::synthesis::AssignmentSynthesis;
+use crate::synthesis::selection_strategy::SelectionStrategy;
 
 #[derive(Copy, Clone, Debug)]
 pub enum SynthesisSelectionStrategy {
@@ -20,6 +26,7 @@ pub struct SynthesisBuilder<'ctx> {
     selection_strategy: SynthesisSelectionStrategy,
     max_gadget_length: usize,
     max_gadgets_per_slot: usize,
+    instructions: Box<dyn Iterator<Item = Instruction>>,
     preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
@@ -31,6 +38,7 @@ impl<'ctx> Default for SynthesisBuilder<'ctx> {
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             max_gadget_length: 4,
             max_gadgets_per_slot: 50,
+            instructions: Box::new(vec![].into_iter()),
             preconditions: vec![],
             postconditions: vec![],
             pointer_invariants: vec![],
@@ -58,10 +66,22 @@ impl<'ctx> SynthesisBuilder<'ctx> {
     }
 
     pub fn with_postcondition<F>(mut self, strat: F) -> Self
-        where
-            F: Fn(&Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx,
+    where
+        F: Fn(&Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx,
     {
         self.postconditions.push(Box::new(strat));
         self
+    }
+
+    pub fn build<T: SelectionStrategy>(
+        self,
+        z3: &'ctx Context,
+        sleigh: &SleighContext,
+    ) -> Result<AssignmentSynthesis<'ctx>, JingleError> {
+        let lib_builder =
+            GadgetLibraryBuilder::default().max_gadget_length(&self.max_gadget_length);
+        let library = lib_builder.build(sleigh)?;
+        let instrs: Vec<Instruction> = self.instructions.collect();
+        AssignmentSynthesis::new(z3, instrs, library, self.selection_strategy)
     }
 }

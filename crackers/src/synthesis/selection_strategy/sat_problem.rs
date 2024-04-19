@@ -1,4 +1,3 @@
-use jingle::modeling::ModeledBlock;
 use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
@@ -14,8 +13,8 @@ pub struct SatProblem<'ctx> {
     solver: Solver<'ctx>,
 }
 
-impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
-    fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> SatProblem<'ctx> {
+impl<'ctx> SatProblem<'ctx>{
+    pub fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
@@ -34,6 +33,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         }
         prob
     }
+    fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
+        format!("i{}_g{}", target_index, gadget_index)
+    }
+}
+
+impl<'ctx> SelectionStrategy for SatProblem<'ctx> {
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check() {
@@ -60,7 +65,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
                     self.solver.assert(&var.not());
                 }
                 ConflictClause::Conjunction(v) => {
-                    let choices: Vec<&Bool<'ctx>> =
+                    let choices: Vec<&Bool> =
                         v.iter().map(|b| self.get_decision_variable(b)).collect();
                     self.solver
                         .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
@@ -76,7 +81,7 @@ mod tests {
 
     use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::ConflictClause;
-    use crate::synthesis::sat_problem::SatProblem;
+    use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::SelectionStrategy;
 
     #[test]

@@ -13,8 +13,9 @@ pub struct OptimizationProblem<'ctx> {
     z3: &'ctx Context,
     solver: Optimize<'ctx>,
 }
-impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
-    fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> Self {
+
+impl<'ctx> OptimizationProblem<'ctx>{
+    pub(crate) fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> Self {
         let mut prob = Self {
             variables: Default::default(),
             z3,
@@ -39,6 +40,9 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
         format!("i{}_g{}", target_index, gadget_index)
     }
+}
+
+impl<'ctx> SelectionStrategy for OptimizationProblem<'ctx> {
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
         match self.solver.check(&[]) {
