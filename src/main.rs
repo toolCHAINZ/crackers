@@ -83,8 +83,12 @@ fn pointer_invariant<'a>(
     z3: &'a Context,
     input: &ResolvedIndirectVarNode<'a>,
 ) -> Result<Option<Bool<'a>>, CrackersError> {
-    let constraint = input.pointer.bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
-    let constraint2 = input.pointer.bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
+    let constraint = input
+        .pointer
+        .bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
+    let constraint2 = input
+        .pointer
+        .bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
     Ok(Some(Bool::and(z3, &[constraint, constraint2])))
 }
 

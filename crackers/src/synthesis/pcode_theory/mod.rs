@@ -2,8 +2,8 @@ use std::slice;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::{create_varnode, varnode};
-use jingle::JingleError;
 use jingle::varnode::ResolvedVarnode;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::ast::{Ast, Bool, BV};
 use z3::{Context, Model, SatResult, Solver};
@@ -168,7 +168,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 ResolvedVarnode::Indirect(i) => Some(i),
             }) {
                 for invariant in &self.pointer_invariants {
-                    if let Ok(Some(b)) = invariant(self.z3, x){
+                    if let Ok(Some(b)) = invariant(self.z3, x) {
                         let refines = Bool::fresh_const(self.z3, "combine");
                         self.solver.assert_and_track(&b, &refines);
                         assertions.push(ConjunctiveConstraint::new(
