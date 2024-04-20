@@ -2,19 +2,19 @@ use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::JingleError;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
-use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -47,7 +47,10 @@ impl GadgetLibrary {
         GadgetIterator::new(z3, self, OutputSignature::from(i))
     }
 
-    pub(super) fn build_from_image(sleigh: &SleighContext, len: usize) -> Result<Self, JingleError> {
+    pub(super) fn build_from_image(
+        sleigh: &SleighContext,
+        len: usize,
+    ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
             spaces: sleigh.get_all_space_info().to_vec(),
@@ -114,8 +117,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::GadgetLibrary;

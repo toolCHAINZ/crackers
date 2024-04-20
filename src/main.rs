@@ -1,21 +1,22 @@
 use std::fs;
 use std::path::Path;
 
-use elf::ElfBytes;
+use crackers::error::CrackersError;
 use elf::endian::AnyEndian;
-use jingle::{JingleError, SleighTranslator};
-use jingle::modeling::{ModeledInstruction, ModelingContext};
-use jingle::sleigh::{SpaceManager, varnode};
+use elf::ElfBytes;
+use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
-use jingle::varnode::ResolvedVarnode;
+use jingle::sleigh::{create_varnode, varnode, SpaceManager};
+use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::{JingleError, SleighTranslator};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
+use z3::ast::{Ast, Bool, BV};
 use z3::{Config, Context};
-use z3::ast::{Ast, BV};
 
 use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
-use crackers::synthesis::builder::SynthesisSelectionStrategy::SatStrategy;
+use crackers::synthesis::builder::SynthesisSelectionStrategy::{OptimizeStrategy, SatStrategy};
 use crackers::synthesis::DecisionResult;
 
 #[allow(unused)]
@@ -24,11 +25,12 @@ const TEST_BYTES: [u8; 41] = [
     0x04, 0xb8, 0x2f, 0x73, 0x68, 0x00, 0x89, 0x03, 0xba, 0x00, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00,
     0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80,
 ];
+
 fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let builder =
@@ -48,13 +50,11 @@ fn main() {
         .unwrap();
     let mut p = SynthesisBuilder::default()
         .max_gadget_length(4)
-        .candidates_per_slot(50)
-        .with_selection_strategy(SatStrategy)
-        .specification(target_sleigh.read(0, 5))
-        .with_precondition(|z3, state| {
-            let reg = state.read_varnode(&varnode!(state, "register"[0]:20).unwrap())?;
-            Ok(reg._eq(&BV::from_u64(z3, 0, reg.get_size())))
-        })
+        .with_selection_strategy(OptimizeStrategy)
+        .specification(target_sleigh.read(0, 6))
+        .candidates_per_slot(100)
+        .with_precondition(some_other_constraint)
+        .with_pointer_invariant(pointer_invariant)
         .build(&z3, &bin_sleigh)
         .unwrap();
     match p.decide().unwrap() {
@@ -62,6 +62,30 @@ fn main() {
         DecisionResult::AssignmentFound(a) => naive_alg(a),
         DecisionResult::Unsat => {}
     };
+}
+
+fn some_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
+    let data = state.read_varnode(&state.varnode("register", 0, 40).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
+    Ok(constraint)
+}
+
+fn some_other_constraint<'a>(
+    z3: &'a Context,
+    state: &State<'a>,
+) -> Result<Bool<'a>, CrackersError> {
+    let data = state.read_varnode(&state.varnode("ram", 0x9d060, 4).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0xdeadbeef, data.get_size()));
+    Ok(constraint)
+}
+
+fn pointer_invariant<'a>(
+    z3: &'a Context,
+    input: &ResolvedIndirectVarNode<'a>,
+) -> Result<Option<Bool<'a>>, CrackersError> {
+    let constraint = input.pointer.bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
+    let constraint2 = input.pointer.bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
+    Ok(Some(Bool::and(z3, &[constraint, constraint2])))
 }
 
 fn get_target_instructions<'ctx>(

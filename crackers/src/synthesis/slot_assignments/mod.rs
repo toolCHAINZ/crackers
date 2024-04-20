@@ -1,9 +1,9 @@
 use z3::ast::Bool;
 use z3::Model;
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
+use crate::synthesis::Decision;
 
 mod display;
 
@@ -26,8 +26,8 @@ impl SlotAssignments {
         }
         vec
     }
-    
-    pub fn choice(&self, idx: usize) -> usize{
+
+    pub fn choice(&self, idx: usize) -> usize {
         self.choices[idx]
     }
     pub fn choices(&self) -> &[usize] {

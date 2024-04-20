@@ -35,10 +35,10 @@ impl OutputSignature {
                     }
                 }
                 GeneralizedVarNode::Indirect(i) => {
-                    if !self_indirect
-                        .iter()
-                        .any(|ii| ii.pointer_location.covers(&i.pointer_location) && ii.access_size_bytes >= i.access_size_bytes)
-                    {
+                    if !self_indirect.iter().any(|ii| {
+                        ii.pointer_location.covers(&i.pointer_location)
+                            && ii.access_size_bytes >= i.access_size_bytes
+                    }) {
                         return false;
                     }
                 }

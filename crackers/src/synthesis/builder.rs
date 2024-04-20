@@ -59,14 +59,17 @@ impl<'ctx> SynthesisBuilder<'ctx> {
         self.candidates_per_slot = len;
         self
     }
-    pub fn specification<T: Iterator<Item = Instruction> + 'ctx>(mut self, iter: T) -> Self{
+    pub fn specification<T: Iterator<Item = Instruction> + 'ctx>(mut self, iter: T) -> Self {
         self.instructions = Box::new(iter);
         self
     }
 
     pub fn with_precondition<F>(mut self, condition: F) -> Self
     where
-        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + Send + Sync + 'ctx,
+        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError>
+            + Send
+            + Sync
+            + 'ctx,
     {
         self.preconditions.push(Box::new(condition));
         self
@@ -74,9 +77,24 @@ impl<'ctx> SynthesisBuilder<'ctx> {
 
     pub fn with_postcondition<F>(mut self, strat: F) -> Self
     where
-        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + Send + Sync + 'ctx,
+        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError>
+            + Send
+            + Sync
+            + 'ctx,
     {
         self.postconditions.push(Box::new(strat));
+        self
+    }
+
+    pub fn with_pointer_invariant<F>(mut self, strat: F) -> Self
+    where
+        F: Fn(
+                &'ctx Context,
+                &ResolvedIndirectVarNode<'ctx>,
+            ) -> Result<Option<Bool<'ctx>>, CrackersError>
+            + 'ctx,
+    {
+        self.pointer_invariants.push(Box::new(strat));
         self
     }
 
