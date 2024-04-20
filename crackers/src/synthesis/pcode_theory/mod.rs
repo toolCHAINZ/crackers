@@ -67,10 +67,6 @@ impl<'ctx> PcodeTheory<'ctx> {
         pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
     ) -> Result<Self, JingleError> {
         let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
-        for instruction in templates.windows(2) {
-            solver.assert(&instruction[0].assert_concat(&instruction[1])?);
-        }
-        solver.push();
         Ok(Self {
             z3,
             solver,
@@ -86,8 +82,10 @@ impl<'ctx> PcodeTheory<'ctx> {
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         event!(Level::TRACE, "Resetting solver");
-        self.solver.pop(1);
-        self.solver.push();
+        self.solver.reset();
+        for instruction in self.templates.windows(2) {
+            self.solver.assert(&instruction[0].assert_concat(&instruction[1])?);
+        }
         let mut assertions = Vec::new();
 
         self.assert_preconditions(slot_assignments)?;
@@ -163,12 +161,12 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
-            for x in gadget.get_inputs().iter().filter_map(|f| match f {
+            for x in gadget.get_inputs().union(&gadget.get_outputs()).filter_map(|f| match f {
                 ResolvedVarnode::Direct(_) => None,
                 ResolvedVarnode::Indirect(i) => Some(i),
             }) {
                 for invariant in &self.pointer_invariants {
-                    if let Ok(Some(b)) = invariant(self.z3, x){
+                    if let Ok(Some(b)) = invariant(self.z3, x) {
                         let refines = Bool::fresh_const(self.z3, "combine");
                         self.solver.assert_and_track(&b, &refines);
                         assertions.push(ConjunctiveConstraint::new(
@@ -198,13 +196,24 @@ impl<'ctx> PcodeTheory<'ctx> {
         assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
-        self.solver.push();
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
-            let gadget = &self.gadget_candidates[index][choice];
+            let gadget = &self.gadget_candidates[index][choice].fresh()?;
             let spec = &self.templates[index];
             let refines = Bool::fresh_const(self.z3, "unit");
+            if index == 0 {
+                for x in &self.preconditions {
+                    let assertion = x(self.z3, gadget.get_original_state())?;
+                    self.solver.assert(&assertion);
+                }
+            }
+            if index == slot_assignments.choices().len() - 1 {
+                for x in &self.postconditions {
+                    let assertion = x(self.z3, gadget.get_final_state())?;
+                    self.solver.assert(&assertion);
+                }
+            }
             self.solver
-                .assert_and_track(&gadget.fresh()?.refines(spec)?, &refines);
+                .assert_and_track(&gadget.refines(spec)?, &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
@@ -213,9 +222,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         }
         // these assertions are used as a pre-filtering step before evaluating a gadget in context
         // so we do not need to keep them around after this check.
-        let c = self.collect_conflicts(assertions);
-        self.solver.pop(1);
-        c
+        self.collect_conflicts(assertions)
     }
 
     #[instrument(skip_all)]

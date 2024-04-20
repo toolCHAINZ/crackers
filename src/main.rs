@@ -51,9 +51,10 @@ fn main() {
     let mut p = SynthesisBuilder::default()
         .max_gadget_length(4)
         .with_selection_strategy(OptimizeStrategy)
-        .specification(target_sleigh.read(0, 6))
+        .specification(target_sleigh.read(0, 11))
         .candidates_per_slot(100)
         .with_precondition(some_other_constraint)
+        .with_precondition(initial_stack)
         .with_pointer_invariant(pointer_invariant)
         .build(&z3, &bin_sleigh)
         .unwrap();
@@ -74,8 +75,17 @@ fn some_other_constraint<'a>(
     z3: &'a Context,
     state: &State<'a>,
 ) -> Result<Bool<'a>, CrackersError> {
-    let data = state.read_varnode(&state.varnode("ram", 0x9d060, 4).unwrap())?;
-    let constraint = data._eq(&BV::from_u64(z3, 0xdeadbeef, data.get_size()));
+    let data = state.read_varnode(&state.varnode("register", 0, 0x20).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
+    Ok(constraint)
+}
+
+fn initial_stack<'a>(
+    z3: &'a Context,
+    state: &State<'a>,
+) -> Result<Bool<'a>, CrackersError> {
+    let data = state.read_varnode(&state.varnode("register", 0x20, 0x8).unwrap())?;
+    let constraint = data._eq(&BV::from_u64(z3, 0x4444_0000, data.get_size()));
     Ok(constraint)
 }
 
@@ -84,7 +94,7 @@ fn pointer_invariant<'a>(
     input: &ResolvedIndirectVarNode<'a>,
 ) -> Result<Option<Bool<'a>>, CrackersError> {
     let constraint = input.pointer.bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
-    let constraint2 = input.pointer.bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
+    let constraint2 = input.pointer.bvule(&BV::from_u64(z3, 0x4444_0400, input.pointer.get_size()));
     Ok(Some(Bool::and(z3, &[constraint, constraint2])))
 }
 
