@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, VarNode};
 
 use crate::gadget::Gadget;
@@ -45,6 +47,25 @@ impl OutputSignature {
             }
         }
         true
+    }
+}
+
+impl PartialEq<OutputSignature> for OutputSignature {
+    fn eq(&self, other: &OutputSignature) -> bool {
+        self.outputs
+            .iter()
+            .all(|f| other.outputs.iter().any(|o| f.eq(o)))
+    }
+}
+
+impl PartialOrd<OutputSignature> for OutputSignature {
+    fn partial_cmp(&self, other: &OutputSignature) -> Option<Ordering> {
+        match (self.covers(other), other.covers(self)) {
+            (true, true) => Some(Ordering::Equal),
+            (true, false) => Some(Ordering::Greater),
+            (false, true) => Some(Ordering::Less),
+            (false, false) => None
+        }
     }
 }
 impl From<&Instruction> for OutputSignature {
@@ -96,6 +117,10 @@ mod tests {
         };
         assert!(o1.covers(&o2));
         assert!(o2.covers(&o1));
+        assert!(o1 >= o2);
+        assert!(o1 <= o2);
+        assert_eq!(o1, o2);
+
     }
 
     #[test]
@@ -114,8 +139,9 @@ mod tests {
                 offset: 3,
             })],
         };
-        assert!(o1.covers(&o2));
-        assert!(o2.covers(&o1));
+        assert_ne!(o1, o2);
+        assert!(!o1.covers(&o2));
+        assert!(!o2.covers(&o1));
     }
 
     #[test]

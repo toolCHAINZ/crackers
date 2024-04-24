@@ -1,40 +1,33 @@
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::modeling::ModeledBlock;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::context::SleighContext;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
-use crate::gadget::iterator::GadgetIterator;
-use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
+use crate::gadget::iterator::ModeledGadgetIterator;
+use crate::gadget::signature::OutputSignature;
 
 pub mod builder;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
+    pub(crate) ancestor_graph: HashMap<u64, HashSet<u64>>,
     spaces: Vec<SpaceInfo>,
     default_code_space_index: usize,
 }
 
 impl GadgetLibrary {
-    pub fn model_gadget<'ctx>(
-        &self,
-        z3: &'ctx Context,
-        gadget: &Gadget,
-    ) -> Result<ModeledBlock<'ctx>, JingleError> {
-        let instrs = gadget.instructions.clone();
-        ModeledBlock::read(z3, self, instrs.into_iter())
-    }
-
     pub fn size(&self) -> usize {
         self.gadgets.len()
     }
@@ -43,8 +36,8 @@ impl GadgetLibrary {
         &'a self,
         z3: &'ctx Context,
         i: &Instruction,
-    ) -> GadgetIterator<'a, 'ctx> {
-        GadgetIterator::new(z3, self, OutputSignature::from(i))
+    ) -> ModeledGadgetIterator<'a, 'ctx> {
+        ModeledGadgetIterator::new(z3, self, OutputSignature::from(i))
     }
 
     pub(super) fn build_from_image(
@@ -53,6 +46,7 @@ impl GadgetLibrary {
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
+            ancestor_graph: HashMap::new(),
             spaces: sleigh.get_all_space_info().to_vec(),
             default_code_space_index: sleigh.get_code_space_idx(),
         };
@@ -65,6 +59,13 @@ impl GadgetLibrary {
             while curr < end {
                 let instrs: Vec<Instruction> = sleigh.read(curr, len).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
+                    for x in instrs.iter().skip(1) {
+                        if let Some(mut v) = lib.ancestor_graph.get_mut(&x.address){
+                            v.insert(curr);
+                        }else{
+                            lib.ancestor_graph.insert(x.address, HashSet::from([curr]));
+                        }
+                    }
                     lib.gadgets.push(Gadget {
                         instructions: instrs[0..=i].to_vec(),
                     });
@@ -117,8 +118,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::GadgetLibrary;

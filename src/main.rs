@@ -1,22 +1,22 @@
 use std::fs;
 use std::path::Path;
 
-use crackers::error::CrackersError;
-use elf::endian::AnyEndian;
 use elf::ElfBytes;
-use jingle::modeling::{ModeledInstruction, ModelingContext, State};
-use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
-use jingle::sleigh::{create_varnode, varnode, SpaceManager};
-use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use elf::endian::AnyEndian;
 use jingle::{JingleError, SleighTranslator};
+use jingle::modeling::{ModeledInstruction, ModelingContext, State};
+use jingle::sleigh::{SpaceManager, varnode};
+use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
+use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::ast::{Ast, Bool, BV};
 use z3::{Config, Context};
+use z3::ast::{Ast, Bool, BV};
 
+use crackers::error::CrackersError;
 use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
-use crackers::synthesis::builder::SynthesisSelectionStrategy::{OptimizeStrategy, SatStrategy};
+use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
 use crackers::synthesis::DecisionResult;
 
 #[allow(unused)]
@@ -49,11 +49,10 @@ fn main() {
         .build("x86:LE:64:default")
         .unwrap();
     let mut p = SynthesisBuilder::default()
-        .max_gadget_length(4)
+        .max_gadget_length(8)
         .with_selection_strategy(OptimizeStrategy)
-        .specification(target_sleigh.read(0, 11))
+        .specification(target_sleigh.read(0, 6))
         .candidates_per_slot(100)
-        .with_precondition(some_other_constraint)
         .with_precondition(initial_stack)
         .with_pointer_invariant(pointer_invariant)
         .build(&z3, &bin_sleigh)
@@ -65,11 +64,6 @@ fn main() {
     };
 }
 
-fn some_constraint<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
-    let data = state.read_varnode(&state.varnode("register", 0, 40).unwrap())?;
-    let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
-    Ok(constraint)
-}
 
 fn some_other_constraint<'a>(
     z3: &'a Context,
