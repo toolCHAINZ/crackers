@@ -26,7 +26,7 @@ impl Default for GadgetLibraryBuilder {
     fn default() -> Self {
         Self {
             max_gadget_length: 4,
-            operation_blacklist: HashSet::from([OpCode::CPUI_BRANCH, OpCode::CPUI_CALL])
+            operation_blacklist: HashSet::from([OpCode::CPUI_BRANCH, OpCode::CPUI_CALL, OpCode::CPUI_CBRANCH])
         }
     }
 }

@@ -64,7 +64,6 @@ fn main() {
     };
 }
 
-
 fn some_other_constraint<'a>(
     z3: &'a Context,
     state: &State<'a>,
@@ -74,10 +73,7 @@ fn some_other_constraint<'a>(
     Ok(constraint)
 }
 
-fn initial_stack<'a>(
-    z3: &'a Context,
-    state: &State<'a>,
-) -> Result<Bool<'a>, CrackersError> {
+fn initial_stack<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
     let data = state.read_varnode(&state.varnode("register", 0x20, 0x8).unwrap())?;
     let constraint = data._eq(&BV::from_u64(z3, 0x4444_0000, data.get_size()));
     Ok(constraint)
