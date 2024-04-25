@@ -58,7 +58,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         library: GadgetLibrary,
         builder: SynthesisBuilder<'ctx>,
     ) -> Result<Self, CrackersError> {
-        let instrs: Vec<Instruction> = builder.instructions.collect();
+        let instrs: Vec<Instruction> = builder.instructions;
         if instrs.len() == 0 {
             return Err(EmptySpecification);
         }

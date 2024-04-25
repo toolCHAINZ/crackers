@@ -1,0 +1,6 @@
+ghidra_path = "/Applications/ghidra"
+specification_binary = "bin/minimized.bin"
+
+[library]
+binary_path = "bin/vuln"
+max_gadget_length = 4

@@ -24,7 +24,7 @@ pub struct SynthesisBuilder<'ctx> {
     pub(crate) selection_strategy: SynthesisSelectionStrategy,
     pub(crate) gadget_library_builder: GadgetLibraryBuilder,
     pub(crate) candidates_per_slot: usize,
-    pub(crate) instructions: Box<dyn Iterator<Item = Instruction> + 'ctx>,
+    pub(crate) instructions: Vec<Instruction>,
     pub(crate) preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     pub(crate) postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
     pub(crate) pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
@@ -36,7 +36,7 @@ impl<'ctx> Default for SynthesisBuilder<'ctx> {
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             gadget_library_builder: GadgetLibraryBuilder::default(),
             candidates_per_slot: 50,
-            instructions: Box::new(vec![].into_iter()),
+            instructions: vec![],
             preconditions: vec![],
             postconditions: vec![],
             pointer_invariants: vec![],
@@ -59,8 +59,8 @@ impl<'ctx> SynthesisBuilder<'ctx> {
         self.candidates_per_slot = len;
         self
     }
-    pub fn specification<T: Iterator<Item = Instruction> + 'ctx>(mut self, iter: T) -> Self {
-        self.instructions = Box::new(iter);
+    pub fn specification<T: Iterator<Item = Instruction>>(mut self, iter: T) -> Self {
+        self.instructions = iter.collect();
         self
     }
 
