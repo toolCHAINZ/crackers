@@ -29,8 +29,10 @@ impl<'a, 'ctx> Iterator for ModeledGadgetIterator<'a, 'ctx> {
         for x in self.library.gadgets[0..self.offset].iter().rev() {
             self.offset -= 1;
             if OutputSignature::from(x).covers(&self.spec_signature) {
-                if let Ok(block) = ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter()) {
-                    return Some(block);
+                let h =  ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter());
+                match h {
+                    Ok(block) => return Some(block),
+                    Err(e) => println!("{:?}", e)
                 }
             }
         }

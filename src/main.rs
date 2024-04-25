@@ -49,9 +49,9 @@ fn main() {
         .build("x86:LE:64:default")
         .unwrap();
     let mut p = SynthesisBuilder::default()
-        .max_gadget_length(8)
+        .max_gadget_length(4)
         .with_selection_strategy(OptimizeStrategy)
-        .specification(target_sleigh.read(0, 6))
+        .specification(target_sleigh.read(0, 4))
         .candidates_per_slot(100)
         .with_precondition(initial_stack)
         .with_pointer_invariant(pointer_invariant)
@@ -115,6 +115,9 @@ fn naive_alg(result: AssignmentModel) {
     for b in &result.gadgets {
         for x in &b.instructions {
             println!("{:x} {}", x.address, x.disassembly);
+            for x in &x.ops {
+                println!("{}", x.display(b).unwrap());
+            }
         }
         println!();
     }

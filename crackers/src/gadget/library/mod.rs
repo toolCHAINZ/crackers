@@ -5,7 +5,7 @@ use std::path::Path;
 
 use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
@@ -43,6 +43,7 @@ impl GadgetLibrary {
     pub(super) fn build_from_image(
         sleigh: &SleighContext,
         len: usize,
+        operation_blacklist: &HashSet<OpCode>,
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
@@ -60,15 +61,18 @@ impl GadgetLibrary {
                 let instrs: Vec<Instruction> = sleigh.read(curr, len).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     for x in instrs.iter().skip(1) {
-                        if let Some(mut v) = lib.ancestor_graph.get_mut(&x.address){
+                        if let Some(mut v) = lib.ancestor_graph.get_mut(&x.address) {
                             v.insert(curr);
-                        }else{
+                        } else {
                             lib.ancestor_graph.insert(x.address, HashSet::from([curr]));
                         }
                     }
-                    lib.gadgets.push(Gadget {
+                    let gadget = Gadget {
                         instructions: instrs[0..=i].to_vec(),
-                    });
+                    };
+                    if !gadget.has_blacklisted_op(operation_blacklist) {
+                        lib.gadgets.push(gadget);
+                    }
                 }
                 curr += 1
             }

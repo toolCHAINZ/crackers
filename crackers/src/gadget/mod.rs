@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 
-use jingle::sleigh::{Instruction, SpaceManager};
+use jingle::sleigh::{Instruction, OpCode, SpaceManager};
 use serde::{Deserialize, Serialize};
 
 mod error;
@@ -27,5 +28,11 @@ impl Gadget {
                 .zip(other.instructions.iter())
                 .all(|(o, e)| o.ops_equal(e))
         }
+    }
+
+    pub fn has_blacklisted_op(&self, blacklist: &HashSet<OpCode>) -> bool {
+        self.instructions
+            .iter()
+            .any(|i| i.ops.iter().any(|o| blacklist.contains(&o.opcode())))
     }
 }
