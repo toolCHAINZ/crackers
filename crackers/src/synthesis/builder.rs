@@ -22,7 +22,7 @@ pub type PointerConstraintGenerator<'ctx> = dyn Fn(&'ctx Context, &ResolvedIndir
 
 pub struct SynthesisBuilder<'ctx> {
     pub(crate) selection_strategy: SynthesisSelectionStrategy,
-    pub(crate) max_gadget_length: usize,
+    pub(crate) gadget_library_builder: GadgetLibraryBuilder,
     pub(crate) candidates_per_slot: usize,
     pub(crate) instructions: Box<dyn Iterator<Item = Instruction> + 'ctx>,
     pub(crate) preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
@@ -34,7 +34,7 @@ impl<'ctx> Default for SynthesisBuilder<'ctx> {
     fn default() -> Self {
         Self {
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
-            max_gadget_length: 4,
+            gadget_library_builder: GadgetLibraryBuilder::default(),
             candidates_per_slot: 50,
             instructions: Box::new(vec![].into_iter()),
             preconditions: vec![],
@@ -50,8 +50,8 @@ impl<'ctx> SynthesisBuilder<'ctx> {
         self
     }
 
-    pub fn max_gadget_length(mut self, len: usize) -> Self {
-        self.max_gadget_length = len;
+    pub fn with_gadget_library_builder(mut self, builder: GadgetLibraryBuilder) -> Self {
+        self.gadget_library_builder = builder;
         self
     }
 
@@ -103,9 +103,7 @@ impl<'ctx> SynthesisBuilder<'ctx> {
         z3: &'ctx Context,
         gadget_source: &SleighContext,
     ) -> Result<AssignmentSynthesis<'ctx>, CrackersError> {
-        let lib_builder =
-            GadgetLibraryBuilder::default().max_gadget_length(&self.max_gadget_length);
-        let library = lib_builder.build(gadget_source)?;
+        let library = self.gadget_library_builder.build(gadget_source)?;
 
         let s = AssignmentSynthesis::new(z3, library, self)?;
 
