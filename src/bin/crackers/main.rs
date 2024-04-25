@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use clap::Parser;
 use elf::ElfBytes;
 use elf::endian::AnyEndian;
 use jingle::{JingleError, SleighTranslator};
@@ -9,6 +10,7 @@ use jingle::sleigh::{SpaceManager, varnode};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
 use z3::ast::{Ast, Bool, BV};
 
@@ -17,14 +19,16 @@ use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
 use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
 use crackers::synthesis::DecisionResult;
-use tracing_subscriber::FmtSubscriber;
 
-#[allow(unused)]
-const TEST_BYTES: [u8; 41] = [
-    0xba, 0x60, 0xd0, 0x09, 0x00, 0x89, 0xd3, 0xb8, 0x2f, 0x62, 0x69, 0x6e, 0x89, 0x02, 0x83, 0xc3,
-    0x04, 0xb8, 0x2f, 0x73, 0x68, 0x00, 0x89, 0x03, 0xba, 0x00, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00,
-    0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0xcd, 0x80,
-];
+use crate::config::CrackersConfig;
+
+mod config;
+mod error;
+
+#[derive(Parser, Debug)]
+struct Arguments{
+    pub cfg_path: String
+}
 
 fn main() {
     let cfg = Config::new();
@@ -33,29 +37,11 @@ fn main() {
         .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
-    let builder =
-        SleighContextBuilder::load_ghidra_installation(Path::new("/Applications/ghidra")).unwrap();
-    let target_sleigh = builder
-        .clone()
-        .set_image(Image::from(TEST_BYTES.as_slice()))
-        .build("x86:LE:64:default")
-        .unwrap();
-    let path = Path::new("bin/vuln");
-    let data = fs::read(path).unwrap();
-    let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
+    let args = Arguments::parse();
+    let cfg_bytes = fs::read(&args.cfg_path).unwrap();
 
-    let bin_sleigh = builder
-        .set_image(Image::try_from(elf).unwrap())
-        .build("x86:LE:64:default")
-        .unwrap();
-    let mut p = SynthesisBuilder::default()
-        .with_selection_strategy(OptimizeStrategy)
-        .specification(target_sleigh.read(0, 4))
-        .candidates_per_slot(100)
-        .with_precondition(initial_stack)
-        .with_pointer_invariant(pointer_invariant)
-        .build(&z3, &bin_sleigh)
-        .unwrap();
+    let p: CrackersConfig = toml::from_str(&String::from_utf8(cfg_bytes).unwrap()).unwrap();
+    let mut p = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => naive_alg(a),
@@ -90,22 +76,6 @@ fn pointer_invariant<'a>(
         .bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
     Ok(Some(Bool::and(z3, &[constraint, constraint2])))
 }
-
-fn get_target_instructions<'ctx>(
-    sleigh: &'ctx SleighContext,
-    z3: &'ctx Context,
-) -> Result<Vec<ModeledInstruction<'ctx>>, JingleError> {
-    let modeler = SleighTranslator::new(sleigh, z3);
-    let mut instrs = vec![];
-    let mut i = 0;
-    while i < TEST_BYTES.len() {
-        let model = modeler.model_instruction_at(i as u64)?;
-        i += model.instr.length;
-        instrs.push(model);
-    }
-    Ok(instrs)
-}
-
 fn naive_alg(result: AssignmentModel) {
     for b in &result.gadgets {
         for x in &b.instructions {
