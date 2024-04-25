@@ -112,18 +112,6 @@ dependencies = [
  "serde",
  "thiserror",
  "tracing",
- "z3",
-]
-
-[[package]]
-name = "crackers_bin"
-version = "0.1.0"
-dependencies = [
- "crackers",
- "elf",
- "jingle",
- "thiserror",
- "tracing",
  "tracing-subscriber",
  "z3",
 ]

@@ -9,7 +9,6 @@ use jingle::sleigh::{SpaceManager, varnode};
 use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
-use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
 use z3::ast::{Ast, Bool, BV};
 
@@ -18,6 +17,7 @@ use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::builder::SynthesisBuilder;
 use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
 use crackers::synthesis::DecisionResult;
+use tracing_subscriber::FmtSubscriber;
 
 #[allow(unused)]
 const TEST_BYTES: [u8; 41] = [
