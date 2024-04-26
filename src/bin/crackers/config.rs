@@ -14,13 +14,21 @@ use crate::error::CrackersBinError::ConfigLoad;
 
 #[derive(Debug, Deserialize)]
 pub struct LibraryConfig {
-    binary_path: String,
+    path: String,
     max_gadget_length: usize,
+    random_sample_size: Option<usize>,
+    random_sample_seed: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpecificationConfig {
+    path: String,
+    max_instructions: usize,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CrackersConfig {
-    specification_binary: String,
+    specification: SpecificationConfig,
     library: LibraryConfig,
     ghidra_path: String,
 }
@@ -32,12 +40,12 @@ impl CrackersConfig {
     }
 
     fn load_library_image(&self) -> Result<Vec<u8>, CrackersBinError> {
-        let data = fs::read(&self.library.binary_path).map_err(|_| ConfigLoad)?;
+        let data = fs::read(&self.library.path).map_err(|_| ConfigLoad)?;
         Ok(data)
     }
 
     fn load_spec(&self) -> Result<Image, CrackersBinError> {
-        let data = fs::read(&self.specification_binary).map_err(|_| ConfigLoad)?;
+        let data = fs::read(&self.specification.path).map_err(|_| ConfigLoad)?;
         Ok(Image::from(data))
     }
     pub fn resolve<'a>(&self, z3: &'a Context) -> Result<AssignmentSynthesis<'a>, CrackersBinError> {
@@ -54,12 +62,13 @@ impl CrackersConfig {
         let library_sleigh = library_sleigh_builder.set_image(library_image).build(architecture_str).map_err(|_| ConfigLoad).unwrap();
 
         let gadget_library_params = GadgetLibraryBuilder::default()
-            .max_gadget_length(&self.library.max_gadget_length);
+            .max_gadget_length(self.library.max_gadget_length)
+            .random_sample_seed(self.library.random_sample_seed)
+            .random_sample_size(self.library.random_sample_size);
         let mut b = SynthesisBuilder::default();
         b = b.with_gadget_library_builder(gadget_library_params);
-        b = b.specification(spec_sleigh.read(0,5));
+        b = b.specification(spec_sleigh.read(0, self.specification.max_instructions));
         let thing = b.build(&z3, &library_sleigh).map_err(|_| ConfigLoad).unwrap();
         Ok(thing)
-
     }
 }

@@ -1,6 +1,10 @@
 ghidra_path = "/Applications/ghidra"
-specification_binary = "bin/minimized.bin"
+
+[specification]
+path = "bin/minimized.bin"
+max_instructions = 4
 
 [library]
-binary_path = "bin/vuln"
-max_gadget_length = 4
+path = "bin/vuln"
+max_gadget_length = 8
+random_sample_size = 1000

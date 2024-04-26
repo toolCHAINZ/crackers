@@ -7,6 +7,9 @@ use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
@@ -15,6 +18,7 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::Gadget;
 use crate::gadget::iterator::ModeledGadgetIterator;
+use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::gadget::signature::OutputSignature;
 
 pub mod builder;
@@ -42,8 +46,7 @@ impl GadgetLibrary {
 
     pub(super) fn build_from_image(
         sleigh: &SleighContext,
-        len: usize,
-        operation_blacklist: &HashSet<OpCode>,
+        builder: &GadgetLibraryBuilder
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
@@ -58,7 +61,7 @@ impl GadgetLibrary {
             let mut curr = start;
 
             while curr < end {
-                let instrs: Vec<Instruction> = sleigh.read(curr, len).collect();
+                let instrs: Vec<Instruction> = sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     for x in instrs.iter().skip(1) {
                         if let Some(mut v) = lib.ancestor_graph.get_mut(&x.address) {
@@ -70,13 +73,22 @@ impl GadgetLibrary {
                     let gadget = Gadget {
                         instructions: instrs[0..=i].to_vec(),
                     };
-                    if !gadget.has_blacklisted_op(operation_blacklist) {
+                    if !gadget.has_blacklisted_op(&builder.operation_blacklist) {
                         lib.gadgets.push(gadget);
                     }
                 }
                 curr += 1
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
+        }
+        if let Some(random_sample_size) = builder.random_sample_size{
+            let mut rng = match builder.random_sample_seed {
+                None => StdRng::from_entropy(),
+                Some(a) => StdRng::seed_from_u64(a)
+            };
+            let rand_gadgets: Vec<Gadget> = lib.gadgets.choose_multiple(&mut rng, random_sample_size).map(|g|g.clone()).collect();
+            event!(Level::INFO, "Randomly selected {}", rand_gadgets.len());
+            lib.gadgets = rand_gadgets;
         }
         Ok(lib)
     }
