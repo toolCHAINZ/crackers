@@ -1,23 +1,22 @@
 use std::slice;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use jingle::sleigh::{create_varnode, varnode};
-use jingle::varnode::ResolvedVarnode;
 use jingle::JingleError;
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
-use z3::ast::{Ast, Bool, BV};
 use z3::{Context, Model, SatResult, Solver};
+use z3::ast::{Ast, Bool};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
 use crate::synthesis::builder::{
-    PointerConstraintGenerator, StateConstraintGenerator, SynthesisBuilder,
+    PointerConstraintGenerator, StateConstraintGenerator,
 };
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 mod theory_constraint;
 

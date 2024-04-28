@@ -4,8 +4,7 @@ use std::fs::File;
 use std::path::Path;
 
 use jingle::JingleError;
-use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -64,7 +63,7 @@ impl GadgetLibrary {
                 let instrs: Vec<Instruction> = sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     for x in instrs.iter().skip(1) {
-                        if let Some(mut v) = lib.ancestor_graph.get_mut(&x.address) {
+                        if let Some(v) = lib.ancestor_graph.get_mut(&x.address) {
                             v.insert(curr);
                         } else {
                             lib.ancestor_graph.insert(x.address, HashSet::from([curr]));

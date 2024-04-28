@@ -1,23 +1,21 @@
 use std::cmp::Ordering;
+use std::fs;
 use std::io::Write;
-use std::{fs, mem};
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
-use jingle::JingleError;
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptySpecification, ModelGenerationError};
-use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::{sat_problem, SelectionStrategy};
+use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;

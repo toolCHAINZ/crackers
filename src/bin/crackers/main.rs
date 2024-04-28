@@ -1,13 +1,8 @@
 use std::fs;
-use std::path::Path;
 
 use clap::Parser;
-use elf::ElfBytes;
-use elf::endian::AnyEndian;
-use jingle::{JingleError, SleighTranslator};
-use jingle::modeling::{ModeledInstruction, ModelingContext, State};
+use jingle::modeling::{ModelingContext, State};
 use jingle::sleigh::{SpaceManager, varnode};
-use jingle::sleigh::context::{Image, SleighContext, SleighContextBuilder};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -16,8 +11,6 @@ use z3::ast::{Ast, Bool, BV};
 
 use crackers::error::CrackersError;
 use crackers::synthesis::assignment_model::AssignmentModel;
-use crackers::synthesis::builder::SynthesisBuilder;
-use crackers::synthesis::builder::SynthesisSelectionStrategy::OptimizeStrategy;
 use crackers::synthesis::DecisionResult;
 
 use crate::config::CrackersConfig;
@@ -49,6 +42,8 @@ fn main() {
     };
 }
 
+#[allow(unused)]
+
 fn some_other_constraint<'a>(
     z3: &'a Context,
     state: &State<'a>,
@@ -58,12 +53,15 @@ fn some_other_constraint<'a>(
     Ok(constraint)
 }
 
+#[allow(unused)]
+
 fn initial_stack<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
     let data = state.read_varnode(&state.varnode("register", 0x20, 0x8).unwrap())?;
     let constraint = data._eq(&BV::from_u64(z3, 0x4444_0000, data.get_size()));
     Ok(constraint)
 }
 
+#[allow(unused)]
 fn pointer_invariant<'a>(
     z3: &'a Context,
     input: &ResolvedIndirectVarNode<'a>,
