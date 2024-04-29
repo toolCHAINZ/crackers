@@ -9,33 +9,32 @@ use crackers::gadget::library::builder::GadgetLibraryBuilder;
 use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
 
+use crate::config::constraint::Constraint;
+use crate::config::library::LibraryConfig;
+use crate::config::sleigh::SleighConfig;
+use crate::config::specification::SpecificationConfig;
+use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersBinError;
 use crate::error::CrackersBinError::ConfigLoad;
 
-#[derive(Debug, Deserialize)]
-pub struct LibraryConfig {
-    path: String,
-    max_gadget_length: usize,
-    random_sample_size: Option<usize>,
-    random_sample_seed: Option<u64>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SpecificationConfig {
-    path: String,
-    max_instructions: usize,
-}
+mod library;
+mod specification;
+mod sleigh;
+mod constraint;
+mod synthesis;
 
 #[derive(Debug, Deserialize)]
 pub struct CrackersConfig {
     specification: SpecificationConfig,
     library: LibraryConfig,
-    ghidra_path: String,
+    sleigh: SleighConfig,
+    constraint: Option<Constraint>,
+    synthesis: Option<SynthesisConfig>
 }
 
 impl CrackersConfig {
     fn get_sleigh_builder(&self) -> Result<SleighContextBuilder, CrackersBinError> {
-        let builder = SleighContextBuilder::load_ghidra_installation(&self.ghidra_path).map_err(|_| ConfigLoad)?;
+        let builder = SleighContextBuilder::load_ghidra_installation(&self.sleigh.ghidra_path).map_err(|_| ConfigLoad)?;
         Ok(builder)
     }
 

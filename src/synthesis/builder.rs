@@ -2,6 +2,7 @@ use jingle::modeling::State;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedIndirectVarNode;
+use serde::Deserialize;
 use z3::ast::Bool;
 use z3::Context;
 
@@ -9,9 +10,11 @@ use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::synthesis::AssignmentSynthesis;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub enum SynthesisSelectionStrategy {
+    #[serde(rename="sat")]
     SatStrategy,
+    #[serde(rename="optimize")]
     OptimizeStrategy,
 }
 

@@ -32,8 +32,9 @@ fn main() {
     tracing::subscriber::set_global_default(sub).unwrap();
     let args = Arguments::parse();
     let cfg_bytes = fs::read(&args.cfg_path).unwrap();
-
-    let p: CrackersConfig = toml::from_str(&String::from_utf8(cfg_bytes).unwrap()).unwrap();
+    let s = String::from_utf8(cfg_bytes).unwrap();
+    let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
+    dbg!(&p);
     let mut p = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}

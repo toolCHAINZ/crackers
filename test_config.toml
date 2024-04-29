@@ -1,10 +1,24 @@
+[sleigh]
 ghidra_path = "/Applications/ghidra"
+
+[synthesis]
+strategy = "sat"
 
 [specification]
 path = "bin/minimized.bin"
-max_instructions = 4
+max_instructions = 6
 
 [library]
 path = "bin/vuln"
 max_gadget_length = 8
 random_sample_size = 1000
+random_sample_seed = 0x29832487
+
+[constraint.precondition.register]
+EAX = 4
+EDX = 4
+
+[constraint.precondition.memory]
+space = "ram"
+address = 0xffff_ff00
+size = 0x100
