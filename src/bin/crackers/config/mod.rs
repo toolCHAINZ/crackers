@@ -1,15 +1,17 @@
 use std::fs;
 
 use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
+use jingle::sleigh::RegisterManager;
 use object::File;
 use serde::Deserialize;
+use tracing::{event, Level};
 use z3::Context;
 
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
 use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
 
-use crate::config::constraint::Constraint;
+use crate::config::constraint::{Constraint, gen_memory_constraint, gen_pointer_constraint, gen_register_constraint};
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
@@ -67,6 +69,28 @@ impl CrackersConfig {
         let mut b = SynthesisBuilder::default();
         b = b.with_gadget_library_builder(gadget_library_params);
         b = b.specification(spec_sleigh.read(0, self.specification.max_instructions));
+        if let Some(a) = &self.synthesis{
+            b = b.with_selection_strategy(a.strategy);
+        }
+        if let Some(c) = &self.constraint{
+            if let Some(pre) = &c.precondition{
+                if let Some(mem) = &pre.memory{
+                    b = b.with_precondition(gen_memory_constraint(mem.clone()));
+                }
+                if let Some(reg) = &pre.register{
+                    for (name, value) in reg {
+                        if let Some(vn) = library_sleigh.get_register(&name){
+                            b = b.with_precondition(gen_register_constraint(vn, *value));
+                        }else{
+                            event!(Level::WARN, "Unrecognized register name: {}", name);
+                        }
+                    }
+                }
+            }
+            if let Some(pointer) = &c.pointer{
+                b = b.with_pointer_invariant(gen_pointer_constraint(pointer.clone()));
+            }
+        }
         let thing = b.build(&z3, &library_sleigh).map_err(|_| ConfigLoad).unwrap();
         Ok(thing)
     }

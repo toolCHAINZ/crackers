@@ -4,7 +4,7 @@ use crackers::synthesis::builder::SynthesisSelectionStrategy;
 
 #[derive(Debug, Deserialize)]
 pub struct SynthesisConfig{
-    strategy: SynthesisSelectionStrategy
+    pub strategy: SynthesisSelectionStrategy
 }
 
 impl Default for SynthesisConfig{

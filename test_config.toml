@@ -2,23 +2,23 @@
 ghidra_path = "/Applications/ghidra"
 
 [synthesis]
-strategy = "sat"
+strategy = "optimize"
 
 [specification]
 path = "bin/minimized.bin"
-max_instructions = 6
+max_instructions = 4
 
 [library]
 path = "bin/vuln"
-max_gadget_length = 8
-random_sample_size = 1000
-random_sample_seed = 0x29832487
+max_gadget_length = 10
+random_sample_size = 4000
+random_sample_seed = 0x2983246
 
 [constraint.precondition.register]
-EAX = 4
-EDX = 4
+EAX = 0
+EDX = 0
+ESP = 0xffff_0100
 
-[constraint.precondition.memory]
-space = "ram"
-address = 0xffff_ff00
-size = 0x100
+[constraint.pointer]
+min = 0xffff_0000
+max = 0xffff_ffff
