@@ -71,6 +71,7 @@ impl CrackersConfig {
         b = b.specification(spec_sleigh.read(0, self.specification.max_instructions));
         if let Some(a) = &self.synthesis{
             b = b.with_selection_strategy(a.strategy);
+            b = b.candidates_per_slot(a.max_candidates_per_slot);
         }
         if let Some(c) = &self.constraint{
             if let Some(pre) = &c.precondition{
