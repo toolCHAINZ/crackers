@@ -6,19 +6,21 @@ strategy = "optimize"
 
 [specification]
 path = "bin/minimized.bin"
-max_instructions = 4
+max_instructions = 11
 
 [library]
 path = "bin/vuln"
-max_gadget_length = 10
-random_sample_size = 4000
+max_gadget_length = 8
+random_sample_size = 500
 random_sample_seed = 0x2983246
 
 [constraint.precondition.register]
 EAX = 0
+EBX = 0
 EDX = 0
-ESP = 0xffff_0100
+XMM0 = 0
+ESP = 0x0009_d200
 
 [constraint.pointer]
-min = 0xffff_0000
-max = 0xffff_ffff
+min = 0x0009_0000
+max = 0x000a_0000
