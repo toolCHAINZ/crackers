@@ -1,7 +1,7 @@
 use jingle::modeling::State;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
-use jingle::varnode::ResolvedIndirectVarNode;
+use jingle::varnode::ResolvedVarnode;
 use serde::Deserialize;
 use z3::ast::Bool;
 use z3::Context;
@@ -12,15 +12,15 @@ use crate::synthesis::AssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum SynthesisSelectionStrategy {
-    #[serde(rename="sat")]
+    #[serde(rename = "sat")]
     SatStrategy,
-    #[serde(rename="optimize")]
+    #[serde(rename = "optimize")]
     OptimizeStrategy,
 }
 
 pub type StateConstraintGenerator<'ctx> =
     dyn Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx;
-pub type PointerConstraintGenerator<'ctx> = dyn Fn(&'ctx Context, &ResolvedIndirectVarNode<'ctx>) -> Result<Option<Bool<'ctx>>, CrackersError>
+pub type PointerConstraintGenerator<'ctx> = dyn Fn(&'ctx Context, &ResolvedVarnode<'ctx>, &State<'ctx>) -> Result<Option<Bool<'ctx>>, CrackersError>
     + 'ctx;
 
 pub struct SynthesisBuilder<'ctx> {
@@ -93,7 +93,8 @@ impl<'ctx> SynthesisBuilder<'ctx> {
     where
         F: Fn(
                 &'ctx Context,
-                &ResolvedIndirectVarNode<'ctx>,
+                &ResolvedVarnode<'ctx>,
+                &State<'ctx>,
             ) -> Result<Option<Bool<'ctx>>, CrackersError>
             + 'ctx,
     {

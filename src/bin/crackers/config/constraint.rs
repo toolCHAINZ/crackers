@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::State;
 use jingle::sleigh::{SpaceManager, VarNode};
-use jingle::varnode::ResolvedIndirectVarNode;
+use jingle::varnode::ResolvedVarnode;
 use serde::Deserialize;
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
@@ -61,13 +62,33 @@ pub fn gen_pointer_constraint<'ctx>(
     m: PointerRangeConstraint,
 ) -> impl Fn(
     &'ctx Context,
-    &ResolvedIndirectVarNode<'ctx>,
+    &ResolvedVarnode<'ctx>,
+    &State<'ctx>,
 ) -> Result<Option<Bool<'ctx>>, CrackersError>
        + 'ctx {
-    return move |z3, vn| {
-        let min = BV::from_u64(z3, m.min, vn.pointer.get_size());
-        let max = BV::from_u64(z3, m.max, vn.pointer.get_size());
-        let constraint = Bool::and(z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
-        Ok(Some(constraint))
+    return move |z3, vn, state| {
+        match vn {
+            ResolvedVarnode::Direct(d) => {
+                // todo: this is gross
+                let should_constrain = state
+                    .get_space_info(d.space_index)
+                    .ok_or(UnmodeledSpace)?
+                    .name
+                    .eq("ram");
+                match should_constrain {
+                    false => Ok(None),
+                    true => {
+                        let bool = d.offset >= m.min && (d.offset + d.size as u64) <= m.max;
+                        Ok(Some(Bool::from_bool(z3, bool)))
+                    }
+                }
+            }
+            ResolvedVarnode::Indirect(vn) => {
+                let min = BV::from_u64(z3, m.min, vn.pointer.get_size());
+                let max = BV::from_u64(z3, m.max, vn.pointer.get_size());
+                let constraint = Bool::and(z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
+                Ok(Some(constraint))
+            }
+        }
     };
 }

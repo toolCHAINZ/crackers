@@ -40,7 +40,7 @@ impl GadgetLibrary {
         z3: &'ctx Context,
         i: &Instruction,
     ) -> ModeledGadgetIterator<'a, 'ctx> {
-        ModeledGadgetIterator::new(z3, self, OutputSignature::from(i))
+        ModeledGadgetIterator::new(z3, self, i.clone())
     }
 
     pub(super) fn build_from_image(

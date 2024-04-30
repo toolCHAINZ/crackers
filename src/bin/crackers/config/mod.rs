@@ -58,6 +58,7 @@ impl CrackersConfig {
         let spec_image = self.load_spec().unwrap();
 
         let architecture_str = map_gimli_architecture(&library_image).ok_or(ConfigLoad).unwrap();
+        event!(Level::INFO, "Using SLEIGH architecture {}", architecture_str);
         let library_image = Image::try_from(library_image).map_err(|_| ConfigLoad).unwrap();
         let spec_sleigh = spec_sleigh_builder.set_image(spec_image).build(architecture_str).map_err(|_| ConfigLoad).unwrap();
         let library_sleigh = library_sleigh_builder.set_image(library_image).build(architecture_str).map_err(|_| ConfigLoad).unwrap();

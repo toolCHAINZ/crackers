@@ -27,7 +27,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_max_level(Level::DEBUG)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let args = Arguments::parse();
@@ -43,38 +43,6 @@ fn main() {
     };
 }
 
-#[allow(unused)]
-
-fn some_other_constraint<'a>(
-    z3: &'a Context,
-    state: &State<'a>,
-) -> Result<Bool<'a>, CrackersError> {
-    let data = state.read_varnode(&state.varnode("register", 0, 0x20).unwrap())?;
-    let constraint = data._eq(&BV::from_u64(z3, 0, data.get_size()));
-    Ok(constraint)
-}
-
-#[allow(unused)]
-
-fn initial_stack<'a>(z3: &'a Context, state: &State<'a>) -> Result<Bool<'a>, CrackersError> {
-    let data = state.read_varnode(&state.varnode("register", 0x20, 0x8).unwrap())?;
-    let constraint = data._eq(&BV::from_u64(z3, 0x4444_0000, data.get_size()));
-    Ok(constraint)
-}
-
-#[allow(unused)]
-fn pointer_invariant<'a>(
-    z3: &'a Context,
-    input: &ResolvedIndirectVarNode<'a>,
-) -> Result<Option<Bool<'a>>, CrackersError> {
-    let constraint = input
-        .pointer
-        .bvuge(&BV::from_u64(z3, 0x4444_0000, input.pointer.get_size()));
-    let constraint2 = input
-        .pointer
-        .bvule(&BV::from_u64(z3, 0x4444_0080, input.pointer.get_size()));
-    Ok(Some(Bool::and(z3, &[constraint, constraint2])))
-}
 fn naive_alg(result: AssignmentModel) {
     for b in &result.gadgets {
         for x in &b.instructions {

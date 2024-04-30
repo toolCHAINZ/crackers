@@ -160,20 +160,29 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
-            for x in gadget.get_inputs().union(&gadget.get_outputs()).filter_map(|f| match f {
-                ResolvedVarnode::Direct(_) => None,
-                ResolvedVarnode::Indirect(i) => Some(i),
-            }) {
+            for x in gadget.get_inputs().union(&gadget.get_outputs()) {
                 for invariant in &self.pointer_invariants {
-                    if let Ok(Some(b)) = invariant(self.z3, x) {
-                        let refines = Bool::fresh_const(self.z3, "combine");
-                        self.solver.assert_and_track(&b, &refines);
+                    if let Ok(Some(b)) = invariant(self.z3, x, gadget.get_original_state()) {
+                        let invar_bool = Bool::fresh_const(self.z3, "combined_invar");
+                        self.solver.assert_and_track(&b, &invar_bool);
                         assertions.push(ConjunctiveConstraint::new(
                             &[Decision { index, choice }],
-                            refines,
+                            invar_bool,
                             TheoryStage::CombinedSemantics,
                         ))
                     }
+                }
+            }
+            if index == 0 {
+                for x in &self.preconditions {
+                    let assertion = x(self.z3, gadget.get_original_state())?;
+                    self.solver.assert(&assertion);
+                }
+            }
+            if index == slot_assignments.choices().len() - 1 {
+                for x in &self.postconditions {
+                    let assertion = x(self.z3, gadget.get_final_state())?;
+                    self.solver.assert(&assertion);
                 }
             }
             let refines = Bool::fresh_const(self.z3, "combine");
@@ -184,7 +193,17 @@ impl<'ctx> PcodeTheory<'ctx> {
                 &[Decision { index, choice }],
                 refines,
                 TheoryStage::CombinedSemantics,
-            ))
+            ));
+            if let Some(comp) = spec.branch_comparison(gadget)? {
+                let branch_behavior = Bool::fresh_const(self.z3, "combined_branch");
+                self.solver
+                    .assert_and_track(&comp.simplify(), &branch_behavior);
+                assertions.push(ConjunctiveConstraint::new(
+                    &[Decision { index, choice }],
+                    branch_behavior,
+                    TheoryStage::CombinedSemantics,
+                ));
+            }
         }
         self.collect_conflicts(assertions)
     }
@@ -217,7 +236,18 @@ impl<'ctx> PcodeTheory<'ctx> {
                 &[Decision { index, choice }],
                 refines,
                 TheoryStage::UnitSemantics,
-            ))
+            ));
+
+            if let Some(comp) = spec.branch_comparison(gadget)? {
+                let branch_behavior = Bool::fresh_const(self.z3, "unit_branch");
+                self.solver
+                    .assert_and_track(&comp, &branch_behavior);
+                assertions.push(ConjunctiveConstraint::new(
+                    &[Decision { index, choice }],
+                    branch_behavior,
+                    TheoryStage::UnitSemantics,
+                ));
+            }
         }
         // these assertions are used as a pre-filtering step before evaluating a gadget in context
         // so we do not need to keep them around after this check.
@@ -248,6 +278,11 @@ impl<'ctx> PcodeTheory<'ctx> {
                 assertions.push(ConjunctiveConstraint::new(
                     &[Decision { index, choice }],
                     branch,
+                    TheoryStage::UnitSemantics,
+                ));
+                assertions.push(ConjunctiveConstraint::new(
+                    &[Decision { index, choice }],
+                    branch_meta,
                     TheoryStage::UnitSemantics,
                 ))
             }

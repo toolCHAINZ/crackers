@@ -3,11 +3,11 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "optimize"
-max_candidates_per_slot = 100
+max_candidates_per_slot = 200
 
 [specification]
 path = "bin/minimized.bin"
-max_instructions = 11
+max_instructions = 4
 
 [library]
 path = "bin/vuln"
