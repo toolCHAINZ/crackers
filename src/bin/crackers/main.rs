@@ -27,7 +27,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let args = Arguments::parse();
