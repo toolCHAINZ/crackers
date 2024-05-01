@@ -205,7 +205,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 ));
             }
         }
-        self.collect_conflicts(assertions)
+        self.collect_conflicts(assertions, slot_assignments)
     }
 
     #[instrument(skip_all)]
@@ -251,7 +251,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         }
         // these assertions are used as a pre-filtering step before evaluating a gadget in context
         // so we do not need to keep them around after this check.
-        self.collect_conflicts(assertions)
+        self.collect_conflicts(assertions, slot_assignments)
     }
 
     #[instrument(skip_all)]
@@ -287,7 +287,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 ))
             }
         }
-        self.collect_conflicts(assertions)
+        self.collect_conflicts(assertions, slot_assignments)
     }
 
     #[instrument(skip_all)]
@@ -336,12 +336,12 @@ impl<'ctx> PcodeTheory<'ctx> {
                 TheoryStage::Branch,
             ))
         }
-        self.collect_conflicts(assertions)
+        self.collect_conflicts(assertions, slot_assignments)
     }
 
     fn collect_conflicts(
         &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>, assignments: &SlotAssignments
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         let mut constraints = Vec::new();
         match self.solver.check() {
@@ -355,7 +355,11 @@ impl<'ctx> PcodeTheory<'ctx> {
                         event!(Level::WARN, "Unsat Core returned unrecognized variable");
                     }
                 }
-                Ok(Some(gen_conflict_clauses(constraints.as_slice())))
+                let clauses = gen_conflict_clauses(constraints.as_slice());
+                if constraints.len() == 0{
+                    return Ok(Some(vec![assignments.as_conflict_clause()]))
+                }
+                Ok(Some(clauses))
             }
             SatResult::Unknown => Err(TheoryTimeout),
             SatResult::Sat => Ok(None),

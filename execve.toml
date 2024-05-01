@@ -3,7 +3,7 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "optimize"
-max_candidates_per_slot = 200
+max_candidates_per_slot = 100
 
 [specification]
 path = "bin/execve_instrs.bin"
@@ -11,8 +11,8 @@ max_instructions = 5
 
 [library]
 path = "bin/libc_wrapper"
-max_gadget_length = 10
-random_sample_size = 10000
+max_gadget_length = 8
+random_sample_size = 1000
 
 
 [constraint.precondition.register]
@@ -35,6 +35,9 @@ R15 = 0x400538
 GS = 0
 FS = 0
 
+[constraint.postcondition.pointer]
+RDI = "/bin/sh"
+
 [constraint.pointer]
-min = 0x7fffff00e000
-max = 0x7ffffffff000
+min = 0x7fffffffde00
+max = 0x7fffffffe000

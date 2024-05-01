@@ -11,7 +11,7 @@ use crackers::gadget::library::builder::GadgetLibraryBuilder;
 use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
 
-use crate::config::constraint::{Constraint, gen_memory_constraint, gen_pointer_constraint, gen_register_constraint};
+use crate::config::constraint::{Constraint, gen_memory_constraint, gen_pointer_range_invariant, gen_register_constraint, gen_register_pointer_constraint};
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
@@ -88,9 +88,38 @@ impl CrackersConfig {
                         }
                     }
                 }
+                if let Some(pointer) = &pre.pointer{
+                    for (name, value) in pointer{
+                        if let Some(vn) = library_sleigh.get_register(&name){
+                            b = b.with_precondition(gen_register_pointer_constraint(vn, value.clone(), c.pointer.clone()))
+                        }
+                    }
+                }
+            }
+            // todo: gross to repeat this stuff
+            if let Some(post) = &c.postcondition{
+                if let Some(mem) = &post.memory{
+                    b = b.with_postcondition(gen_memory_constraint(mem.clone()));
+                }
+                if let Some(reg) = &post.register{
+                    for (name, value) in reg {
+                        if let Some(vn) = library_sleigh.get_register(&name){
+                            b = b.with_postcondition(gen_register_constraint(vn, *value));
+                        }else{
+                            event!(Level::WARN, "Unrecognized register name: {}", name);
+                        }
+                    }
+                }
+                if let Some(pointer) = &post.pointer{
+                    for (name, value) in pointer{
+                        if let Some(vn) = library_sleigh.get_register(&name){
+                            b = b.with_postcondition(gen_register_pointer_constraint(vn, value.clone(), c.pointer.clone()))
+                        }
+                    }
+                }
             }
             if let Some(pointer) = &c.pointer{
-                b = b.with_pointer_invariant(gen_pointer_constraint(pointer.clone()));
+                b = b.with_pointer_invariant(gen_pointer_range_invariant(pointer.clone()));
             }
         }
         let thing = b.build(&z3, &library_sleigh).map_err(|_| ConfigLoad).unwrap();

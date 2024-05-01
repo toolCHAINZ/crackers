@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::State;
-use jingle::sleigh::{SpaceManager, VarNode};
-use jingle::varnode::ResolvedVarnode;
+use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
+use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use serde::Deserialize;
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
@@ -20,6 +20,7 @@ pub struct Constraint {
 #[derive(Debug, Deserialize)]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, u64>>,
+    pub pointer: Option<HashMap<String, String>>,
     pub memory: Option<MemoryEqualityConstraint>,
 }
 
@@ -58,14 +59,39 @@ pub fn gen_register_constraint<'ctx>(
     };
 }
 
-pub fn gen_pointer_constraint<'ctx>(
+pub fn gen_register_pointer_constraint<'ctx>(
+    vn: VarNode,
+    value: String,
+    m: Option<PointerRangeConstraint>
+) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+
+    return move |z3, state| {
+        let val = value.as_bytes().iter().map(|b|
+            BV::from_u64(z3, *b as u64, 8)
+        ).reduce(|a, b| a.concat(&b)).unwrap();
+        let pointer = state.read_varnode(&vn)?;
+        let data = state.read_varnode_indirect(&IndirectVarNode { pointer_space_index: state.get_code_space_idx(), access_size_bytes: value.len(), pointer_location: vn.clone() })?;
+        let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode{pointer_space_idx: state.get_code_space_idx(), access_size_bytes: value.len(), pointer});
+        let mut constraint = data._eq(&val);
+        if let Some(c) = &m{
+            let callback = gen_pointer_range_invariant(c.clone());
+            let cc = callback(z3, &resolved, &state)?;
+            if let Some(b) = cc{
+                constraint = Bool::and(z3, &[constraint, b])
+            }
+        }
+        Ok(constraint)
+    };
+}
+
+pub fn gen_pointer_range_invariant<'ctx>(
     m: PointerRangeConstraint,
 ) -> impl Fn(
     &'ctx Context,
     &ResolvedVarnode<'ctx>,
     &State<'ctx>,
 ) -> Result<Option<Bool<'ctx>>, CrackersError>
-       + 'ctx {
++ 'ctx {
     return move |z3, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {

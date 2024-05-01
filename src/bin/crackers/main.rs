@@ -117,22 +117,12 @@ fn naive_alg(result: AssignmentModel) {
     }
     // buffer stuff
     println!("buffer");
-    let ptr = 0x9d060u64;
-    for i in 0i32..8i32 {
+    let ptr = 0x7fffffffde00u64;
+    for i in 0..(0x7ffffffff000 - ptr)/4 {
         let addr = ptr.wrapping_add(i as u64 * 4);
         let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
         let display = varnode.display(final_state).unwrap();
         let read = final_state.read_varnode(&varnode).unwrap();
-        let val = result.model().eval(&read, false).unwrap();
-        println!("{} = {}", display, val);
-    }
-    println!("buffer");
-    let ptr = 0x9d060u64;
-    for i in 0i32..8i32 {
-        let addr = ptr.wrapping_add(i as u64 * 4);
-        let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
-        let display = varnode.display(final_state).unwrap();
-        let read = initial_state.read_varnode(&varnode).unwrap();
         let val = result.model().eval(&read, false).unwrap();
         println!("{} = {}", display, val);
     }
