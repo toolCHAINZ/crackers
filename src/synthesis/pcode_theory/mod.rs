@@ -217,37 +217,32 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice].fresh()?;
             let spec = &self.templates[index];
+            let mut bools = vec![];
             let refines = Bool::fresh_const(self.z3, "unit");
             if index == 0 {
                 for x in &self.preconditions {
-                    let assertion = x(self.z3, gadget.get_original_state())?;
-                    self.solver.assert(&assertion);
+                     bools.push(x(self.z3, gadget.get_original_state())?.simplify());
                 }
             }
             if index == slot_assignments.choices().len() - 1 {
                 for x in &self.postconditions {
-                    let assertion = x(self.z3, gadget.get_final_state())?;
-                    self.solver.assert(&assertion);
+                    bools.push( x(self.z3, gadget.get_final_state())?.simplify());
                 }
             }
+            bools.push(gadget.refines(spec)?.simplify());
+            if let Some(comp) = spec.branch_comparison(gadget)? {
+                bools.push(comp.simplify());
+            }
+            let condition = Bool::and(self.z3, &bools);
+            dbg!(bools);
             self.solver
-                .assert_and_track(&gadget.refines(spec)?, &refines);
+                .assert_and_track(&condition, &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
                 TheoryStage::UnitSemantics,
             ));
 
-            if let Some(comp) = spec.branch_comparison(gadget)? {
-                let branch_behavior = Bool::fresh_const(self.z3, "unit_branch");
-                self.solver
-                    .assert_and_track(&comp, &branch_behavior);
-                assertions.push(ConjunctiveConstraint::new(
-                    &[Decision { index, choice }],
-                    branch_behavior,
-                    TheoryStage::UnitSemantics,
-                ));
-            }
         }
         // these assertions are used as a pre-filtering step before evaluating a gadget in context
         // so we do not need to keep them around after this check.
@@ -349,14 +344,14 @@ impl<'ctx> PcodeTheory<'ctx> {
                 let unsat_core = self.solver.get_unsat_core();
                 for b in unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
-                        event!(Level::TRACE, "{:?}: {:?}", b, m.decisions);
+                        event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
                         constraints.push(m)
                     } else {
                         event!(Level::WARN, "Unsat Core returned unrecognized variable");
                     }
                 }
                 let clauses = gen_conflict_clauses(constraints.as_slice());
-                if constraints.len() == 0{
+                if clauses.len() == 0{
                     return Ok(Some(vec![assignments.as_conflict_clause()]))
                 }
                 Ok(Some(clauses))

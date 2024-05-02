@@ -1,11 +1,11 @@
 use jingle::modeling::ModeledBlock;
-use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
+use z3::ast::{Ast, Bool};
 
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -26,7 +26,7 @@ impl<'ctx> OptimizationProblem<'ctx> {
             for (j, _) in slot.iter().enumerate() {
                 let var = Bool::new_const(prob.z3, Self::derive_var_name(i, j));
                 prob.solver
-                    .assert_soft(&var.not(), gadgets[i][j].instructions.len().pow(2), None);
+                    .assert_soft(&var.not(), gadgets[i][j].instructions.len(), None);
                 vars.push(var)
             }
             prob.variables.push(vars);

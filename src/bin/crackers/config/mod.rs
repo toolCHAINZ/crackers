@@ -82,7 +82,7 @@ impl CrackersConfig {
                 if let Some(reg) = &pre.register{
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name){
-                            b = b.with_precondition(gen_register_constraint(vn, *value));
+                            b = b.with_precondition(gen_register_constraint(vn, *value as u64));
                         }else{
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -104,7 +104,7 @@ impl CrackersConfig {
                 if let Some(reg) = &post.register{
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name){
-                            b = b.with_postcondition(gen_register_constraint(vn, *value));
+                            b = b.with_postcondition(gen_register_constraint(vn, *value as u64));
                         }else{
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }

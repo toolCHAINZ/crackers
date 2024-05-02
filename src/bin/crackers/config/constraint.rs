@@ -19,7 +19,7 @@ pub struct Constraint {
 
 #[derive(Debug, Deserialize)]
 pub struct StateEqualityConstraint {
-    pub register: Option<HashMap<String, u64>>,
+    pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,
     pub memory: Option<MemoryEqualityConstraint>,
 }
