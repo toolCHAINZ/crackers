@@ -160,16 +160,11 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
+            let mut bools = vec![];
             for x in gadget.get_inputs().union(&gadget.get_outputs()) {
                 for invariant in &self.pointer_invariants {
                     if let Ok(Some(b)) = invariant(self.z3, x, gadget.get_original_state()) {
-                        let invar_bool = Bool::fresh_const(self.z3, "combined_invar");
-                        self.solver.assert_and_track(&b, &invar_bool);
-                        assertions.push(ConjunctiveConstraint::new(
-                            &[Decision { index, choice }],
-                            invar_bool,
-                            TheoryStage::CombinedSemantics,
-                        ))
+                        bools.push(b);
                     }
                 }
             }
@@ -184,26 +179,19 @@ impl<'ctx> PcodeTheory<'ctx> {
                     let assertion = x(self.z3, gadget.get_final_state())?;
                     self.solver.assert(&assertion);
                 }
+            if let Some(comp) = spec.branch_comparison(gadget)? {
+                bools.push(comp);
             }
+            bools.push(gadget.refines(spec)?);
             let refines = Bool::fresh_const(self.z3, "combine");
-
             self.solver
-                .assert_and_track(&gadget.refines(spec)?, &refines);
+                .assert_and_track(&Bool::and(&self.z3, &bools), &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
                 TheoryStage::CombinedSemantics,
             ));
-            if let Some(comp) = spec.branch_comparison(gadget)? {
-                let branch_behavior = Bool::fresh_const(self.z3, "combined_branch");
-                self.solver
-                    .assert_and_track(&comp.simplify(), &branch_behavior);
-                assertions.push(ConjunctiveConstraint::new(
-                    &[Decision { index, choice }],
-                    branch_behavior,
-                    TheoryStage::CombinedSemantics,
-                ));
-            }
+
         }
         self.collect_conflicts(assertions, slot_assignments)
     }
@@ -303,10 +291,6 @@ impl<'ctx> PcodeTheory<'ctx> {
                         index,
                         choice: w[0],
                     },
-                    Decision {
-                        index: index + 1,
-                        choice: w[1],
-                    },
                 ],
                 concat_var,
                 TheoryStage::Consistency,
@@ -321,10 +305,6 @@ impl<'ctx> PcodeTheory<'ctx> {
                     Decision {
                         index,
                         choice: w[0],
-                    },
-                    Decision {
-                        index: index + 1,
-                        choice: w[1],
                     },
                 ],
                 branch_var,
@@ -342,12 +322,12 @@ impl<'ctx> PcodeTheory<'ctx> {
         match self.solver.check() {
             SatResult::Unsat => {
                 let unsat_core = self.solver.get_unsat_core();
-                for b in unsat_core {
+                for b in &unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
                         constraints.push(m)
                     } else {
-                        event!(Level::WARN, "Unsat Core returned unrecognized variable");
+                        event!(Level::WARN, "Unsat Core returned unrecognized variable: {:?}", &unsat_core);
                     }
                 }
                 let clauses = gen_conflict_clauses(constraints.as_slice());
