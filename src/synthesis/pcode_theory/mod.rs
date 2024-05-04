@@ -221,7 +221,6 @@ impl<'ctx> PcodeTheory<'ctx> {
                     bools.push(comp.simplify());
                 }
                 let condition = Bool::and(self.z3, &bools);
-                dbg!(bools);
                 self.solver
                     .assert_and_track(&condition, &refines);
                 assertions.push(ConjunctiveConstraint::new(
