@@ -93,13 +93,6 @@ impl<'ctx> PcodeTheory<'ctx> {
             event!(Level::DEBUG, "Unit semantics returned conflicts");
             return Ok(unit_conflicts);
         }
-        event!(Level::TRACE, "Evaluating branch destination semantics");
-        let branch_semantics_conflicts =
-            self.eval_branching_semantics(&mut assertions, slot_assignments)?;
-        if branch_semantics_conflicts.is_some() {
-            event!(Level::DEBUG, "Branch semantics returned conflicts");
-            return Ok(branch_semantics_conflicts);
-        }
         event!(Level::TRACE, "Evaluating memory and branching");
         let mem_and_branch_conflicts =
             self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;
