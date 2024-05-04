@@ -227,42 +227,6 @@ impl<'ctx> PcodeTheory<'ctx> {
     }
 
     #[instrument(skip_all)]
-    fn eval_branching_semantics(
-        &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
-        slot_assignments: &SlotAssignments,
-    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
-        for (index, &choice) in slot_assignments.choices().iter().enumerate() {
-            let gadget = &self.gadget_candidates[index][choice];
-            let spec = &self.templates[index];
-            if spec.get_branch_constraint().has_branch() {
-                let branch = Bool::fresh_const(self.z3, "branch_dest");
-                let branch_meta = Bool::fresh_const(self.z3, "branch_meta");
-                let spec_branch_dest = spec.get_branch_constraint().build_bv(spec)?;
-                let gadget_branch_dest = gadget.get_branch_constraint().build_bv(gadget)?;
-
-                let spec_branch_meta = spec.get_branch_constraint().build_bv(spec)?;
-                let gadget_branch_meta = gadget.get_branch_constraint().build_bv(gadget)?;
-                self.solver
-                    .assert_and_track(&spec_branch_dest._eq(&gadget_branch_dest), &branch);
-                self.solver
-                    .assert_and_track(&spec_branch_meta._eq(&gadget_branch_meta), &branch_meta);
-                assertions.push(ConjunctiveConstraint::new(
-                    &[Decision { index, choice }],
-                    branch,
-                    TheoryStage::UnitSemantics,
-                ));
-                assertions.push(ConjunctiveConstraint::new(
-                    &[Decision { index, choice }],
-                    branch_meta,
-                    TheoryStage::UnitSemantics,
-                ))
-            }
-        }
-        self.collect_conflicts(assertions, slot_assignments)
-    }
-
-    #[instrument(skip_all)]
     fn eval_memory_conflict_and_branching(
         &self,
         assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
