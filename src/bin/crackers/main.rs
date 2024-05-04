@@ -2,12 +2,12 @@ use std::fs;
 
 use clap::Parser;
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{SpaceManager, varnode};
+use jingle::sleigh::{varnode, SpaceManager};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::{Config, Context};
 use z3::ast::{Ast, Bool, BV};
+use z3::{Config, Context};
 
 use crackers::error::CrackersError;
 use crackers::synthesis::assignment_model::AssignmentModel;
@@ -19,8 +19,8 @@ mod config;
 mod error;
 
 #[derive(Parser, Debug)]
-struct Arguments{
-    pub cfg_path: String
+struct Arguments {
+    pub cfg_path: String,
 }
 
 fn main() {
@@ -118,7 +118,7 @@ fn naive_alg(result: AssignmentModel) {
     // buffer stuff
     println!("buffer");
     let ptr = 0x7fffffffde00u64;
-    for i in 0..(0x7ffffffff000 - ptr)/4 {
+    for i in 0..(0x7ffffffff000 - ptr) / 4 {
         let addr = ptr.wrapping_add(i as u64 * 4);
         let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
         let display = varnode.display(final_state).unwrap();

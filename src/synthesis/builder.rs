@@ -20,7 +20,11 @@ pub enum SynthesisSelectionStrategy {
 
 pub type StateConstraintGenerator<'ctx> =
     dyn Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx;
-pub type PointerConstraintGenerator<'ctx> = dyn Fn(&'ctx Context, &ResolvedVarnode<'ctx>, &State<'ctx>) -> Result<Option<Bool<'ctx>>, CrackersError>
+pub type PointerConstraintGenerator<'ctx> = dyn Fn(
+        &'ctx Context,
+        &ResolvedVarnode<'ctx>,
+        &State<'ctx>,
+    ) -> Result<Option<Bool<'ctx>>, CrackersError>
     + 'ctx;
 
 pub struct SynthesisBuilder<'ctx> {

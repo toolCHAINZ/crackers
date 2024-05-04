@@ -22,4 +22,3 @@ pub enum CrackersError {
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
 }
-

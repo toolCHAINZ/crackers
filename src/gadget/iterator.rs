@@ -29,12 +29,15 @@ impl<'a, 'ctx> Iterator for ModeledGadgetIterator<'a, 'ctx> {
     fn next(&mut self) -> Option<Self::Item> {
         for x in self.library.gadgets[0..self.offset].iter().rev() {
             self.offset -= 1;
-            let syscall_cond = !self.instr.has_syscall() || x.instructions.iter().any(|i|i.ops_equal(&self.instr));
-            if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr)) && syscall_cond {
-                let h =  ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter());
+            let syscall_cond = !self.instr.has_syscall()
+                || x.instructions.iter().any(|i| i.ops_equal(&self.instr));
+            if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr)) && syscall_cond
+            {
+                let h =
+                    ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter());
                 match h {
                     Ok(block) => return Some(block),
-                    Err(e) => println!("{:?}", e)
+                    Err(e) => println!("{:?}", e),
                 }
             }
         }
