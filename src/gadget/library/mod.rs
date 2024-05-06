@@ -15,7 +15,7 @@ use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
-use crate::gadget::iterator::ModeledGadgetIterator;
+use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
@@ -35,12 +35,12 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_modeled_gadgets_for_instruction<'a, 'ctx>(
+    pub fn get_gadgets_for_instruction<'a, 'ctx>(
         &'a self,
         z3: &'ctx Context,
         i: &Instruction,
-    ) -> ModeledGadgetIterator<'a, 'ctx> {
-        ModeledGadgetIterator::new(z3, self, i.clone())
+    ) -> Result<GadgetIterator<'a, 'ctx>, CrackersError> {
+        GadgetIterator::new(z3, self, i.clone())
     }
 
     pub(super) fn build_from_image(

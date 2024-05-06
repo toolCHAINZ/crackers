@@ -1,9 +1,10 @@
+use crate::gadget::Gadget;
 use jingle::modeling::ModeledBlock;
 use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
 
 use crate::synthesis::pcode_theory::ConflictClause;
-use crate::synthesis::selection_strategy::SelectionStrategy;
+use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 use crate::synthesis::Decision;
 
@@ -15,7 +16,14 @@ pub struct OptimizationProblem<'ctx> {
 }
 
 impl<'ctx> OptimizationProblem<'ctx> {
-    pub(crate) fn initialize(z3: &'ctx Context, gadgets: &Vec<Vec<ModeledBlock<'ctx>>>) -> Self {
+
+    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
+        &self.variables[var.index][var.choice]
+    }
+}
+
+impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
+    fn initialize<T: InstrLen>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> Self {
         let mut prob = Self {
             variables: Default::default(),
             z3,
@@ -26,7 +34,7 @@ impl<'ctx> OptimizationProblem<'ctx> {
             for (j, _) in slot.iter().enumerate() {
                 let var = Bool::new_const(prob.z3, Self::derive_var_name(i, j));
                 prob.solver
-                    .assert_soft(&var.not(), gadgets[i][j].instructions.len(), None);
+                    .assert_soft(&var.not(), gadgets[i][j].instr_len(), None);
                 vars.push(var)
             }
             prob.variables.push(vars);
@@ -37,14 +45,19 @@ impl<'ctx> OptimizationProblem<'ctx> {
         }
         prob
     }
-    fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
-        format!("i{}_g{}", target_index, gadget_index)
-    }
-}
-
-impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
-    fn get_assignments(&self) -> Option<SlotAssignments> {
-        match self.solver.check(&[]) {
+    fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments> {
+        let terms: Vec<Bool> = blacklist
+            .iter()
+            .map(|s| {
+                let decisions: Vec<&Bool<'ctx>> = s
+                    .to_decisions()
+                    .iter()
+                    .map(|d| self.get_decision_variable(d))
+                    .collect();
+                Bool::and(self.z3, &decisions)
+            })
+            .collect();
+        match self.solver.check(&[Bool::or(self.z3, &terms)]) {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
@@ -54,10 +67,6 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
                 SlotAssignments::create_from_model(model, self.variables.as_slice())
             }
         }
-    }
-
-    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
-        &self.variables[var.index][var.choice]
     }
 
     fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {

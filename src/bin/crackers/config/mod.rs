@@ -100,12 +100,12 @@ impl CrackersConfig {
         if let Some(c) = &self.constraint {
             if let Some(pre) = &c.precondition {
                 if let Some(mem) = &pre.memory {
-                    b = b.with_precondition(gen_memory_constraint(mem.clone()));
+                    b = b.with_precondition(&gen_memory_constraint(mem.clone()));
                 }
                 if let Some(reg) = &pre.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_precondition(gen_register_constraint(vn, *value as u64));
+                            b = b.with_precondition(&gen_register_constraint(vn, *value as u64));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -114,7 +114,7 @@ impl CrackersConfig {
                 if let Some(pointer) = &pre.pointer {
                     for (name, value) in pointer {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_precondition(gen_register_pointer_constraint(
+                            b = b.with_precondition(&gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
                                 c.pointer.clone(),
@@ -126,12 +126,12 @@ impl CrackersConfig {
             // todo: gross to repeat this stuff
             if let Some(post) = &c.postcondition {
                 if let Some(mem) = &post.memory {
-                    b = b.with_postcondition(gen_memory_constraint(mem.clone()));
+                    b = b.with_postcondition(&gen_memory_constraint(mem.clone()));
                 }
                 if let Some(reg) = &post.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_postcondition(gen_register_constraint(vn, *value as u64));
+                            b = b.with_postcondition(&gen_register_constraint(vn, *value as u64));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -140,7 +140,7 @@ impl CrackersConfig {
                 if let Some(pointer) = &post.pointer {
                     for (name, value) in pointer {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_postcondition(gen_register_pointer_constraint(
+                            b = b.with_postcondition(&gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
                                 c.pointer.clone(),
@@ -150,7 +150,7 @@ impl CrackersConfig {
                 }
             }
             if let Some(pointer) = &c.pointer {
-                b = b.with_pointer_invariant(gen_pointer_range_invariant(pointer.clone()));
+                b = b.with_pointer_invariant(&gen_pointer_range_invariant(pointer.clone()));
             }
         }
         let thing = b

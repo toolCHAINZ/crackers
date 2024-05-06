@@ -38,7 +38,7 @@ fn main() {
     let mut p = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
-        DecisionResult::AssignmentFound(a) => naive_alg(a),
+        DecisionResult::AssignmentFound(a) => todo!(""),
         DecisionResult::Unsat => {}
     };
 }

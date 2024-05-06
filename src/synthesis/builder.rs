@@ -3,12 +3,14 @@ use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
 use serde::Deserialize;
+use std::num::NonZeroUsize;
 use z3::ast::Bool;
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::synthesis::AssignmentSynthesis;
+use crate::synthesis::selection_strategy::SelectionStrategy;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum SynthesisSelectionStrategy {
@@ -18,31 +20,34 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator<'ctx> =
-    dyn Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx;
-pub type PointerConstraintGenerator<'ctx> = dyn Fn(
-        &'ctx Context,
-        &ResolvedVarnode<'ctx>,
-        &State<'ctx>,
-    ) -> Result<Option<Bool<'ctx>>, CrackersError>
-    + 'ctx;
+pub type StateConstraintGenerator =
+    dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + Send + Sync + 'static;
+pub type PointerConstraintGenerator = dyn for<'a, 'b> Fn(
+        &'a Context,
+        &'b ResolvedVarnode<'a>,
+        &'b State<'a>,
+    ) -> Result<Option<Bool<'a>>, CrackersError>
+    + Send
+    + Sync + 'static;
 
-pub struct SynthesisBuilder<'ctx> {
+pub struct SynthesisBuilder {
     pub(crate) selection_strategy: SynthesisSelectionStrategy,
     pub(crate) gadget_library_builder: GadgetLibraryBuilder,
     pub(crate) candidates_per_slot: usize,
+    pub(crate) parallel: usize,
     pub(crate) instructions: Vec<Instruction>,
-    pub(crate) preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-    pub(crate) postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-    pub(crate) pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
+    pub(crate) preconditions: Vec<&'static StateConstraintGenerator>,
+    pub(crate) postconditions: Vec<&'static StateConstraintGenerator>,
+    pub(crate) pointer_invariants: Vec<&'static PointerConstraintGenerator>,
 }
 
-impl<'ctx> Default for SynthesisBuilder<'ctx> {
+impl Default for SynthesisBuilder {
     fn default() -> Self {
         Self {
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             gadget_library_builder: GadgetLibraryBuilder::default(),
             candidates_per_slot: 50,
+            parallel: 8,
             instructions: vec![],
             preconditions: vec![],
             postconditions: vec![],
@@ -51,7 +56,7 @@ impl<'ctx> Default for SynthesisBuilder<'ctx> {
     }
 }
 
-impl<'ctx> SynthesisBuilder<'ctx> {
+impl SynthesisBuilder {
     pub fn with_selection_strategy(mut self, strat: SynthesisSelectionStrategy) -> Self {
         self.selection_strategy = strat;
         self
@@ -66,51 +71,55 @@ impl<'ctx> SynthesisBuilder<'ctx> {
         self.candidates_per_slot = len;
         self
     }
+
+    pub fn parallel(mut self, len: usize) -> Self {
+        self.parallel = len;
+        self
+    }
     pub fn specification<T: Iterator<Item = Instruction>>(mut self, iter: T) -> Self {
         self.instructions = iter.collect();
         self
     }
 
-    pub fn with_precondition<F>(mut self, condition: F) -> Self
+    pub fn with_precondition<F>(mut self, condition: &'static F) -> Self
     where
-        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError>
+        F: for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
             + Send
-            + Sync
-            + 'ctx,
+            + Sync + 'static,
     {
-        self.preconditions.push(Box::new(condition));
+        self.preconditions.push(condition);
         self
     }
 
-    pub fn with_postcondition<F>(mut self, strat: F) -> Self
+    pub fn with_postcondition<F>(mut self, strat: &'static F) -> Self
     where
-        F: Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError>
+        F: for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
             + Send
-            + Sync
-            + 'ctx,
+            + Sync + 'static,
     {
-        self.postconditions.push(Box::new(strat));
+        self.postconditions.push(strat);
         self
     }
 
-    pub fn with_pointer_invariant<F>(mut self, strat: F) -> Self
+    pub fn with_pointer_invariant<F>(mut self, strat: &'static F) -> Self
     where
-        F: Fn(
-                &'ctx Context,
-                &ResolvedVarnode<'ctx>,
-                &State<'ctx>,
-            ) -> Result<Option<Bool<'ctx>>, CrackersError>
-            + 'ctx,
+        F: for<'a, 'b> Fn(
+                &'a Context,
+                &'b ResolvedVarnode<'a>,
+                &'b State<'a>,
+            ) -> Result<Option<Bool<'a>>, CrackersError>
+            + Send
+            + Sync + 'static,
     {
-        self.pointer_invariants.push(Box::new(strat));
+        self.pointer_invariants.push(strat);
         self
     }
 
-    pub fn build(
+    pub fn build<'a>(
         self,
-        z3: &'ctx Context,
-        gadget_source: &SleighContext,
-    ) -> Result<AssignmentSynthesis<'ctx>, CrackersError> {
+        z3: &'a Context,
+        gadget_source: &'a SleighContext,
+    ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
         let library = self.gadget_library_builder.build(gadget_source)?;
 
         let s = AssignmentSynthesis::new(z3, library, self)?;

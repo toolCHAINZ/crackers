@@ -40,7 +40,7 @@ pub struct PointerRangeConstraint {
 
 pub fn gen_memory_constraint<'ctx>(
     m: MemoryEqualityConstraint,
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
     return move |z3, state| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(z3, m.value as u64, data.get_size()));
@@ -51,7 +51,7 @@ pub fn gen_memory_constraint<'ctx>(
 pub fn gen_register_constraint<'ctx>(
     vn: VarNode,
     value: u64,
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
     return move |z3, state| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));
@@ -63,7 +63,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraint>,
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
     return move |z3, state| {
         let val = value
             .as_bytes()
@@ -96,11 +96,11 @@ pub fn gen_register_pointer_constraint<'ctx>(
 
 pub fn gen_pointer_range_invariant<'ctx>(
     m: PointerRangeConstraint,
-) -> impl Fn(
-    &'ctx Context,
-    &ResolvedVarnode<'ctx>,
-    &State<'ctx>,
-) -> Result<Option<Bool<'ctx>>, CrackersError>
+) -> impl for<'a, 'b> Fn(
+    &'a Context,
+    &'b ResolvedVarnode<'a>,
+    &'b State<'a>,
+) -> Result<Option<Bool<'a>>, CrackersError>
        + 'ctx {
     return move |z3, vn, state| {
         match vn {
