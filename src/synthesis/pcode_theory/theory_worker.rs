@@ -2,8 +2,11 @@ use crate::error::CrackersError;
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::slot_assignments::SlotAssignments;
+use jingle::modeling::State;
+use jingle::varnode::ResolvedVarnode;
 use std::sync::mpsc::{Receiver, Sender};
 use tracing::{event, Level};
+use z3::ast::Bool;
 use z3::{Config, Context};
 
 pub type TheoryWorkerRequest = SlotAssignments;
@@ -13,7 +16,8 @@ pub struct TheoryWorkerResponse {
     pub theory_result: Result<Option<Vec<ConflictClause>>, CrackersError>,
 }
 
-pub struct TheoryWorker<'ctx> {
+pub struct TheoryWorker<'ctx>
+{
     z3: &'ctx Context,
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
@@ -21,7 +25,8 @@ pub struct TheoryWorker<'ctx> {
     theory: PcodeTheory<'ctx>,
 }
 
-impl<'ctx> TheoryWorker<'ctx> {
+impl<'ctx> TheoryWorker<'ctx>
+{
     pub fn new(
         z3: &'ctx Context,
         id: usize,

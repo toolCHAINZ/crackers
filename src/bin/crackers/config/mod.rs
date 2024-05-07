@@ -1,10 +1,15 @@
+use jingle::modeling::State;
 use std::fs;
+use std::sync::Arc;
 
+use crackers::error::CrackersError;
 use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
+use jingle::varnode::ResolvedVarnode;
 use object::File;
 use serde::Deserialize;
 use tracing::{event, Level};
+use z3::ast::Bool;
 use z3::Context;
 
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
@@ -53,10 +58,10 @@ impl CrackersConfig {
         let data = fs::read(&self.specification.path).map_err(|_| ConfigLoad)?;
         Ok(Image::from(data))
     }
-    pub fn resolve<'a>(
+    pub fn resolve<'z3>(
         &self,
-        z3: &'a Context,
-    ) -> Result<AssignmentSynthesis<'a>, CrackersBinError> {
+        z3: &'z3 Context,
+    ) -> Result<AssignmentSynthesis<'z3>, CrackersBinError> {
         let spec_sleigh_builder = self.get_sleigh_builder().unwrap();
         let library_sleigh_builder = self.get_sleigh_builder().unwrap();
 
@@ -100,12 +105,12 @@ impl CrackersConfig {
         if let Some(c) = &self.constraint {
             if let Some(pre) = &c.precondition {
                 if let Some(mem) = &pre.memory {
-                    b = b.with_precondition(&gen_memory_constraint(mem.clone()));
+                    b = b.with_precondition(Arc::new(gen_memory_constraint(mem.clone())));
                 }
                 if let Some(reg) = &pre.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_precondition(&gen_register_constraint(vn, *value as u64));
+                            b = b.with_precondition(Arc::new(gen_register_constraint(vn, *value as u64)));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -114,11 +119,11 @@ impl CrackersConfig {
                 if let Some(pointer) = &pre.pointer {
                     for (name, value) in pointer {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_precondition(&gen_register_pointer_constraint(
+                            b = b.with_precondition(Arc::new(gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
                                 c.pointer.clone(),
-                            ))
+                            )))
                         }
                     }
                 }
@@ -126,12 +131,12 @@ impl CrackersConfig {
             // todo: gross to repeat this stuff
             if let Some(post) = &c.postcondition {
                 if let Some(mem) = &post.memory {
-                    b = b.with_postcondition(&gen_memory_constraint(mem.clone()));
+                    b = b.with_postcondition(Arc::new(gen_memory_constraint(mem.clone())));
                 }
                 if let Some(reg) = &post.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_postcondition(&gen_register_constraint(vn, *value as u64));
+                            b = b.with_postcondition(Arc::new(gen_register_constraint(vn, *value as u64)));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -140,17 +145,17 @@ impl CrackersConfig {
                 if let Some(pointer) = &post.pointer {
                     for (name, value) in pointer {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_postcondition(&gen_register_pointer_constraint(
+                            b = b.with_postcondition(Arc::new(gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
                                 c.pointer.clone(),
-                            ))
+                            )))
                         }
                     }
                 }
             }
             if let Some(pointer) = &c.pointer {
-                b = b.with_pointer_invariant(&gen_pointer_range_invariant(pointer.clone()));
+                b = b.with_pointer_invariant(Arc::new(gen_pointer_range_invariant(pointer.clone())));
             }
         }
         let thing = b

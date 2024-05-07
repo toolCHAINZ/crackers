@@ -11,7 +11,7 @@ use z3::{Config, Context};
 
 use crackers::error::CrackersError;
 use crackers::synthesis::assignment_model::AssignmentModel;
-use crackers::synthesis::DecisionResult;
+use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 
 use crate::config::CrackersConfig;
 
@@ -27,7 +27,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_max_level(Level::TRACE)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let args = Arguments::parse();
@@ -35,7 +35,7 @@ fn main() {
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
     dbg!(&p);
-    let mut p = p.resolve(&z3).unwrap();
+    let mut p: AssignmentSynthesis = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
         DecisionResult::AssignmentFound(a) => todo!(""),

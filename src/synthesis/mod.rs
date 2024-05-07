@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, State};
 use jingle::sleigh::Instruction;
+use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
+use z3::ast::Bool;
 use z3::{Config, Context};
 
 use crate::error::CrackersError;
@@ -19,8 +21,8 @@ use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -54,7 +56,9 @@ pub struct AssignmentSynthesis<'ctx> {
     builder: SynthesisBuilder,
 }
 
-impl<'ctx> AssignmentSynthesis<'ctx> {
+impl<'ctx> AssignmentSynthesis<'ctx> where
+
+{
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
@@ -80,13 +84,12 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let outer_problem = match builder.selection_strategy{
+        let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
                 SatProb(SatProblem::initialize(z3, &gadget_candidates))
             }
             SynthesisSelectionStrategy::OptimizeStrategy => {
-                OptimizeProb(
-                OptimizationProblem::initialize(z3, &gadget_candidates))
+                OptimizeProb(OptimizationProblem::initialize(z3, &gadget_candidates))
             }
         };
 

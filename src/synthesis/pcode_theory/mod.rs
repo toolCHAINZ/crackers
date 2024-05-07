@@ -1,6 +1,7 @@
 use std::slice;
+use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
 use jingle::JingleError;
@@ -49,25 +50,27 @@ impl ConflictClause {
     }
 }
 
-pub struct PcodeTheory<'ctx> {
+pub struct PcodeTheory<'ctx>
+{
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    preconditions: Vec<&'static StateConstraintGenerator>,
-    postconditions: Vec<&'static StateConstraintGenerator>,
-    pointer_invariants: Vec<&'static PointerConstraintGenerator>,
+    preconditions: Vec<Arc<StateConstraintGenerator>>,
+    postconditions: Vec<Arc<StateConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx> PcodeTheory<'ctx> {
+impl<'ctx> PcodeTheory<'ctx>
+{
     pub fn new(
         z3: &'ctx Context,
         templates: &Vec<Instruction>,
         library: &GadgetLibrary,
         candidates_per_slot: usize,
-        preconditions: Vec<&'static StateConstraintGenerator>,
-        postconditions: Vec<&'static StateConstraintGenerator>,
-        pointer_invariants: Vec<&'static PointerConstraintGenerator>,
+        preconditions: Vec<Arc<StateConstraintGenerator>>,
+        postconditions: Vec<Arc<StateConstraintGenerator>>,
+        pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
         let mut modeled_templates = vec![];
         let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];

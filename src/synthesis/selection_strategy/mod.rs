@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use crate::gadget::Gadget;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use z3::ast::Bool;
@@ -31,7 +32,7 @@ impl InstrLen for Gadget {
 
 impl<T: InstrLen> InstrLen for &T{
     fn instr_len(&self) -> usize {
-        self.instr_len()
+        self.deref().instr_len()
     }
 }
 impl<'ctx> InstrLen for ModeledInstruction<'ctx> {

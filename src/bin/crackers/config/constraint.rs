@@ -32,7 +32,7 @@ pub struct MemoryEqualityConstraint {
     pub value: u8,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub struct PointerRangeConstraint {
     pub min: u64,
     pub max: u64,
@@ -40,7 +40,11 @@ pub struct PointerRangeConstraint {
 
 pub fn gen_memory_constraint<'ctx>(
     m: MemoryEqualityConstraint,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+       + Send
+       + Sync
+       + Clone
+       + 'static {
     return move |z3, state| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(z3, m.value as u64, data.get_size()));
@@ -51,7 +55,8 @@ pub fn gen_memory_constraint<'ctx>(
 pub fn gen_register_constraint<'ctx>(
     vn: VarNode,
     value: u64,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'static + Send + Sync + Clone
+{
     return move |z3, state| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));
@@ -63,7 +68,8 @@ pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraint>,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
+{
     return move |z3, state| {
         let val = value
             .as_bytes()
@@ -101,7 +107,8 @@ pub fn gen_pointer_range_invariant<'ctx>(
     &'b ResolvedVarnode<'a>,
     &'b State<'a>,
 ) -> Result<Option<Bool<'a>>, CrackersError>
-       + 'ctx {
+       + 'ctx
+       + Clone {
     return move |z3, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
