@@ -1,10 +1,10 @@
-use z3::ast::{Ast, Bool};
 use z3::{Context, SatResult, Solver};
+use z3::ast::{Ast, Bool};
 
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
@@ -54,13 +54,17 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
                 Bool::and(self.z3, &decisions).not()
             })
             .collect();
-        match self.solver.check_assumptions(&terms) {
+        self.solver.push();
+        self.solver.assert(&Bool::and(self.z3, &terms));
+        match self.solver.check() {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
             SatResult::Sat => {
+                
                 let model = self.solver.get_model()?;
+                self.solver.pop(1);
                 SlotAssignments::create_from_model(model, self.variables.as_slice())
             }
         }
@@ -89,10 +93,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
+    use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::SelectionStrategy;
-    use crate::synthesis::Decision;
 
     #[test]
     fn test_assignment() {

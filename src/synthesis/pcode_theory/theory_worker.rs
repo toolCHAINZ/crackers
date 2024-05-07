@@ -1,13 +1,15 @@
-use crate::error::CrackersError;
-use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
-use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
-use crate::synthesis::slot_assignments::SlotAssignments;
+use std::sync::mpsc::{Receiver, Sender, SendError};
+
 use jingle::modeling::State;
 use jingle::varnode::ResolvedVarnode;
-use std::sync::mpsc::{Receiver, Sender};
 use tracing::{event, instrument, Level};
-use z3::ast::Bool;
 use z3::{Config, Context};
+use z3::ast::Bool;
+
+use crate::error::CrackersError;
+use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
+use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub type TheoryWorkerRequest = SlotAssignments;
 pub struct TheoryWorkerResponse {
@@ -56,13 +58,18 @@ impl<'ctx> TheoryWorker<'ctx> {
                 assignment
             );
             let r = self.theory.check_assignment(&assignment);
-            self.sender
+            match self.sender
                 .send(TheoryWorkerResponse {
                     idx: self.id,
                     assignment,
                     theory_result: r,
-                })
-                .unwrap();
+                }){
+                Ok(_) => {}
+                Err(_) => {
+                    event!(Level::TRACE, "Exiting worker {}", self.id);
+                    return;
+                }
+            }
         }
     }
 }

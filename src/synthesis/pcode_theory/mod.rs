@@ -1,24 +1,24 @@
 use std::slice;
 use std::sync::Arc;
 
+use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
-use jingle::JingleError;
 use tracing::{event, instrument, Level};
-use z3::ast::{Ast, Bool};
 use z3::{Config, Context, Model, SatResult, Solver};
+use z3::ast::{Ast, Bool};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::Gadget;
+use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 pub mod builder;
 mod theory_constraint;
@@ -113,13 +113,6 @@ impl<'ctx> PcodeTheory<'ctx>
                 .assert(&instruction[0].assert_concat(&instruction[1])?);
         }
         let mut assertions = Vec::new();
-
-        event!(Level::TRACE, "Evaluating unit semantics");
-        let unit_conflicts = self.eval_unit_semantics(&mut assertions, slot_assignments)?;
-        if unit_conflicts.is_some() {
-            event!(Level::DEBUG, "Unit semantics returned conflicts");
-            return Ok(unit_conflicts);
-        }
         event!(Level::TRACE, "Evaluating memory and branching");
         let mem_and_branch_conflicts =
             self.eval_memory_conflict_and_branching(&mut assertions, slot_assignments)?;

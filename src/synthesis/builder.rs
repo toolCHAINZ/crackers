@@ -1,16 +1,15 @@
+use std::sync::Arc;
+
 use jingle::modeling::State;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
 use serde::Deserialize;
-use std::num::NonZeroUsize;
-use std::sync::Arc;
 use z3::ast::Bool;
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::AssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
@@ -49,7 +48,7 @@ impl Default for SynthesisBuilder
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             gadget_library_builder: GadgetLibraryBuilder::default(),
             candidates_per_slot: 50,
-            parallel: 4,
+            parallel: 6,
             instructions: vec![],
             preconditions: vec![],
             postconditions: vec![],
