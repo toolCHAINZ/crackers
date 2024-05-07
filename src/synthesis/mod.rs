@@ -56,9 +56,7 @@ pub struct AssignmentSynthesis<'ctx> {
     builder: SynthesisBuilder,
 }
 
-impl<'ctx> AssignmentSynthesis<'ctx> where
-
-{
+impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
@@ -107,6 +105,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> where
             .with_pointer_invariants(&self.builder.pointer_invariants)
             .with_preconditions(&self.builder.preconditions)
             .with_postconditions(&self.builder.postconditions)
+            .with_max_candidates(self.builder.candidates_per_slot)
             .with_templates(self.builder.instructions.clone().into_iter());
 
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
@@ -120,69 +119,84 @@ impl<'ctx> AssignmentSynthesis<'ctx> where
                 workers.push(s.spawn(move || -> Result<(), CrackersError> {
                     let z3 = Context::new(&Config::new());
                     let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
+                    event!(Level::TRACE, "Created worker {}", idx);
                     worker.run();
                     Ok(())
                 }));
             }
-        });
 
-        let mut blacklist = HashMap::new();
-        for (i, x) in req_channels.iter().enumerate() {
-            let active: Vec<&SlotAssignments> = blacklist.values().collect();
-            let assignment = self.outer_problem.get_assignments(&active).unwrap();
-            blacklist.insert(i, assignment.clone());
-            x.send(assignment).unwrap();
-        }
-        for response in resp_receiver {
-            match response.theory_result {
-                Ok(r) => {
-                    match r {
-                        None => {
-                            event!(
-                                Level::INFO,
-                                "Theory returned SAT for {:?}!",
-                                response.assignment
-                            );
-                            for x in req_channels {
-                                // drop the senders
-                                req_channels = vec![]
-                            }
-                            return Ok(DecisionResult::AssignmentFound(response.assignment));
-                        }
-                        Some(c) => {
-                            self.outer_problem.add_theory_clauses(&c);
-                            let active: Vec<&SlotAssignments> = blacklist.values().collect();
-                            let new_assignment = self.outer_problem.get_assignments(&active);
-                            match new_assignment {
-                                None => {
-                                    event!(
-                                        Level::ERROR,
-                                        "Outer SAT returned UNSAT! No solution found! :("
-                                    );
+            let mut blacklist = HashMap::new();
+            for (i, x) in req_channels.iter().enumerate() {
+                let active: Vec<&SlotAssignments> = blacklist.values().collect();
+                event!(
+                    Level::TRACE,
+                    "Asking outer procedure for initial assignments"
+                );
+                let assignment = self.outer_problem.get_assignments(&active).unwrap();
+                event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
+                blacklist.insert(i, assignment.clone());
+                x.send(assignment).unwrap();
+            }
+            event!(Level::TRACE, "Done sending initial jobs");
+
+            for response in resp_receiver {
+                event!(
+                    Level::TRACE,
+                    "Received response from worker {}",
+                    response.idx
+                );
+
+                match response.theory_result {
+                    Ok(r) => {
+                        match r {
+                            None => {
+                                event!(
+                                    Level::INFO,
+                                    "Theory returned SAT for {:?}!",
+                                    response.assignment
+                                );
+                                for x in req_channels {
                                     // drop the senders
-                                    req_channels = vec![];
-
-                                    return Ok(DecisionResult::Unsat);
+                                    req_channels = vec![]
                                 }
-                                Some(a) => {
-                                    blacklist.insert(response.idx, a.clone());
-                                    req_channels[response.idx].send(a).unwrap();
+                                return Ok(DecisionResult::AssignmentFound(response.assignment));
+                            }
+                            Some(c) => {
+                                event!(Level::INFO, "Worker {} found conflicts: {}", response.idx, response.assignment.display_conflict(&c));
+                                self.outer_problem.add_theory_clauses(&c);
+                                let active: Vec<&SlotAssignments> = blacklist.values().collect();
+                                let new_assignment = self.outer_problem.get_assignments(&active);
+                                match new_assignment {
+                                    None => {
+                                        event!(
+                                            Level::ERROR,
+                                            "Outer SAT returned UNSAT! No solution found! :("
+                                        );
+                                        // drop the senders
+                                        req_channels = vec![];
+
+                                        return Ok(DecisionResult::Unsat);
+                                    }
+                                    Some(a) => {
+                                        blacklist.insert(response.idx, a.clone());
+                                        req_channels[response.idx].send(a).unwrap();
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                Err(e) => {
-                    event!(
-                        Level::ERROR,
-                        "Worker {} returned error: {}",
-                        response.idx,
-                        e
-                    );
-                    panic!()
+                    Err(e) => {
+                        event!(
+                            Level::ERROR,
+                            "Worker {} returned error: {}",
+                            response.idx,
+                            e
+                        );
+                        panic!()
+                    }
                 }
             }
-        }
-        unreachable!()
+            unreachable!()
+        })
     }
 }

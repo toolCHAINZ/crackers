@@ -68,4 +68,9 @@ impl<'lib> PcodeTheoryBuilder<'lib>
         self.pointer_invariants = invariants.to_vec();
         self
     }
+
+    pub fn with_max_candidates(mut self, candidates: usize) -> Self{
+        self.candidates_per_slot = candidates;
+        self
+    }
 }

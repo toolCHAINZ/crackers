@@ -5,7 +5,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 use jingle::modeling::State;
 use jingle::varnode::ResolvedVarnode;
 use std::sync::mpsc::{Receiver, Sender};
-use tracing::{event, Level};
+use tracing::{event, instrument, Level};
 use z3::ast::Bool;
 use z3::{Config, Context};
 
@@ -16,8 +16,7 @@ pub struct TheoryWorkerResponse {
     pub theory_result: Result<Option<Vec<ConflictClause>>, CrackersError>,
 }
 
-pub struct TheoryWorker<'ctx>
-{
+pub struct TheoryWorker<'ctx> {
     z3: &'ctx Context,
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
@@ -25,8 +24,7 @@ pub struct TheoryWorker<'ctx>
     theory: PcodeTheory<'ctx>,
 }
 
-impl<'ctx> TheoryWorker<'ctx>
-{
+impl<'ctx> TheoryWorker<'ctx> {
     pub fn new(
         z3: &'ctx Context,
         id: usize,
@@ -43,7 +41,13 @@ impl<'ctx> TheoryWorker<'ctx>
         })
     }
 
+    #[instrument(skip_all)]
     pub fn run(&self) {
+        event!(
+            Level::TRACE,
+            "Worker {} about to wait for messages",
+            self.id
+        );
         for assignment in self.receiver.iter() {
             event!(
                 Level::TRACE,

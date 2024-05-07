@@ -51,10 +51,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                Bool::and(self.z3, &decisions)
+                Bool::and(self.z3, &decisions).not()
             })
             .collect();
-        match self.solver.check_assumptions(&[Bool::or(self.z3, &terms)]) {
+        match self.solver.check_assumptions(&terms) {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
