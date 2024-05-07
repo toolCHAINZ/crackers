@@ -200,9 +200,9 @@ impl<'ctx> PcodeTheory<'ctx>
                     bools.push(comp);
                 }
                 bools.push(gadget.refines(spec)?);
-                let refines = Bool::fresh_const(&self.z3, "combine");
+                let refines = Bool::fresh_const(&self.z3, "c");
                 self.solver
-                    .assert_and_track(&Bool::and(&self.z3, &bools), &refines);
+                    .assert_and_track(&Bool::and(&self.z3, &bools).simplify(), &refines);
                 assertions.push(ConjunctiveConstraint::new(
                     &[Decision { index, choice }],
                     refines,
@@ -223,7 +223,7 @@ impl<'ctx> PcodeTheory<'ctx>
             let gadget = &self.gadget_candidates[index][choice].fresh()?;
             let spec = &self.templates[index];
             let mut bools = vec![];
-            let refines = Bool::fresh_const(&self.z3, "unit");
+            let refines = Bool::fresh_const(&self.z3, "u");
             if index == 0 {
                 for x in &self.preconditions {
                     bools.push(x(&self.z3, gadget.get_original_state())?.simplify());
@@ -239,7 +239,7 @@ impl<'ctx> PcodeTheory<'ctx>
                 bools.push(comp.simplify());
             }
             let condition = Bool::and(&self.z3, &bools);
-            self.solver.assert_and_track(&condition, &refines);
+            self.solver.assert_and_track(&condition.simplify(), &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
@@ -260,9 +260,9 @@ impl<'ctx> PcodeTheory<'ctx>
         for (index, w) in slot_assignments.choices().windows(2).enumerate() {
             let block1 = &self.gadget_candidates[index][w[0]];
             let block2 = &self.gadget_candidates[index + 1][w[1]];
-            let concat_var = Bool::fresh_const(&self.z3, &"concat");
+            let concat_var = Bool::fresh_const(&self.z3, &"m");
             self.solver
-                .assert_and_track(&block1.assert_concat(block2)?, &concat_var);
+                .assert_and_track(&block1.assert_concat(block2)?.simplify(), &concat_var);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision {
                     index,
@@ -271,9 +271,9 @@ impl<'ctx> PcodeTheory<'ctx>
                 concat_var,
                 TheoryStage::Consistency,
             ));
-            let branch_var = Bool::fresh_const(&self.z3, &"branch");
+            let branch_var = Bool::fresh_const(&self.z3, &"b");
             self.solver.assert_and_track(
-                &block1.can_branch_to_address(block2.get_address())?,
+                &block1.can_branch_to_address(block2.get_address())?.simplify(),
                 &branch_var,
             );
             assertions.push(ConjunctiveConstraint::new(

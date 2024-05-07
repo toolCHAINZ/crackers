@@ -48,7 +48,7 @@ impl Default for SynthesisBuilder
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             gadget_library_builder: GadgetLibraryBuilder::default(),
             candidates_per_slot: 50,
-            parallel: 6,
+            parallel: 4,
             instructions: vec![],
             preconditions: vec![],
             postconditions: vec![],

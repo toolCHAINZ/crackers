@@ -101,6 +101,7 @@ impl CrackersConfig {
         if let Some(a) = &self.synthesis {
             b = b.with_selection_strategy(a.strategy);
             b = b.candidates_per_slot(a.max_candidates_per_slot);
+            b = b.parallel(a.parallel);
         }
         if let Some(c) = &self.constraint {
             if let Some(pre) = &c.precondition {

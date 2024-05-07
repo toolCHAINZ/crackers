@@ -6,6 +6,7 @@ use crackers::synthesis::builder::SynthesisSelectionStrategy;
 pub struct SynthesisConfig {
     pub strategy: SynthesisSelectionStrategy,
     pub max_candidates_per_slot: usize,
+    pub parallel: usize
 }
 
 impl Default for SynthesisConfig {
@@ -13,6 +14,7 @@ impl Default for SynthesisConfig {
         SynthesisConfig {
             strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             max_candidates_per_slot: 50,
+            parallel: 4
         }
     }
 }

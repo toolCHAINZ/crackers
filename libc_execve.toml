@@ -4,6 +4,7 @@ ghidra_path = "/Applications/ghidra"
 [synthesis]
 strategy = "optimize"
 max_candidates_per_slot = 200
+parallel = 6
 
 [specification]
 path = "bin/execve_instrs.bin"
