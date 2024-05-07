@@ -2,16 +2,16 @@ use std::fs;
 
 use clap::Parser;
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{SpaceManager, varnode};
+use jingle::sleigh::{varnode, SpaceManager};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::{Config, Context};
 use z3::ast::{Ast, Bool, BV};
+use z3::{Config, Context};
 
 use crackers::error::CrackersError;
 use crackers::synthesis::assignment_model::AssignmentModel;
-use crackers::synthesis::DecisionResult;
+use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 
 use crate::config::CrackersConfig;
 
@@ -19,8 +19,8 @@ mod config;
 mod error;
 
 #[derive(Parser, Debug)]
-struct Arguments{
-    pub cfg_path: String
+struct Arguments {
+    pub cfg_path: String,
 }
 
 fn main() {
@@ -35,10 +35,10 @@ fn main() {
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
     dbg!(&p);
-    let mut p = p.resolve(&z3).unwrap();
+    let mut p: AssignmentSynthesis = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}
-        DecisionResult::AssignmentFound(a) => naive_alg(a),
+        DecisionResult::AssignmentFound(a) => todo!(""),
         DecisionResult::Unsat => {}
     };
 }
@@ -118,7 +118,7 @@ fn naive_alg(result: AssignmentModel) {
     // buffer stuff
     println!("buffer");
     let ptr = 0x7fffffffde00u64;
-    for i in 0..(0x7ffffffff000 - ptr)/4 {
+    for i in 0..(0x7ffffffff000 - ptr) / 4 {
         let addr = ptr.wrapping_add(i as u64 * 4);
         let varnode = varnode!(final_state, "ram"[addr]:4).unwrap();
         let display = varnode.display(final_state).unwrap();

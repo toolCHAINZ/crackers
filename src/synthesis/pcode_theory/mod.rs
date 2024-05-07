@@ -1,24 +1,28 @@
 use std::slice;
+use std::sync::Arc;
 
-use jingle::JingleError;
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
+use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
-use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool};
+use z3::{Config, Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::synthesis::builder::{
-    PointerConstraintGenerator, StateConstraintGenerator,
-};
-use crate::synthesis::Decision;
+use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
+use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
 use crate::synthesis::pcode_theory::theory_constraint::{
-    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
+pub mod builder;
 mod theory_constraint;
+pub mod theory_worker;
 
 #[derive(Debug, Clone)]
 pub enum ConflictClause {
@@ -46,31 +50,53 @@ impl ConflictClause {
     }
 }
 
-pub struct PcodeTheory<'ctx> {
+pub struct PcodeTheory<'ctx>
+{
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     templates: Vec<ModeledInstruction<'ctx>>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-    postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-    pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
+    preconditions: Vec<Arc<StateConstraintGenerator>>,
+    postconditions: Vec<Arc<StateConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx> PcodeTheory<'ctx> {
+impl<'ctx> PcodeTheory<'ctx>
+{
     pub fn new(
         z3: &'ctx Context,
-        templates: &[ModeledInstruction<'ctx>],
-        gadget_candidates: &[Vec<ModeledBlock<'ctx>>],
-        preconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-        postconditions: Vec<Box<StateConstraintGenerator<'ctx>>>,
-        pointer_invariants: Vec<Box<PointerConstraintGenerator<'ctx>>>,
-    ) -> Result<Self, JingleError> {
-        let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
+        templates: &Vec<Instruction>,
+        library: &GadgetLibrary,
+        candidates_per_slot: usize,
+        preconditions: Vec<Arc<StateConstraintGenerator>>,
+        postconditions: Vec<Arc<StateConstraintGenerator>>,
+        pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+    ) -> Result<Self, CrackersError> {
+        let mut modeled_templates = vec![];
+        let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
+        for template in templates.iter() {
+            modeled_templates.push(ModeledInstruction::new(template.clone(), library, &z3)?);
+            let candidates: Vec<ModeledBlock<'ctx>> = library
+                .get_gadgets_for_instruction(&z3, &template)?
+                .take(candidates_per_slot)
+                .map(|g| {
+                    ModeledBlock::read(&z3, library, g.instructions.clone().into_iter()).unwrap()
+                })
+                .collect();
+            event!(
+                Level::DEBUG,
+                "Instruction {} has {} candidates",
+                template.disassembly,
+                candidates.len()
+            );
+            gadget_candidates.push(candidates);
+        }
+        let solver = Solver::new_for_logic(&z3, "QF_ABV").unwrap();
         Ok(Self {
             z3,
             solver,
-            templates: templates.to_vec(),
-            gadget_candidates: gadget_candidates.to_vec(),
+            templates: modeled_templates,
+            gadget_candidates,
             preconditions,
             postconditions,
             pointer_invariants,
@@ -83,7 +109,8 @@ impl<'ctx> PcodeTheory<'ctx> {
         event!(Level::TRACE, "Resetting solver");
         self.solver.reset();
         for instruction in self.templates.windows(2) {
-            self.solver.assert(&instruction[0].assert_concat(&instruction[1])?);
+            self.solver
+                .assert(&instruction[0].assert_concat(&instruction[1])?);
         }
         let mut assertions = Vec::new();
 
@@ -122,9 +149,10 @@ impl<'ctx> PcodeTheory<'ctx> {
             .map(|f| &f[slot_assignments.choice(0)])
             .ok_or(EmptyAssignment)?;
         for x in &self.preconditions {
-            let assertion = x(self.z3, first_gadget.get_original_state())?;
+            let assertion = x(&self.z3, first_gadget.get_original_state())?;
             self.solver.assert(&assertion);
         }
+
         Ok(())
     }
 
@@ -138,9 +166,10 @@ impl<'ctx> PcodeTheory<'ctx> {
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
         for x in &self.postconditions {
-            let assertion = x(self.z3, last_gadget.get_final_state())?;
+            let assertion = x(&self.z3, last_gadget.get_final_state())?;
             self.solver.assert(&assertion);
         }
+
         Ok(())
     }
 
@@ -153,35 +182,37 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, &choice) in slot_assignments.choices().iter().enumerate() {
             let gadget = &self.gadget_candidates[index][choice];
             let spec = &self.templates[index];
+            let mut bools = vec![];
             for x in gadget.get_inputs().union(&gadget.get_outputs()) {
                 for invariant in &self.pointer_invariants {
-                    if let Ok(Some(b)) = invariant(self.z3, x, gadget.get_original_state()) {
-                        let invar_bool = Bool::fresh_const(self.z3, "combined_invar");
-                        self.solver.assert_and_track(&b, &invar_bool);
-                        assertions.push(ConjunctiveConstraint::new(
-                            &[Decision { index, choice }],
-                            invar_bool,
-                            TheoryStage::CombinedSemantics,
-                        ))
+                    if let Ok(Some(b)) = invariant(&self.z3, x, gadget.get_original_state()) {
+                        bools.push(b);
                     }
                 }
             }
-            let refines = Bool::fresh_const(self.z3, "combine");
+            if index == 0 {
+                for x in &self.preconditions {
+                    let assertion = x(&self.z3, gadget.get_original_state())?;
+                    self.solver.assert(&assertion);
+                }
+            }
 
-            self.solver
-                .assert_and_track(&gadget.refines(spec)?, &refines);
-            assertions.push(ConjunctiveConstraint::new(
-                &[Decision { index, choice }],
-                refines,
-                TheoryStage::CombinedSemantics,
-            ));
-            if let Some(comp) = spec.branch_comparison(gadget)? {
-                let branch_behavior = Bool::fresh_const(self.z3, "combined_branch");
+            if index == slot_assignments.choices().len() - 1 {
+                for x in &self.postconditions {
+                    let assertion = x(&self.z3, gadget.get_final_state())?;
+                    self.solver.assert(&assertion);
+                }
+
+                if let Some(comp) = spec.branch_comparison(gadget)? {
+                    bools.push(comp);
+                }
+                bools.push(gadget.refines(spec)?);
+                let refines = Bool::fresh_const(&self.z3, "combine");
                 self.solver
-                    .assert_and_track(&comp.simplify(), &branch_behavior);
+                    .assert_and_track(&Bool::and(&self.z3, &bools), &refines);
                 assertions.push(ConjunctiveConstraint::new(
                     &[Decision { index, choice }],
-                    branch_behavior,
+                    refines,
                     TheoryStage::CombinedSemantics,
                 ));
             }
@@ -199,30 +230,28 @@ impl<'ctx> PcodeTheory<'ctx> {
             let gadget = &self.gadget_candidates[index][choice].fresh()?;
             let spec = &self.templates[index];
             let mut bools = vec![];
-            let refines = Bool::fresh_const(self.z3, "unit");
+            let refines = Bool::fresh_const(&self.z3, "unit");
             if index == 0 {
                 for x in &self.preconditions {
-                     bools.push(x(self.z3, gadget.get_original_state())?.simplify());
+                    bools.push(x(&self.z3, gadget.get_original_state())?.simplify());
                 }
             }
             if index == slot_assignments.choices().len() - 1 {
                 for x in &self.postconditions {
-                    bools.push( x(self.z3, gadget.get_final_state())?.simplify());
+                    bools.push(x(&self.z3, gadget.get_final_state())?.simplify());
                 }
             }
             bools.push(gadget.refines(spec)?.simplify());
             if let Some(comp) = spec.branch_comparison(gadget)? {
                 bools.push(comp.simplify());
             }
-            let condition = Bool::and(self.z3, &bools);
-            self.solver
-                .assert_and_track(&condition, &refines);
+            let condition = Bool::and(&self.z3, &bools);
+            self.solver.assert_and_track(&condition, &refines);
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision { index, choice }],
                 refines,
                 TheoryStage::UnitSemantics,
             ));
-
         }
         // these assertions are used as a pre-filtering step before evaluating a gadget in context
         // so we do not need to keep them around after this check.
@@ -238,39 +267,27 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, w) in slot_assignments.choices().windows(2).enumerate() {
             let block1 = &self.gadget_candidates[index][w[0]];
             let block2 = &self.gadget_candidates[index + 1][w[1]];
-            let concat_var = Bool::fresh_const(self.z3, &"concat");
+            let concat_var = Bool::fresh_const(&self.z3, &"concat");
             self.solver
                 .assert_and_track(&block1.assert_concat(block2)?, &concat_var);
             assertions.push(ConjunctiveConstraint::new(
-                &[
-                    Decision {
-                        index,
-                        choice: w[0],
-                    },
-                    Decision {
-                        index: index + 1,
-                        choice: w[1],
-                    },
-                ],
+                &[Decision {
+                    index,
+                    choice: w[0],
+                }],
                 concat_var,
                 TheoryStage::Consistency,
             ));
-            let branch_var = Bool::fresh_const(self.z3, &"branch");
+            let branch_var = Bool::fresh_const(&self.z3, &"branch");
             self.solver.assert_and_track(
                 &block1.can_branch_to_address(block2.get_address())?,
                 &branch_var,
             );
             assertions.push(ConjunctiveConstraint::new(
-                &[
-                    Decision {
-                        index,
-                        choice: w[0],
-                    },
-                    Decision {
-                        index: index + 1,
-                        choice: w[1],
-                    },
-                ],
+                &[Decision {
+                    index,
+                    choice: w[0],
+                }],
                 branch_var,
                 TheoryStage::Branch,
             ))
@@ -280,23 +297,28 @@ impl<'ctx> PcodeTheory<'ctx> {
 
     fn collect_conflicts(
         &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>, assignments: &SlotAssignments
+        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         let mut constraints = Vec::new();
         match self.solver.check() {
             SatResult::Unsat => {
                 let unsat_core = self.solver.get_unsat_core();
-                for b in unsat_core {
+                for b in &unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
                         constraints.push(m)
                     } else {
-                        event!(Level::WARN, "Unsat Core returned unrecognized variable");
+                        event!(
+                            Level::WARN,
+                            "Unsat Core returned unrecognized variable: {:?}",
+                            &unsat_core
+                        );
                     }
                 }
                 let clauses = gen_conflict_clauses(constraints.as_slice());
-                if clauses.len() == 0{
-                    return Ok(Some(vec![assignments.as_conflict_clause()]))
+                if clauses.len() == 0 {
+                    return Ok(Some(vec![assignments.as_conflict_clause()]));
                 }
                 Ok(Some(clauses))
             }

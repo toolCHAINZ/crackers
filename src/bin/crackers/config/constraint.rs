@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::State;
 use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::JingleError::UnmodeledSpace;
 use serde::Deserialize;
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
@@ -32,7 +32,7 @@ pub struct MemoryEqualityConstraint {
     pub value: u8,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub struct PointerRangeConstraint {
     pub min: u64,
     pub max: u64,
@@ -40,7 +40,11 @@ pub struct PointerRangeConstraint {
 
 pub fn gen_memory_constraint<'ctx>(
     m: MemoryEqualityConstraint,
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+       + Send
+       + Sync
+       + Clone
+       + 'static {
     return move |z3, state| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(z3, m.value as u64, data.get_size()));
@@ -51,7 +55,8 @@ pub fn gen_memory_constraint<'ctx>(
 pub fn gen_register_constraint<'ctx>(
     vn: VarNode,
     value: u64,
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'static + Send + Sync + Clone
+{
     return move |z3, state| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));
@@ -62,21 +67,32 @@ pub fn gen_register_constraint<'ctx>(
 pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
-    m: Option<PointerRangeConstraint>
-) -> impl Fn(&'ctx Context, &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> + 'ctx {
-
+    m: Option<PointerRangeConstraint>,
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
+{
     return move |z3, state| {
-        let val = value.as_bytes().iter().map(|b|
-            BV::from_u64(z3, *b as u64, 8)
-        ).reduce(|a, b| a.concat(&b)).unwrap();
+        let val = value
+            .as_bytes()
+            .iter()
+            .map(|b| BV::from_u64(z3, *b as u64, 8))
+            .reduce(|a, b| a.concat(&b))
+            .unwrap();
         let pointer = state.read_varnode(&vn)?;
-        let data = state.read_varnode_indirect(&IndirectVarNode { pointer_space_index: state.get_code_space_idx(), access_size_bytes: value.len(), pointer_location: vn.clone() })?;
-        let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode{pointer_space_idx: state.get_code_space_idx(), access_size_bytes: value.len(), pointer});
+        let data = state.read_varnode_indirect(&IndirectVarNode {
+            pointer_space_index: state.get_code_space_idx(),
+            access_size_bytes: value.len(),
+            pointer_location: vn.clone(),
+        })?;
+        let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
+            pointer_space_idx: state.get_code_space_idx(),
+            access_size_bytes: value.len(),
+            pointer,
+        });
         let mut constraint = data._eq(&val);
-        if let Some(c) = &m{
+        if let Some(c) = &m {
             let callback = gen_pointer_range_invariant(c.clone());
             let cc = callback(z3, &resolved, &state)?;
-            if let Some(b) = cc{
+            if let Some(b) = cc {
                 constraint = Bool::and(z3, &[constraint, b])
             }
         }
@@ -86,12 +102,13 @@ pub fn gen_register_pointer_constraint<'ctx>(
 
 pub fn gen_pointer_range_invariant<'ctx>(
     m: PointerRangeConstraint,
-) -> impl Fn(
-    &'ctx Context,
-    &ResolvedVarnode<'ctx>,
-    &State<'ctx>,
-) -> Result<Option<Bool<'ctx>>, CrackersError>
-+ 'ctx {
+) -> impl for<'a, 'b> Fn(
+    &'a Context,
+    &'b ResolvedVarnode<'a>,
+    &'b State<'a>,
+) -> Result<Option<Bool<'a>>, CrackersError>
+       + 'ctx
+       + Clone {
     return move |z3, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {

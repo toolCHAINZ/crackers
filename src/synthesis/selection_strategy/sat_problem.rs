@@ -14,7 +14,15 @@ pub struct SatProblem<'ctx> {
 }
 
 impl<'ctx> SatProblem<'ctx> {
-    pub fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
+
+    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
+        &self.variables[var.index][var.choice]
+    }
+}
+
+impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
+
+    fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
@@ -33,14 +41,20 @@ impl<'ctx> SatProblem<'ctx> {
         }
         prob
     }
-    fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
-        format!("i{}_g{}", target_index, gadget_index)
-    }
-}
 
-impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
-    fn get_assignments(&self) -> Option<SlotAssignments> {
-        match self.solver.check() {
+    fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments> {
+        let terms: Vec<Bool> = blacklist
+            .iter()
+            .map(|s| {
+                let decisions: Vec<&Bool<'ctx>> = s
+                    .to_decisions()
+                    .iter()
+                    .map(|d| self.get_decision_variable(d))
+                    .collect();
+                Bool::and(self.z3, &decisions).not()
+            })
+            .collect();
+        match self.solver.check_assumptions(&terms) {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
@@ -52,9 +66,6 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         }
     }
 
-    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
-        &self.variables[var.index][var.choice]
-    }
 
     fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
         for clause in clauses {

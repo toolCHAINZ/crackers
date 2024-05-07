@@ -1,16 +1,16 @@
 use std::collections::HashSet;
 
-use jingle::JingleError;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::OpCode;
+use jingle::JingleError;
 
 use crate::gadget::library::GadgetLibrary;
 
 pub struct GadgetLibraryBuilder {
     pub(crate) max_gadget_length: usize,
-    pub(crate)operation_blacklist: HashSet<OpCode>,
-    pub(crate)random_sample_size: Option<usize>,
-    pub(crate) random_sample_seed: Option<u64>
+    pub(crate) operation_blacklist: HashSet<OpCode>,
+    pub(crate) random_sample_size: Option<usize>,
+    pub(crate) random_sample_seed: Option<u64>,
 }
 
 impl GadgetLibraryBuilder {
@@ -37,8 +37,13 @@ impl Default for GadgetLibraryBuilder {
     fn default() -> Self {
         Self {
             max_gadget_length: 4,
-            operation_blacklist: HashSet::from([OpCode::CPUI_BRANCH, OpCode::CPUI_CALL, OpCode::CPUI_CBRANCH]),
-            random_sample_size: None, random_sample_seed: None
+            operation_blacklist: HashSet::from([
+                OpCode::CPUI_BRANCH,
+                OpCode::CPUI_CALL,
+                OpCode::CPUI_CBRANCH,
+            ]),
+            random_sample_size: None,
+            random_sample_seed: None,
         }
     }
 }

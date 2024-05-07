@@ -3,22 +3,22 @@ use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::JingleError;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::JingleError;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
-use crate::gadget::Gadget;
-use crate::gadget::iterator::ModeledGadgetIterator;
+use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -35,17 +35,17 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_modeled_gadgets_for_instruction<'a, 'ctx>(
+    pub fn get_gadgets_for_instruction<'a, 'ctx>(
         &'a self,
         z3: &'ctx Context,
         i: &Instruction,
-    ) -> ModeledGadgetIterator<'a, 'ctx> {
-        ModeledGadgetIterator::new(z3, self, i.clone())
+    ) -> Result<GadgetIterator<'a, 'ctx>, CrackersError> {
+        GadgetIterator::new(z3, self, i.clone())
     }
 
     pub(super) fn build_from_image(
         sleigh: &SleighContext,
-        builder: &GadgetLibraryBuilder
+        builder: &GadgetLibraryBuilder,
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
@@ -60,7 +60,8 @@ impl GadgetLibrary {
             let mut curr = start;
 
             while curr < end {
-                let instrs: Vec<Instruction> = sleigh.read(curr, builder.max_gadget_length).collect();
+                let instrs: Vec<Instruction> =
+                    sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     for x in instrs.iter().skip(1) {
                         if let Some(v) = lib.ancestor_graph.get_mut(&x.address) {
@@ -80,12 +81,16 @@ impl GadgetLibrary {
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
-        if let Some(random_sample_size) = builder.random_sample_size{
+        if let Some(random_sample_size) = builder.random_sample_size {
             let mut rng = match builder.random_sample_seed {
                 None => StdRng::from_entropy(),
-                Some(a) => StdRng::seed_from_u64(a)
+                Some(a) => StdRng::seed_from_u64(a),
             };
-            let rand_gadgets: Vec<Gadget> = lib.gadgets.choose_multiple(&mut rng, random_sample_size).map(|g|g.clone()).collect();
+            let rand_gadgets: Vec<Gadget> = lib
+                .gadgets
+                .choose_multiple(&mut rng, random_sample_size)
+                .map(|g| g.clone())
+                .collect();
             event!(Level::INFO, "Randomly selected {}", rand_gadgets.len());
             lib.gadgets = rand_gadgets;
         }
@@ -133,8 +138,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::GadgetLibrary;

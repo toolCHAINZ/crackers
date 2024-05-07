@@ -1,21 +1,28 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, State};
 use jingle::sleigh::Instruction;
+use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
-use z3::Context;
+use z3::ast::Bool;
+use z3::{Config, Context};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptySpecification, ModelGenerationError};
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
+use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
+use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::SelectionStrategy;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -24,7 +31,7 @@ mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord)]
 pub struct Decision {
     pub index: usize,
     pub choice: usize,
@@ -37,16 +44,16 @@ impl PartialOrd for Decision {
 }
 
 #[derive(Debug)]
-pub enum DecisionResult<'ctx> {
+pub enum DecisionResult {
     ConflictsFound(SlotAssignments, Vec<ConflictClause>),
-    AssignmentFound(AssignmentModel<'ctx>),
+    AssignmentFound(SlotAssignments),
     Unsat,
 }
 
 pub struct AssignmentSynthesis<'ctx> {
-    gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
-    sat_problem: Box<dyn SelectionStrategy<'ctx> + 'ctx>,
-    theory_problem: PcodeTheory<'ctx>,
+    outer_problem: OuterProblem<'ctx>,
+    library: GadgetLibrary,
+    builder: SynthesisBuilder,
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
@@ -54,20 +61,17 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn new(
         z3: &'ctx Context,
         library: GadgetLibrary,
-        builder: SynthesisBuilder<'ctx>,
+        builder: SynthesisBuilder,
     ) -> Result<Self, CrackersError> {
-        let instrs: Vec<Instruction> = builder.instructions;
+        let instrs = &builder.instructions;
         if instrs.len() == 0 {
             return Err(EmptySpecification);
         }
 
-        let mut modeled_templates = vec![];
-        let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
+        let mut gadget_candidates: Vec<Vec<&Gadget>> = vec![];
         for template in instrs.iter() {
-            modeled_templates
-                .push(ModeledInstruction::new(template.clone(), &library, z3).unwrap());
-            let candidates: Vec<ModeledBlock<'ctx>> = library
-                .get_modeled_gadgets_for_instruction(z3, &template)
+            let candidates: Vec<&Gadget> = library
+                .get_gadgets_for_instruction(z3, &template)?
                 .take(builder.candidates_per_slot)
                 .collect();
             event!(
@@ -78,110 +82,121 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let outer: Box<dyn SelectionStrategy<'ctx>>;
-        match builder.selection_strategy {
+        let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
-                outer = Box::new(SatProblem::initialize(z3, &gadget_candidates));
+                SatProb(SatProblem::initialize(z3, &gadget_candidates))
             }
             SynthesisSelectionStrategy::OptimizeStrategy => {
-                outer = Box::new(OptimizationProblem::initialize(z3, &gadget_candidates));
+                OptimizeProb(OptimizationProblem::initialize(z3, &gadget_candidates))
             }
         };
-        let theory_problem = PcodeTheory::new(
-            z3,
-            modeled_templates.as_slice(),
-            &gadget_candidates,
-            builder.preconditions,
-            builder.postconditions,
-            builder.pointer_invariants,
-        )?;
+
         Ok(AssignmentSynthesis {
-            gadget_candidates,
-            sat_problem: outer,
-            theory_problem,
+            outer_problem,
+            library,
+            builder,
         })
-    }
-    fn single_decision_iteration(&mut self) -> Result<DecisionResult<'ctx>, CrackersError> {
-        event!(Level::TRACE, "checking SAT problem");
-        let assignment = self.sat_problem.get_assignments();
-        if let Some(a) = assignment {
-            event!(Level::TRACE, "checking theory problem");
-
-            let conflicts = self.theory_problem.check_assignment(&a);
-            match conflicts {
-                Ok(conflicts) => {
-                    if let Some(c) = conflicts {
-                        event!(Level::TRACE, "theory returned {} conjunctions", c.len());
-
-                        self.sat_problem.add_theory_clauses(&c);
-                        Ok(DecisionResult::ConflictsFound(a, c))
-                    } else {
-                        event!(Level::DEBUG, "theory returned SAT");
-                        let model = self
-                            .theory_problem
-                            .get_model()
-                            .ok_or(ModelGenerationError)?;
-                        let gadgets = self.gadgets_for_assignment(&a);
-                        Ok(DecisionResult::AssignmentFound(AssignmentModel::new(
-                            a, model, gadgets,
-                        )))
-                    }
-                }
-                Err(err) => match err {
-                    CrackersError::TheoryTimeout => {
-                        event!(Level::WARN, "{:?} timed out", &a);
-                        let c = a.as_conflict_clause();
-                        self.sat_problem
-                            .add_theory_clauses(&[a.as_conflict_clause()]);
-                        let mut f =
-                            fs::File::create(format!("dumps/gadgets_{:?}.txt", a.choices()))
-                                .unwrap();
-                        for b in self.gadgets_for_assignment(&a) {
-                            f.write(format!("{}", b).as_ref())
-                                .expect("TODO: panic message");
-                        }
-                        Ok(DecisionResult::ConflictsFound(a, vec![c]))
-                    }
-                    _ => return Err(err),
-                },
-            }
-        } else {
-            event!(Level::TRACE, "SAT problem returned UNSAT");
-
-            Ok(DecisionResult::Unsat)
-        }
-    }
-
-    fn gadgets_for_assignment(&self, a: &SlotAssignments) -> Vec<ModeledBlock<'ctx>> {
-        let mut gadgets = Vec::with_capacity(a.choices().len());
-        for (index, &choice) in a.choices().iter().enumerate() {
-            gadgets.push(self.gadget_candidates[index][choice].clone());
-        }
-        gadgets
     }
 
     #[instrument(skip_all)]
     pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
-        loop {
-            let res = self.single_decision_iteration()?;
-            match res {
-                DecisionResult::ConflictsFound(a, c) => {
-                    event!(
-                        Level::INFO,
-                        "{} has conflicts",
-                        a.display_conflict(c.as_slice())
-                    );
-                    continue;
-                }
-                DecisionResult::AssignmentFound(a) => {
-                    event!(Level::INFO, "{:?} is feasible", a.get_assignments());
-                    return Ok(DecisionResult::AssignmentFound(a));
-                }
-                DecisionResult::Unsat => {
-                    event!(Level::WARN, "No assignment exists");
-                    return Ok(DecisionResult::Unsat);
+        let mut req_channels = vec![];
+        let theory_builder = PcodeTheoryBuilder::new(&self.library)
+            .with_pointer_invariants(&self.builder.pointer_invariants)
+            .with_preconditions(&self.builder.preconditions)
+            .with_postconditions(&self.builder.postconditions)
+            .with_max_candidates(self.builder.candidates_per_slot)
+            .with_templates(self.builder.instructions.clone().into_iter());
+
+        let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
+        std::thread::scope(|s| {
+            let mut workers = vec![];
+            for idx in 0..self.builder.parallel {
+                let t = theory_builder.clone();
+                let r = resp_sender.clone();
+                let (req_sender, req_receiver) = std::sync::mpsc::channel();
+                req_channels.push(req_sender);
+                workers.push(s.spawn(move || -> Result<(), CrackersError> {
+                    let z3 = Context::new(&Config::new());
+                    let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
+                    event!(Level::TRACE, "Created worker {}", idx);
+                    worker.run();
+                    Ok(())
+                }));
+            }
+
+            let mut blacklist = HashMap::new();
+            for (i, x) in req_channels.iter().enumerate() {
+                let active: Vec<&SlotAssignments> = blacklist.values().collect();
+                event!(
+                    Level::TRACE,
+                    "Asking outer procedure for initial assignments"
+                );
+                let assignment = self.outer_problem.get_assignments(&active).unwrap();
+                event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
+                blacklist.insert(i, assignment.clone());
+                x.send(assignment).unwrap();
+            }
+            event!(Level::TRACE, "Done sending initial jobs");
+
+            for response in resp_receiver {
+                event!(
+                    Level::TRACE,
+                    "Received response from worker {}",
+                    response.idx
+                );
+
+                match response.theory_result {
+                    Ok(r) => {
+                        match r {
+                            None => {
+                                event!(
+                                    Level::INFO,
+                                    "Theory returned SAT for {:?}!",
+                                    response.assignment
+                                );
+                                for x in req_channels {
+                                    // drop the senders
+                                    req_channels = vec![]
+                                }
+                                return Ok(DecisionResult::AssignmentFound(response.assignment));
+                            }
+                            Some(c) => {
+                                event!(Level::INFO, "Worker {} found conflicts: {}", response.idx, response.assignment.display_conflict(&c));
+                                self.outer_problem.add_theory_clauses(&c);
+                                let active: Vec<&SlotAssignments> = blacklist.values().collect();
+                                let new_assignment = self.outer_problem.get_assignments(&active);
+                                match new_assignment {
+                                    None => {
+                                        event!(
+                                            Level::ERROR,
+                                            "Outer SAT returned UNSAT! No solution found! :("
+                                        );
+                                        // drop the senders
+                                        req_channels = vec![];
+
+                                        return Ok(DecisionResult::Unsat);
+                                    }
+                                    Some(a) => {
+                                        blacklist.insert(response.idx, a.clone());
+                                        req_channels[response.idx].send(a).unwrap();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        event!(
+                            Level::ERROR,
+                            "Worker {} returned error: {}",
+                            response.idx,
+                            e
+                        );
+                        panic!()
+                    }
                 }
             }
-        }
+            unreachable!()
+        })
     }
 }

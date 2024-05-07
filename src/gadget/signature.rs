@@ -64,7 +64,7 @@ impl PartialOrd<OutputSignature> for OutputSignature {
             (true, true) => Some(Ordering::Equal),
             (true, false) => Some(Ordering::Greater),
             (false, true) => Some(Ordering::Less),
-            (false, false) => None
+            (false, false) => None,
         }
     }
 }
@@ -120,7 +120,6 @@ mod tests {
         assert!(o1 >= o2);
         assert!(o1 <= o2);
         assert_eq!(o1, o2);
-
     }
 
     #[test]

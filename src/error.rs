@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::sync::mpsc::SendError;
 
 use jingle::JingleError;
 use thiserror::Error;
@@ -22,4 +23,3 @@ pub enum CrackersError {
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
 }
-
