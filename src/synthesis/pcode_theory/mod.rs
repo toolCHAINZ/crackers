@@ -285,7 +285,8 @@ impl<'ctx> PcodeTheory<'ctx>
                 TheoryStage::Branch,
             ))
         }
-        self.collect_conflicts(assertions, slot_assignments)
+        Ok(None)
+        //self.collect_conflicts(assertions, slot_assignments)
     }
 
     fn collect_conflicts(
