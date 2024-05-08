@@ -24,7 +24,7 @@ mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Decision {
     pub index: usize,
     pub choice: usize,
@@ -57,14 +57,14 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         builder: SynthesisBuilder,
     ) -> Result<Self, CrackersError> {
         let instrs = &builder.instructions;
-        if instrs.len() == 0 {
+        if instrs.is_empty() {
             return Err(EmptySpecification);
         }
 
         let mut gadget_candidates: Vec<Vec<&Gadget>> = vec![];
         for template in instrs.iter() {
             let candidates: Vec<&Gadget> = library
-                .get_gadgets_for_instruction(z3, &template)?
+                .get_gadgets_for_instruction(z3, template)?
                 .take(builder.candidates_per_slot)
                 .collect();
             event!(

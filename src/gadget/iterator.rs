@@ -1,9 +1,9 @@
-use crate::error::CrackersError;
-use crate::gadget::Gadget;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
 use z3::{Context, SatResult, Solver};
 
+use crate::error::CrackersError;
+use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
 use crate::gadget::signature::OutputSignature;
 
@@ -48,9 +48,8 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
                     ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter())
                         .ok()?;
                 let isolated_check = h.refines(&self.instr).ok()?;
-                match self.solver.check_assumptions(&[isolated_check]) {
-                    SatResult::Sat => return Some(x),
-                    _ => {}
+                if self.solver.check_assumptions(&[isolated_check]) == SatResult::Sat {
+                    return Some(x);
                 }
             }
         }

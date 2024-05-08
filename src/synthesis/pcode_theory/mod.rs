@@ -75,7 +75,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 .get_gadgets_for_instruction(z3, template)?
                 .take(candidates_per_slot)
                 .map(|g| {
-                    ModeledBlock::read(&z3, library, g.instructions.clone().into_iter()).unwrap()
+                    ModeledBlock::read(z3, library, g.instructions.clone().into_iter()).unwrap()
                 })
                 .collect();
             event!(
@@ -86,7 +86,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             );
             gadget_candidates.push(candidates);
         }
-        let solver = Solver::new_for_logic(&z3, "QF_ABV").unwrap();
+        let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         Ok(Self {
             z3,
             solver,
@@ -137,7 +137,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             .map(|f| &f[slot_assignments.choice(0)])
             .ok_or(EmptyAssignment)?;
         for x in &self.preconditions {
-            let assertion = x(&self.z3, first_gadget.get_original_state())?;
+            let assertion = x(self.z3, first_gadget.get_original_state())?;
             self.solver.assert(&assertion);
         }
 
@@ -154,7 +154,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
         for x in &self.postconditions {
-            let assertion = x(&self.z3, last_gadget.get_final_state())?;
+            let assertion = x(self.z3, last_gadget.get_final_state())?;
             self.solver.assert(&assertion);
         }
 
@@ -173,21 +173,21 @@ impl<'ctx> PcodeTheory<'ctx> {
             let mut bools = vec![];
             for x in gadget.get_inputs().union(&gadget.get_outputs()) {
                 for invariant in &self.pointer_invariants {
-                    if let Ok(Some(b)) = invariant(&self.z3, x, gadget.get_original_state()) {
+                    if let Ok(Some(b)) = invariant(self.z3, x, gadget.get_original_state()) {
                         bools.push(b);
                     }
                 }
             }
             if index == 0 {
                 for x in &self.preconditions {
-                    let assertion = x(&self.z3, gadget.get_original_state())?;
+                    let assertion = x(self.z3, gadget.get_original_state())?;
                     self.solver.assert(&assertion);
                 }
             }
 
             if index == slot_assignments.choices().len() - 1 {
                 for x in &self.postconditions {
-                    let assertion = x(&self.z3, gadget.get_final_state())?;
+                    let assertion = x(self.z3, gadget.get_final_state())?;
                     self.solver.assert(&assertion);
                 }
 
@@ -195,9 +195,9 @@ impl<'ctx> PcodeTheory<'ctx> {
                     bools.push(comp);
                 }
                 bools.push(gadget.refines(spec)?);
-                let refines = Bool::fresh_const(&self.z3, "c");
+                let refines = Bool::fresh_const(self.z3, "c");
                 self.solver
-                    .assert_and_track(&Bool::and(&self.z3, &bools).simplify(), &refines);
+                    .assert_and_track(&Bool::and(self.z3, &bools).simplify(), &refines);
                 assertions.push(ConjunctiveConstraint::new(
                     &[Decision { index, choice }],
                     refines,
@@ -217,7 +217,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         for (index, w) in slot_assignments.choices().windows(2).enumerate() {
             let block1 = &self.gadget_candidates[index][w[0]];
             let block2 = &self.gadget_candidates[index + 1][w[1]];
-            let concat_var = Bool::fresh_const(&self.z3, &"m");
+            let concat_var = Bool::fresh_const(self.z3, "m");
             self.solver
                 .assert_and_track(&block1.assert_concat(block2)?.simplify(), &concat_var);
             assertions.push(ConjunctiveConstraint::new(
@@ -228,7 +228,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                 concat_var,
                 TheoryStage::Consistency,
             ));
-            let branch_var = Bool::fresh_const(&self.z3, &"b");
+            let branch_var = Bool::fresh_const(self.z3, "b");
             self.solver.assert_and_track(
                 &block1
                     .can_branch_to_address(block2.get_address())?
@@ -250,7 +250,7 @@ impl<'ctx> PcodeTheory<'ctx> {
 
     fn collect_conflicts(
         &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
+        assertions: &mut [ConjunctiveConstraint<'ctx>],
         assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         let mut constraints = Vec::new();
@@ -258,7 +258,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             SatResult::Unsat => {
                 let unsat_core = self.solver.get_unsat_core();
                 for b in &unsat_core {
-                    if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(&b)) {
+                    if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(b)) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
                         constraints.push(m)
                     } else {

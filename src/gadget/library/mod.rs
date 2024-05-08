@@ -85,13 +85,12 @@ impl GadgetLibrary {
                 None => StdRng::from_entropy(),
                 Some(a) => StdRng::seed_from_u64(a),
             };
-            let rand_gadgets: Vec<Gadget> = lib
+            let rand_gadgets = lib
                 .gadgets
                 .choose_multiple(&mut rng, random_sample_size)
-                .map(|g| g.clone())
-                .collect();
+                .cloned();
             event!(Level::INFO, "Randomly selected {}", rand_gadgets.len());
-            lib.gadgets = rand_gadgets;
+            lib.gadgets = rand_gadgets.collect();
         }
         Ok(lib)
     }
