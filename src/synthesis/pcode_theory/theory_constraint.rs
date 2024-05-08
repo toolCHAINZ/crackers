@@ -31,7 +31,7 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
         match self.constraint_type {
-            TheoryStage::Branch => ConflictClause::Unit(self.decisions[0].clone()),
+            TheoryStage::Branch => ConflictClause::Unit(self.decisions[0]),
             _ => ConflictClause::Conjunction(self.decisions.clone()),
         }
     }
@@ -53,12 +53,12 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
         }
     }
 
-    if combined_semantics.len() > 0 {
+    if !combined_semantics.is_empty() {
         let clause = ConflictClause::combine(combined_semantics.as_slice());
         result.push(clause);
     }
 
-    if branch.len() > 0 {
+    if !branch.is_empty() {
         let clause = ConflictClause::combine(branch.as_slice());
         result.push(clause);
     }

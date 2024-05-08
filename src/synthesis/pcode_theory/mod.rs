@@ -33,7 +33,7 @@ impl ConflictClause {
         for x in clauses {
             match x {
                 ConflictClause::Conjunction(v) => result.extend(v.clone()),
-                ConflictClause::Unit(d) => result.push(d.clone()),
+                ConflictClause::Unit(d) => result.push(*d),
             }
         }
         ConflictClause::Conjunction(result)
@@ -60,7 +60,7 @@ pub struct PcodeTheory<'ctx> {
 impl<'ctx> PcodeTheory<'ctx> {
     pub fn new(
         z3: &'ctx Context,
-        templates: &Vec<Instruction>,
+        templates: &[Instruction],
         library: &GadgetLibrary,
         candidates_per_slot: usize,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -70,9 +70,9 @@ impl<'ctx> PcodeTheory<'ctx> {
         let mut modeled_templates = vec![];
         let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
         for template in templates.iter() {
-            modeled_templates.push(ModeledInstruction::new(template.clone(), library, &z3)?);
+            modeled_templates.push(ModeledInstruction::new(template.clone(), library, z3)?);
             let candidates: Vec<ModeledBlock<'ctx>> = library
-                .get_gadgets_for_instruction(&z3, &template)?
+                .get_gadgets_for_instruction(z3, template)?
                 .take(candidates_per_slot)
                 .map(|g| {
                     ModeledBlock::read(&z3, library, g.instructions.clone().into_iter()).unwrap()

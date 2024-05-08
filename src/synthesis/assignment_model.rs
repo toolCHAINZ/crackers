@@ -44,17 +44,15 @@ impl<'ctx> AssignmentModel<'ctx> {
     }
 
     pub fn read_original(&'ctx self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
-        self.initial_state().map(|f| f.read(vn).ok()).flatten()
+        self.initial_state().and_then(|f| f.read(vn).ok())
     }
 
     pub fn read_output(&'ctx self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
-        self.final_state().map(|f| f.read(vn).ok()).flatten()
+        self.final_state().and_then(|f| f.read(vn).ok())
     }
 
     pub fn read_resolved(&'ctx self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
-        self.final_state()
-            .map(|f| f.read_resolved(&vn).ok())
-            .flatten()
+        self.final_state().and_then(|f| f.read_resolved(vn).ok())
     }
 }
 

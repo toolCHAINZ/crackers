@@ -107,7 +107,7 @@ impl GadgetLibrary {
 
     #[instrument(skip_all, fields(%path))]
     pub fn write_to_file<T: AsRef<Path> + Display>(&self, path: &T) -> Result<(), CrackersError> {
-        if let Ok(r) = File::options().create(true).write(true).open(path) {
+        if let Ok(r) = File::options().create(true).truncate(true).write(true).open(path) {
             event!(Level::INFO, "Writing gadget library...");
 
             return self
