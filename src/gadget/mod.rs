@@ -1,7 +1,7 @@
 use std::collections::HashSet;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
-use jingle::sleigh::{Instruction, OpCode, SpaceManager};
+use jingle::sleigh::{Instruction, OpCode};
 use serde::{Deserialize, Serialize};
 
 mod error;

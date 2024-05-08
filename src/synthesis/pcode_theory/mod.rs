@@ -1,24 +1,21 @@
 use std::slice;
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
-use jingle::varnode::ResolvedVarnode;
-use jingle::JingleError;
 use tracing::{event, instrument, Level};
+use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool};
-use z3::{Config, Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
 use crate::gadget::library::GadgetLibrary;
-use crate::gadget::Gadget;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 pub mod builder;
 mod theory_constraint;
@@ -273,7 +270,7 @@ impl<'ctx> PcodeTheory<'ctx> {
                     }
                 }
                 let clauses = gen_conflict_clauses(constraints.as_slice());
-                if clauses.len() == 0 {
+                if clauses.is_empty() {
                     return Ok(Some(vec![assignments.as_conflict_clause()]));
                 }
                 Ok(Some(clauses))
@@ -282,6 +279,7 @@ impl<'ctx> PcodeTheory<'ctx> {
             SatResult::Sat => Ok(None),
         }
     }
+    #[allow(unused)]
     pub fn get_model(&self) -> Option<Model<'ctx>> {
         self.solver.get_model()
     }

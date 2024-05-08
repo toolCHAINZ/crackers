@@ -1,6 +1,3 @@
-use std::fmt::Display;
-use std::sync::mpsc::SendError;
-
 use jingle::JingleError;
 use thiserror::Error;
 

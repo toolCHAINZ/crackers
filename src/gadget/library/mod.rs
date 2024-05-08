@@ -3,22 +3,21 @@ use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::context::SleighContext;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
+use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::gadget::signature::OutputSignature;
-use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -138,8 +137,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::GadgetLibrary;

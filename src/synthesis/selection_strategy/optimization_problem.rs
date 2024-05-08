@@ -1,10 +1,10 @@
-use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
+use z3::ast::{Ast, Bool};
 
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -20,7 +20,7 @@ impl<'ctx> OptimizationProblem<'ctx> {
 }
 
 impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
-    fn initialize<T: InstrLen>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> Self {
+    fn initialize<T: InstrLen>(z3: &'ctx Context, gadgets: &[Vec<T>]) -> Self {
         let mut prob = Self {
             variables: Default::default(),
             z3,

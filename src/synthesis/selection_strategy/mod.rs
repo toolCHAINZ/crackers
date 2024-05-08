@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use z3::Context;
 
@@ -41,7 +39,7 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
 }
 
 pub trait SelectionStrategy<'ctx> {
-    fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &Vec<Vec<T>>) -> Self;
+    fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
 
     fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments>;
 

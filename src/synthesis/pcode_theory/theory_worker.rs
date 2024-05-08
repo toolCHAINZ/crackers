@@ -4,11 +4,10 @@ use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
+use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
-pub type TheoryWorkerRequest = SlotAssignments;
 pub struct TheoryWorkerResponse {
     pub idx: usize,
     pub assignment: SlotAssignments,

@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::ConflictClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
@@ -28,9 +28,6 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
         &self.boolean
     }
 
-    pub fn get_type(&self) -> TheoryStage {
-        self.constraint_type
-    }
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
         match self.constraint_type {
