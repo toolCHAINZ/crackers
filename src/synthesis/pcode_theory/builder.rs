@@ -9,8 +9,7 @@ use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGener
 use crate::synthesis::pcode_theory::PcodeTheory;
 
 #[derive(Clone)]
-pub struct PcodeTheoryBuilder<'lib>
-{
+pub struct PcodeTheoryBuilder<'lib> {
     templates: Vec<Instruction>,
     library: &'lib GadgetLibrary,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -19,8 +18,7 @@ pub struct PcodeTheoryBuilder<'lib>
     candidates_per_slot: usize,
 }
 
-impl<'lib> PcodeTheoryBuilder<'lib>
-{
+impl<'lib> PcodeTheoryBuilder<'lib> {
     pub fn new(library: &'lib GadgetLibrary) -> PcodeTheoryBuilder<'lib> {
         Self {
             templates: Default::default(),
@@ -59,12 +57,15 @@ impl<'lib> PcodeTheoryBuilder<'lib>
         self
     }
 
-    pub fn with_pointer_invariants(mut self, invariants: &[Arc<PointerConstraintGenerator>]) -> Self {
+    pub fn with_pointer_invariants(
+        mut self,
+        invariants: &[Arc<PointerConstraintGenerator>],
+    ) -> Self {
         self.pointer_invariants = invariants.to_vec();
         self
     }
 
-    pub fn with_max_candidates(mut self, candidates: usize) -> Self{
+    pub fn with_max_candidates(mut self, candidates: usize) -> Self {
         self.candidates_per_slot = candidates;
         self
     }

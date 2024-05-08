@@ -55,8 +55,11 @@ pub fn gen_memory_constraint<'ctx>(
 pub fn gen_register_constraint<'ctx>(
     vn: VarNode,
     value: u64,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'static + Send + Sync + Clone
-{
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+       + 'static
+       + Send
+       + Sync
+       + Clone {
     return move |z3, state| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));

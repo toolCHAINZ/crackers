@@ -1,10 +1,10 @@
-use z3::{Context, Optimize, SatResult};
 use z3::ast::{Ast, Bool};
+use z3::{Context, Optimize, SatResult};
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -14,7 +14,6 @@ pub struct OptimizationProblem<'ctx> {
 }
 
 impl<'ctx> OptimizationProblem<'ctx> {
-
     fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
         &self.variables[var.index][var.choice]
     }

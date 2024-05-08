@@ -1,7 +1,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
+use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use jingle::varnode::ResolvedVarnode;
 use object::File;
@@ -12,12 +12,12 @@ use z3::Context;
 
 use crackers::error::CrackersError;
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
-use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
+use crackers::synthesis::AssignmentSynthesis;
 
 use crate::config::constraint::{
-    Constraint, gen_memory_constraint, gen_pointer_range_invariant,
-    gen_register_constraint, gen_register_pointer_constraint,
+    gen_memory_constraint, gen_pointer_range_invariant, gen_register_constraint,
+    gen_register_pointer_constraint, Constraint,
 };
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
@@ -110,7 +110,10 @@ impl CrackersConfig {
                 if let Some(reg) = &pre.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_precondition(Arc::new(gen_register_constraint(vn, *value as u64)));
+                            b = b.with_precondition(Arc::new(gen_register_constraint(
+                                vn,
+                                *value as u64,
+                            )));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -136,7 +139,10 @@ impl CrackersConfig {
                 if let Some(reg) = &post.register {
                     for (name, value) in reg {
                         if let Some(vn) = library_sleigh.get_register(&name) {
-                            b = b.with_postcondition(Arc::new(gen_register_constraint(vn, *value as u64)));
+                            b = b.with_postcondition(Arc::new(gen_register_constraint(
+                                vn,
+                                *value as u64,
+                            )));
                         } else {
                             event!(Level::WARN, "Unrecognized register name: {}", name);
                         }
@@ -155,7 +161,8 @@ impl CrackersConfig {
                 }
             }
             if let Some(pointer) = &c.pointer {
-                b = b.with_pointer_invariant(Arc::new(gen_pointer_range_invariant(pointer.clone())));
+                b = b
+                    .with_pointer_invariant(Arc::new(gen_pointer_range_invariant(pointer.clone())));
             }
         }
         let thing = b

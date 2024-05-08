@@ -2,16 +2,16 @@ use std::fs;
 
 use clap::Parser;
 use jingle::modeling::ModelingContext;
-use jingle::sleigh::{SpaceManager, varnode};
+use jingle::sleigh::{varnode, SpaceManager};
 use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::{Config, Context};
 use z3::ast::Ast;
+use z3::{Config, Context};
 
 use crackers::error::CrackersError;
-use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 use crackers::synthesis::assignment_model::AssignmentModel;
+use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
 
 use crate::config::CrackersConfig;
 

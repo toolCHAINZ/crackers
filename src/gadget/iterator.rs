@@ -38,11 +38,15 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
         for x in self.library.gadgets[0..self.offset].iter().rev() {
             self.offset -= 1;
             let syscall_cond = !self.instr.instr.has_syscall()
-                || x.instructions.iter().any(|i| i.ops_equal(&self.instr.instr));
-            if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr.instr)) && syscall_cond
+                || x.instructions
+                    .iter()
+                    .any(|i| i.ops_equal(&self.instr.instr));
+            if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr.instr))
+                && syscall_cond
             {
                 let h =
-                    ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter()).ok()?;
+                    ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter())
+                        .ok()?;
                 let isolated_check = h.refines(&self.instr).ok()?;
                 match self.solver.check_assumptions(&[isolated_check]) {
                     SatResult::Sat => return Some(x),

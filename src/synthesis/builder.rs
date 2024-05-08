@@ -20,17 +20,19 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator =
-dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + Send + Sync + 'static;
+pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+    + Send
+    + Sync
+    + 'static;
 pub type PointerConstraintGenerator = dyn for<'a, 'b> Fn(
-    &'a Context,
-    &'b ResolvedVarnode<'a>,
-    &'b State<'a>,
-) -> Result<Option<Bool<'a>>, CrackersError>
-+ Send
-+ Sync + 'static;
-pub struct SynthesisBuilder
-{
+        &'a Context,
+        &'b ResolvedVarnode<'a>,
+        &'b State<'a>,
+    ) -> Result<Option<Bool<'a>>, CrackersError>
+    + Send
+    + Sync
+    + 'static;
+pub struct SynthesisBuilder {
     pub(crate) selection_strategy: SynthesisSelectionStrategy,
     pub(crate) gadget_library_builder: GadgetLibraryBuilder,
     pub(crate) candidates_per_slot: usize,
@@ -41,8 +43,7 @@ pub struct SynthesisBuilder
     pub(crate) pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl Default for SynthesisBuilder
-{
+impl Default for SynthesisBuilder {
     fn default() -> Self {
         Self {
             selection_strategy: SynthesisSelectionStrategy::OptimizeStrategy,
@@ -57,8 +58,7 @@ impl Default for SynthesisBuilder
     }
 }
 
-impl SynthesisBuilder
-{
+impl SynthesisBuilder {
     pub fn with_selection_strategy(mut self, strat: SynthesisSelectionStrategy) -> Self {
         self.selection_strategy = strat;
         self
@@ -83,21 +83,17 @@ impl SynthesisBuilder
         self
     }
 
-    pub fn with_precondition(mut self, condition: Arc<StateConstraintGenerator>) -> Self
-
-    {
+    pub fn with_precondition(mut self, condition: Arc<StateConstraintGenerator>) -> Self {
         self.preconditions.push(condition);
         self
     }
 
-    pub fn with_postcondition(mut self, strat: Arc<StateConstraintGenerator>) -> Self
-    {
+    pub fn with_postcondition(mut self, strat: Arc<StateConstraintGenerator>) -> Self {
         self.postconditions.push(strat);
         self
     }
 
-    pub fn with_pointer_invariant(mut self, strat: Arc<PointerConstraintGenerator>) -> Self
-    {
+    pub fn with_pointer_invariant(mut self, strat: Arc<PointerConstraintGenerator>) -> Self {
         self.pointer_invariants.push(strat);
         self
     }

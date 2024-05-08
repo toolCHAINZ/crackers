@@ -1,24 +1,24 @@
 use std::slice;
 use std::sync::Arc;
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
+use jingle::JingleError;
 use tracing::{event, instrument, Level};
-use z3::{Config, Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool};
+use z3::{Config, Context, Model, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::theory_constraint::{
-    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 pub mod builder;
 mod theory_constraint;
@@ -50,8 +50,7 @@ impl ConflictClause {
     }
 }
 
-pub struct PcodeTheory<'ctx>
-{
+pub struct PcodeTheory<'ctx> {
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     templates: Vec<ModeledInstruction<'ctx>>,
@@ -61,8 +60,7 @@ pub struct PcodeTheory<'ctx>
     pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx> PcodeTheory<'ctx>
-{
+impl<'ctx> PcodeTheory<'ctx> {
     pub fn new(
         z3: &'ctx Context,
         templates: &Vec<Instruction>,
@@ -212,7 +210,6 @@ impl<'ctx> PcodeTheory<'ctx>
         }
         self.collect_conflicts(assertions, slot_assignments)
     }
-    
 
     #[instrument(skip_all)]
     fn eval_memory_conflict_and_branching(
@@ -236,7 +233,9 @@ impl<'ctx> PcodeTheory<'ctx>
             ));
             let branch_var = Bool::fresh_const(&self.z3, &"b");
             self.solver.assert_and_track(
-                &block1.can_branch_to_address(block2.get_address())?.simplify(),
+                &block1
+                    .can_branch_to_address(block2.get_address())?
+                    .simplify(),
                 &branch_var,
             );
             assertions.push(ConjunctiveConstraint::new(

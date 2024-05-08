@@ -29,7 +29,7 @@ impl InstrLen for Gadget {
     }
 }
 
-impl<T: InstrLen> InstrLen for &T{
+impl<T: InstrLen> InstrLen for &T {
     fn instr_len(&self) -> usize {
         (*self).instr_len()
     }
@@ -50,27 +50,28 @@ pub trait SelectionStrategy<'ctx> {
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
         format!("i{}_g{}", target_index, gadget_index)
     }
-
 }
 
-pub enum OuterProblem<'ctx>{
+pub enum OuterProblem<'ctx> {
     SatProb(SatProblem<'ctx>),
-    OptimizeProb(OptimizationProblem<'ctx>)
+    OptimizeProb(OptimizationProblem<'ctx>),
 }
 
-impl<'ctx> OuterProblem<'ctx>{
-    pub(crate) fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments>{
-        match self{
+impl<'ctx> OuterProblem<'ctx> {
+    pub(crate) fn get_assignments(
+        &self,
+        blacklist: &[&SlotAssignments],
+    ) -> Option<SlotAssignments> {
+        match self {
             OuterProblem::SatProb(s) => s.get_assignments(blacklist),
-            OuterProblem::OptimizeProb(o) => o.get_assignments(blacklist)
+            OuterProblem::OptimizeProb(o) => o.get_assignments(blacklist),
         }
     }
 
-    pub(crate) fn add_theory_clauses(&mut self, clauses: &[ConflictClause]){
-        match self{
-            OuterProblem::SatProb(s)=>s.add_theory_clauses(clauses),
-            OuterProblem::OptimizeProb(o)=>o.add_theory_clauses(clauses)
+    pub(crate) fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+        match self {
+            OuterProblem::SatProb(s) => s.add_theory_clauses(clauses),
+            OuterProblem::OptimizeProb(o) => o.add_theory_clauses(clauses),
         }
     }
-
 }

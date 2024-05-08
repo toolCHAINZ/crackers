@@ -13,7 +13,12 @@ pub(crate) struct SlotAssignmentConflictDisplay<'a> {
 impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
-        let num_conflicts = self.conflicts.iter().map(|c|c.decisions().len()).reduce(|a,b| a+b).unwrap_or(1);
+        let num_conflicts = self
+            .conflicts
+            .iter()
+            .map(|c| c.decisions().len())
+            .reduce(|a, b| a + b)
+            .unwrap_or(1);
         for (i, assignment) in self.assignment.choices.iter().enumerate() {
             let token = if self.conflicts.iter().any(|c| match c {
                 ConflictClause::Unit(c) => c.index == i,

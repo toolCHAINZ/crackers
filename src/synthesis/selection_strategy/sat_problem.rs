@@ -1,10 +1,10 @@
-use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
+use z3::{Context, SatResult, Solver};
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
@@ -14,14 +14,12 @@ pub struct SatProblem<'ctx> {
 }
 
 impl<'ctx> SatProblem<'ctx> {
-
     fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
         &self.variables[var.index][var.choice]
     }
 }
 
 impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
-
     fn initialize<T>(z3: &'ctx Context, gadgets: &Vec<Vec<T>>) -> SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
@@ -62,14 +60,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
             SatResult::Sat => {
-                
                 let model = self.solver.get_model()?;
                 self.solver.pop(1);
                 SlotAssignments::create_from_model(model, self.variables.as_slice())
             }
         }
     }
-
 
     fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
         for clause in clauses {
@@ -93,10 +89,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
-    use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::SelectionStrategy;
+    use crate::synthesis::Decision;
 
     #[test]
     fn test_assignment() {

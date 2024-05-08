@@ -4,8 +4,8 @@ use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
+use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub type TheoryWorkerRequest = SlotAssignments;
@@ -53,12 +53,11 @@ impl<'ctx> TheoryWorker<'ctx> {
                 assignment
             );
             let r = self.theory.check_assignment(&assignment);
-            match self.sender
-                .send(TheoryWorkerResponse {
-                    idx: self.id,
-                    assignment,
-                    theory_result: r,
-                }){
+            match self.sender.send(TheoryWorkerResponse {
+                idx: self.id,
+                assignment,
+                theory_result: r,
+            }) {
                 Ok(_) => {}
                 Err(_) => {
                     event!(Level::TRACE, "Exiting worker {}", self.id);
