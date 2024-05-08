@@ -1,12 +1,10 @@
-use crate::gadget::Gadget;
-use jingle::modeling::ModeledBlock;
-use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
+use z3::ast::{Ast, Bool};
 
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {

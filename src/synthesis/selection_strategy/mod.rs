@@ -1,14 +1,13 @@
 use std::ops::Deref;
-use crate::gadget::Gadget;
+
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use z3::ast::Bool;
 use z3::Context;
 
+use crate::gadget::Gadget;
 use crate::synthesis::pcode_theory::ConflictClause;
-use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 // mod optimization_problem;
 pub mod optimization_problem;
@@ -32,7 +31,7 @@ impl InstrLen for Gadget {
 
 impl<T: InstrLen> InstrLen for &T{
     fn instr_len(&self) -> usize {
-        self.deref().instr_len()
+        (*self).instr_len()
     }
 }
 impl<'ctx> InstrLen for ModeledInstruction<'ctx> {

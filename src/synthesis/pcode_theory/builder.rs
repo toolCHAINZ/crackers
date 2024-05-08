@@ -1,22 +1,18 @@
 use std::sync::Arc;
+
+use jingle::sleigh::Instruction;
+use z3::Context;
+
 use crate::error::CrackersError;
 use crate::gadget::library::GadgetLibrary;
-use crate::gadget::Gadget;
-use crate::synthesis::pcode_theory::PcodeTheory;
-use jingle::modeling::{ModeledBlock, ModeledInstruction, State};
-use jingle::sleigh::Instruction;
-use jingle::varnode::ResolvedVarnode;
-use tracing::{event, Level};
-use z3::ast::Bool;
-use z3::{Config, Context};
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::pcode_theory::PcodeTheory;
 
 #[derive(Clone)]
 pub struct PcodeTheoryBuilder<'lib>
 {
     templates: Vec<Instruction>,
     library: &'lib GadgetLibrary,
-    gadget_candidates: Vec<Vec<Gadget>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
@@ -29,7 +25,6 @@ impl<'lib> PcodeTheoryBuilder<'lib>
         Self {
             templates: Default::default(),
             library,
-            gadget_candidates: vec![],
             preconditions: vec![],
             postconditions: vec![],
             pointer_invariants: vec![],

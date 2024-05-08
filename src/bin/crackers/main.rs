@@ -1,17 +1,17 @@
 use std::fs;
 
 use clap::Parser;
-use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{varnode, SpaceManager};
-use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::modeling::ModelingContext;
+use jingle::sleigh::{SpaceManager, varnode};
+use jingle::varnode::ResolvedVarnode;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-use z3::ast::{Ast, Bool, BV};
 use z3::{Config, Context};
+use z3::ast::Ast;
 
 use crackers::error::CrackersError;
-use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
+use crackers::synthesis::assignment_model::AssignmentModel;
 
 use crate::config::CrackersConfig;
 
@@ -34,7 +34,6 @@ fn main() {
     let cfg_bytes = fs::read(&args.cfg_path).unwrap();
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
-    dbg!(&p);
     let mut p: AssignmentSynthesis = p.resolve(&z3).unwrap();
     match p.decide().unwrap() {
         DecisionResult::ConflictsFound(_, _) => {}

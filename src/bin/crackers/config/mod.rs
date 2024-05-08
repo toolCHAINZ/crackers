@@ -1,9 +1,7 @@
-use jingle::modeling::State;
 use std::fs;
 use std::sync::Arc;
 
-use crackers::error::CrackersError;
-use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
+use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use jingle::varnode::ResolvedVarnode;
 use object::File;
@@ -12,13 +10,14 @@ use tracing::{event, Level};
 use z3::ast::Bool;
 use z3::Context;
 
+use crackers::error::CrackersError;
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
-use crackers::synthesis::builder::SynthesisBuilder;
 use crackers::synthesis::AssignmentSynthesis;
+use crackers::synthesis::builder::SynthesisBuilder;
 
 use crate::config::constraint::{
-    gen_memory_constraint, gen_pointer_range_invariant, gen_register_constraint,
-    gen_register_pointer_constraint, Constraint,
+    Constraint, gen_memory_constraint, gen_pointer_range_invariant,
+    gen_register_constraint, gen_register_pointer_constraint,
 };
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;

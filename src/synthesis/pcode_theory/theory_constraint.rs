@@ -1,11 +1,10 @@
 use z3::ast::Bool;
 
-use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::ConflictClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
-    UnitSemantics,
     CombinedSemantics,
     Consistency,
     Branch,
@@ -35,7 +34,6 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
         match self.constraint_type {
-            TheoryStage::UnitSemantics => ConflictClause::Unit(self.decisions[0].clone()),
             TheoryStage::Branch => ConflictClause::Unit(self.decisions[0].clone()),
             _ => ConflictClause::Conjunction(self.decisions.clone()),
         }
@@ -48,9 +46,6 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
     let mut branch = Vec::new();
     for x in constraints {
         match x.constraint_type {
-            TheoryStage::UnitSemantics => {
-                result.push(x.gen_conflict_clause());
-            }
             TheoryStage::CombinedSemantics => {
                 combined_semantics.push(x.gen_conflict_clause());
             }

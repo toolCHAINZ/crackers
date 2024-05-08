@@ -1,10 +1,7 @@
-use std::sync::mpsc::{Receiver, Sender, SendError};
+use std::sync::mpsc::{Receiver, Sender};
 
-use jingle::modeling::State;
-use jingle::varnode::ResolvedVarnode;
 use tracing::{event, instrument, Level};
-use z3::{Config, Context};
-use z3::ast::Bool;
+use z3::Context;
 
 use crate::error::CrackersError;
 use crate::synthesis::pcode_theory::{ConflictClause, PcodeTheory};
@@ -19,7 +16,6 @@ pub struct TheoryWorkerResponse {
 }
 
 pub struct TheoryWorker<'ctx> {
-    z3: &'ctx Context,
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
     receiver: Receiver<SlotAssignments>,
@@ -35,7 +31,6 @@ impl<'ctx> TheoryWorker<'ctx> {
         builder: PcodeTheoryBuilder<'ctx>,
     ) -> Result<Self, CrackersError> {
         Ok(Self {
-            z3,
             id,
             sender,
             receiver,

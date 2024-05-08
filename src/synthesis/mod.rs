@@ -155,14 +155,18 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     "Theory returned SAT for {:?}!",
                                     response.assignment
                                 );
-                                for x in req_channels {
-                                    // drop the senders
-                                    req_channels = vec![]
-                                }
+
+                                req_channels = vec![];
+
                                 return Ok(DecisionResult::AssignmentFound(response.assignment));
                             }
                             Some(c) => {
-                                event!(Level::INFO, "Worker {} found conflicts: {}", response.idx, response.assignment.display_conflict(&c));
+                                event!(
+                                    Level::INFO,
+                                    "Worker {} found conflicts: {}",
+                                    response.idx,
+                                    response.assignment.display_conflict(&c)
+                                );
                                 self.outer_problem.add_theory_clauses(&c);
                                 let active: Vec<&SlotAssignments> = blacklist.values().collect();
                                 let new_assignment = self.outer_problem.get_assignments(&active);

@@ -212,44 +212,7 @@ impl<'ctx> PcodeTheory<'ctx>
         }
         self.collect_conflicts(assertions, slot_assignments)
     }
-
-    #[instrument(skip_all)]
-    fn eval_unit_semantics(
-        &self,
-        assertions: &mut Vec<ConjunctiveConstraint<'ctx>>,
-        slot_assignments: &SlotAssignments,
-    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
-        for (index, &choice) in slot_assignments.choices().iter().enumerate() {
-            let gadget = &self.gadget_candidates[index][choice].fresh()?;
-            let spec = &self.templates[index];
-            let mut bools = vec![];
-            let refines = Bool::fresh_const(&self.z3, "u");
-            if index == 0 {
-                for x in &self.preconditions {
-                    bools.push(x(&self.z3, gadget.get_original_state())?.simplify());
-                }
-            }
-            if index == slot_assignments.choices().len() - 1 {
-                for x in &self.postconditions {
-                    bools.push(x(&self.z3, gadget.get_final_state())?.simplify());
-                }
-            }
-            bools.push(gadget.refines(spec)?.simplify());
-            if let Some(comp) = spec.branch_comparison(gadget)? {
-                bools.push(comp.simplify());
-            }
-            let condition = Bool::and(&self.z3, &bools);
-            self.solver.assert_and_track(&condition.simplify(), &refines);
-            assertions.push(ConjunctiveConstraint::new(
-                &[Decision { index, choice }],
-                refines,
-                TheoryStage::UnitSemantics,
-            ));
-        }
-        // these assertions are used as a pre-filtering step before evaluating a gadget in context
-        // so we do not need to keep them around after this check.
-        self.collect_conflicts(assertions, slot_assignments)
-    }
+    
 
     #[instrument(skip_all)]
     fn eval_memory_conflict_and_branching(
