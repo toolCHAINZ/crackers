@@ -257,6 +257,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         match self.solver.check() {
             SatResult::Unsat => {
                 let unsat_core = self.solver.get_unsat_core();
+                event!(Level::TRACE, "Unsat core: {:?}", unsat_core);
                 for b in &unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(b)) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);

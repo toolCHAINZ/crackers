@@ -2,16 +2,17 @@
 ghidra_path = "/Applications/ghidra"
 
 [synthesis]
-strategy = "optimize"
+strategy = "sat"
 max_candidates_per_slot = 200
+parallel = 6
 
 [specification]
 path = "bin/mmap_call.bin"
-max_instructions = 5
+max_instructions = 7
 
 [library]
 path = "bin/libc_wrapper"
-max_gadget_length = 6
+max_gadget_length = 8
 random_sample_size = 10000
 
 [constraint.precondition.register]
@@ -42,8 +43,6 @@ RCX = 0x20
 R8 = -1
 R9 = 16
 
-[constraint.postcondition.pointer]
-RDI = "/bin/sh"
 
 [constraint.pointer]
 min = 0x7fffffffde00
