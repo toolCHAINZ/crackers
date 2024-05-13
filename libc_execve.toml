@@ -2,7 +2,7 @@
 ghidra_path = "/Applications/ghidra"
 
 [synthesis]
-strategy = "optimize"
+strategy = "sat"
 max_candidates_per_slot = 200
 parallel = 6
 
@@ -12,7 +12,7 @@ max_instructions = 5
 
 [library]
 path = "bin/libc_wrapper"
-max_gadget_length = 4
+max_gadget_length = 6
 random_sample_size = 10000
 
 

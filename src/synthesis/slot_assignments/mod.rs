@@ -1,9 +1,9 @@
 use z3::ast::Bool;
 use z3::Model;
 
-use crate::synthesis::pcode_theory::ConflictClause;
-use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
 
 mod display;
 

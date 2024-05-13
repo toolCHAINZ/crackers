@@ -29,9 +29,12 @@ fn main() {
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
     let mut p: AssignmentSynthesis = p.resolve(&z3).unwrap();
-    match p.decide().unwrap() {
-        DecisionResult::ConflictsFound(_, _) => {}
-        DecisionResult::AssignmentFound(_a) => todo!(""),
-        DecisionResult::Unsat => {}
-    };
+    let res = p.decide();
+    if let Ok(res) = res {
+        match res {
+            DecisionResult::ConflictsFound(_, _) => {}
+            DecisionResult::AssignmentFound(_a) => todo!(""),
+            DecisionResult::Unsat => {}
+        }
+    }
 }

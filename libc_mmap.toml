@@ -35,13 +35,6 @@ R15 = 0x400538
 GS = 0
 FS = 0
 
-[constraint.postcondition.register]
-RDI = 0x00007fffffffe0a8
-RSI = 1024
-RDX = 0x7b
-RCX = 0x20
-R8 = -1
-R9 = 16
 
 
 [constraint.pointer]

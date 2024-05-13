@@ -4,13 +4,14 @@ use std::collections::HashMap;
 use tracing::{event, instrument, Level};
 use z3::{Config, Context};
 
+use pcode_theory::conflict_clause::ConflictClause;
+
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
-use crate::synthesis::pcode_theory::ConflictClause;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
@@ -125,10 +126,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                     Level::TRACE,
                     "Asking outer procedure for initial assignments"
                 );
-                let assignment = self.outer_problem.get_assignments(&active).unwrap();
-                event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
-                blacklist.insert(i, assignment.clone());
-                x.send(assignment).unwrap();
+                if let Some(assignment) = self.outer_problem.get_assignments(&active) {
+                    event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
+                    blacklist.insert(i, assignment.clone());
+                    x.send(assignment).unwrap();
+                }
             }
             event!(Level::TRACE, "Done sending initial jobs");
 

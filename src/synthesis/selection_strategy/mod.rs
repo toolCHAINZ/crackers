@@ -2,7 +2,7 @@ use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use z3::Context;
 
 use crate::gadget::Gadget;
-use crate::synthesis::pcode_theory::ConflictClause;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::slot_assignments::SlotAssignments;

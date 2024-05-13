@@ -2,7 +2,7 @@ use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
 use crate::synthesis::Decision;
-use crate::synthesis::pcode_theory::ConflictClause;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
@@ -90,7 +90,7 @@ mod tests {
     use z3::{Config, Context};
 
     use crate::synthesis::Decision;
-    use crate::synthesis::pcode_theory::ConflictClause;
+    use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::SelectionStrategy;
 

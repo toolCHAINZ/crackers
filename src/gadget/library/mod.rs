@@ -70,6 +70,8 @@ impl GadgetLibrary {
                         }
                     }
                     let gadget = Gadget {
+                        code_space_idx: sleigh.get_code_space_idx(),
+                        spaces: sleigh.get_all_space_info().to_vec(),
                         instructions: instrs[0..=i].to_vec(),
                     };
                     if !gadget.has_blacklisted_op(&builder.operation_blacklist) {

@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use colored::Colorize;
 
-use crate::synthesis::pcode_theory::ConflictClause;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub(crate) struct SlotAssignmentConflictDisplay<'a> {

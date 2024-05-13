@@ -1,28 +1,23 @@
 use std::fmt::{Display, Formatter};
 
-use jingle::modeling::{ModeledBlock, ModelingContext, State};
+use jingle::modeling::{ModelingContext, State};
 use jingle::sleigh::GeneralizedVarNode;
 use jingle::varnode::ResolvedVarnode;
 use z3::ast::BV;
 use z3::Model;
 
-use crate::synthesis::slot_assignments::SlotAssignments;
-
 #[derive(Debug)]
-pub struct AssignmentModel<'ctx> {
-    assignments: SlotAssignments,
+pub struct AssignmentModel<'ctx, T: ModelingContext<'ctx>> {
     model: Model<'ctx>,
-    pub gadgets: Vec<ModeledBlock<'ctx>>,
+    pub gadgets: Vec<T>,
 }
 
-impl<'ctx> AssignmentModel<'ctx> {
-    pub fn new(
-        assignments: SlotAssignments,
+impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
+    pub fn generate(
         model: Model<'ctx>,
-        gadgets: Vec<ModeledBlock<'ctx>>,
+        gadgets: Vec<T>,
     ) -> Self {
         Self {
-            assignments,
             model,
             gadgets,
         }
@@ -32,9 +27,6 @@ impl<'ctx> AssignmentModel<'ctx> {
         &self.model
     }
 
-    pub fn get_assignments(&self) -> &SlotAssignments {
-        &self.assignments
-    }
     pub fn initial_state(&'ctx self) -> Option<&'ctx State<'ctx>> {
         self.gadgets.first().map(|f| f.get_original_state())
     }
@@ -56,7 +48,7 @@ impl<'ctx> AssignmentModel<'ctx> {
     }
 }
 
-impl<'ctx> Display for AssignmentModel<'ctx> {
+impl<'ctx, T: ModelingContext<'ctx> + Display> Display for AssignmentModel<'ctx, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Gadgets:\n")?;
         for block in &self.gadgets {

@@ -1,8 +1,12 @@
 use std::collections::HashSet;
 use std::fmt::Debug;
 
-use jingle::sleigh::{Instruction, OpCode};
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
 use serde::{Deserialize, Serialize};
+use z3::Context;
+
+use crate::error::CrackersError;
 
 mod error;
 mod iterator;
@@ -11,6 +15,10 @@ pub mod signature;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gadget {
+    // todo: This is obviously not ideal, but it's not that much extra data and
+    // I'd rather not deal with another lifetime
+    spaces: Vec<SpaceInfo>,
+    code_space_idx: usize,
     pub instructions: Vec<Instruction>,
 }
 
@@ -34,5 +42,24 @@ impl Gadget {
         self.instructions
             .iter()
             .any(|i| i.ops.iter().any(|o| blacklist.contains(&o.opcode())))
+    }
+
+    pub fn model<'ctx>(&self, z3: &'ctx Context) -> Result<ModeledBlock<'ctx>, CrackersError>{
+        let blk = ModeledBlock::read(z3, self, self.instructions.clone().into_iter())?;
+        Ok(blk)
+    }
+}
+
+impl SpaceManager for Gadget{
+    fn get_space_info(&self, idx: usize) -> Option<&SpaceInfo> {
+        self.spaces.get(idx)
+    }
+
+    fn get_all_space_info(&self) -> &[SpaceInfo] {
+        self.spaces.as_slice()
+    }
+
+    fn get_code_space_idx(&self) -> usize {
+        self.code_space_idx
     }
 }
