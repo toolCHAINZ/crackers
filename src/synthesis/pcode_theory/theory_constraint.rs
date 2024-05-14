@@ -64,7 +64,7 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
         result.push(clause);
     }
     
-    if !concat.is_empty(){
+    if !concat.is_empty() && result.is_empty(){
         let clause = ConflictClause::combine(concat.as_slice());
         result.push(clause);
     }

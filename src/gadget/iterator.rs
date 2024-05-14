@@ -36,6 +36,7 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
 
     fn next(&mut self) -> Option<Self::Item> {
         for x in self.library.gadgets[self.offset..].iter() {
+            self.offset += 1;
             let syscall_cond = !self.instr.instr.has_syscall()
                 || x.instructions
                     .iter()

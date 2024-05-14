@@ -93,8 +93,6 @@ impl<'ctx> PcodeTheory<'ctx> {
 
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
-        self.assert_preconditions(slot_assignments)?;
-        self.assert_postconditions(slot_assignments)?;
         self.solver
             .assert(&assert_concat(self.z3, &self.templates)?);
 
@@ -140,7 +138,14 @@ impl<'ctx> PcodeTheory<'ctx> {
             ))
         }
 
-        self.collect_conflicts(&assertions, slot_assignments)
+        let  conflicts = self.collect_conflicts(&assertions, slot_assignments)?;
+        if let Some(_) = conflicts{
+            return Ok(conflicts);
+        }else{
+            self.assert_preconditions(slot_assignments)?;
+            self.assert_postconditions(slot_assignments)?;
+            self.collect_conflicts(&assertions, slot_assignments)
+        }
     }
 
     fn assert_preconditions(
