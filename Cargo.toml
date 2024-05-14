@@ -10,10 +10,14 @@ name = "crackers"
 required-features = ["tracing-subscriber", "toml", "gimli", "clap"]
 
 [features]
+default = ["tracing-subscriber", "toml", "gimli", "clap"]
+
 tracing-subscriber = ["dep:tracing-subscriber"]
 toml = ["dep:toml_edit"]
 gimli = ["dep:object"]
 clap = ["dep:clap"]
+bundled = ["z3/bundled"]
+vcpkg = ["z3/vcpkg"]
 
 [profile.dev]
 opt-level = 3
