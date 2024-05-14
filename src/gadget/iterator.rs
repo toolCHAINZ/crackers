@@ -25,7 +25,7 @@ impl<'a, 'ctx> GadgetIterator<'a, 'ctx> {
             z3,
             library,
             solver: Solver::new_for_logic(z3, "QF_ABV").unwrap(),
-            offset: library.size(),
+            offset: 0,
             instr: ModeledInstruction::new(sig, library, z3)?,
         })
     }
@@ -35,8 +35,7 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
     type Item = &'a Gadget;
 
     fn next(&mut self) -> Option<Self::Item> {
-        for x in self.library.gadgets[0..self.offset].iter().rev() {
-            self.offset -= 1;
+        for x in self.library.gadgets[self.offset..].iter() {
             let syscall_cond = !self.instr.instr.has_syscall()
                 || x.instructions
                     .iter()
