@@ -52,12 +52,12 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     }
 
     pub fn build_assignment<'ctx>(
-        &'ctx self,
+        &self,
         z3: &'ctx Context,
         slot_assignments: SlotAssignments,
-    ) -> Result<PcodeAssignment, CrackersError> {
-        let modeled_templates = self.model_instructions(z3)?;
-        let gadget_candidates = self.model_candidates(z3)?;
+    ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
+        let modeled_templates: Vec<ModeledInstruction<'ctx>> = self.model_instructions(z3)?;
+        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.model_candidates(z3)?;
         let selected_candidates: Vec<ModeledBlock<'ctx>> = slot_assignments
             .choices()
             .iter()
@@ -122,7 +122,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
                 })
                 .collect();
             event!(
-                Level::DEBUG,
+                Level::INFO,
                 "Instruction {} has {} candidates",
                 template.disassembly,
                 candidates.len()

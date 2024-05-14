@@ -50,6 +50,7 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
 
 impl<'ctx, T: ModelingContext<'ctx> + Display> Display for AssignmentModel<'ctx, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        dbg!("hello");
         writeln!(f, "Gadgets:\n")?;
         for block in &self.gadgets {
             writeln!(f, "{}\n", block)?;

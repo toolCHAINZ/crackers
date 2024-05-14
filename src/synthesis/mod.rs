@@ -155,11 +155,14 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     "Theory returned SAT for {:?}!",
                                     response.assignment
                                 );
-
+                                dbg!("huh");
                                 req_channels.clear();
-                                let a = theory_builder.build_assignment(self.z3, response.assignment)?;
-                                let solver = Solver::new_for_logic(self.z3, "QF_ABV").unwrap();
+                                let t = theory_builder.clone();
+                                let a :PcodeAssignment<'ctx> = t.build_assignment(self.z3, response.assignment)?;
+                                dbg!("huh2");
+                                let solver = Solver::new(self.z3);
                                 let model = a.check(self.z3, &solver)?;
+                                dbg!("here");
                                 return Ok(DecisionResult::AssignmentFound(model));
                             }
                             Some(c) => {

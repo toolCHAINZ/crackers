@@ -4,24 +4,24 @@ use std::sync::Arc;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
-use z3::{Context, Model, SatResult, Solver};
 use z3::ast::{Ast, Bool};
+use z3::{Context, Model, SatResult, Solver};
 
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints, PcodeAssignment,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
-    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 pub mod builder;
 pub mod conflict_clause;
@@ -39,7 +39,7 @@ pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> 
     pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheory<'ctx, S,T> {
+impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheory<'ctx, S, T> {
     pub fn new(
         z3: &'ctx Context,
         templates: Vec<S>,
@@ -120,12 +120,9 @@ impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheo
 
         let pre = self.assert_preconditions(slot_assignments)?;
         let post = self.assert_postconditions(slot_assignments)?;
-        let pre_bool = Bool::fresh_const(self.z3, "pre");
-        let post_bool = Bool::fresh_const(self.z3, "post");
-            self.solver.assert_and_track(&pre, &pre_bool);
-            self.solver.assert_and_track(&post, &post_bool);
+        self.solver.assert(&pre);
+        self.solver.assert(&post);
         self.collect_conflicts(&assertions, slot_assignments)
-
     }
 
     fn assert_preconditions(
@@ -139,7 +136,7 @@ impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheo
             .ok_or(EmptyAssignment)?;
         assert_state_constraints(
             &self.z3,
-            &self.postconditions,
+            &self.preconditions,
             &first_gadget.get_original_state(),
         )
     }

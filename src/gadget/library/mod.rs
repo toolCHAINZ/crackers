@@ -82,6 +82,7 @@ impl GadgetLibrary {
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
+        return Ok(lib);
         if let Some(random_sample_size) = builder.random_sample_size {
             let mut rng = match builder.random_sample_seed {
                 None => StdRng::from_entropy(),

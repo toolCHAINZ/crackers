@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
-use z3::{Context, SatResult, Solver};
 use z3::ast::Bool;
+use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
@@ -33,7 +33,24 @@ impl<'ctx> PcodeAssignment<'ctx> {
         }
     }
 
-    pub fn check(&self, z3: &'ctx Context, solver: &Solver<'ctx>) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+    pub fn check(
+        &self,
+        z3: &'ctx Context,
+        solver: &Solver<'ctx>,
+    ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+        solver.assert(&assert_concat(z3, &self.spec_trace)?);
+        for x in self.eval_trace.windows(2) {
+            solver.assert(&x[0].assert_concat(&x[1])?);
+            solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
+        }
+        for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {
+            solver.assert(&assert_compatible_semantics(
+                z3,
+                spec_inst,
+                trace_inst,
+                &self.pointer_invariants,
+            )?);
+        }
         solver.assert(&assert_state_constraints(
             z3,
             &self.preconditions,
@@ -44,24 +61,13 @@ impl<'ctx> PcodeAssignment<'ctx> {
             &self.postconditions,
             self.eval_trace.as_slice().get_final_state(),
         )?);
-        solver.assert(&assert_concat(z3, &self.spec_trace)?);
-        solver.assert(&assert_concat(z3, &self.eval_trace)?);
-        for x in self.eval_trace.windows(2) {
-            solver.assert(&x[0].can_branch_to_address(x[1].get_address())?)
-        }
-        for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {
-            solver.assert(&assert_compatible_semantics(
-                z3,
-                spec_inst,
-                trace_inst,
-                &self.pointer_invariants,
-            )?);
-        }
-        match solver.check(){
-            SatResult::Unsat | SatResult::Unknown=> {Err(CrackersError::ModelGenerationError)}
+        match solver.check() {
+            SatResult::Unsat | SatResult::Unknown => Err(CrackersError::ModelGenerationError),
             SatResult::Sat => {
-                let model =solver.get_model().ok_or(CrackersError::ModelGenerationError)?;
-                Ok(AssignmentModel::generate(model,self.eval_trace.to_vec()))
+                let model = solver
+                    .get_model()
+                    .ok_or(CrackersError::ModelGenerationError)?;
+                Ok(AssignmentModel::generate(model, self.eval_trace.to_vec()))
             }
         }
     }
