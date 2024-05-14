@@ -65,5 +65,10 @@ impl<'ctx> TheoryWorker<'ctx> {
                 }
             }
         }
+        event!(
+            Level::TRACE,
+            "Worker {} exiting",
+            self.id
+        );
     }
 }

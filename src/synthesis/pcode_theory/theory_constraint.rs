@@ -41,6 +41,7 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
     let mut result = Vec::new();
     let mut combined_semantics = Vec::new();
     let mut branch = Vec::new();
+    let mut concat = Vec::new();
     for x in constraints {
         match x.constraint_type {
             TheoryStage::CombinedSemantics => {
@@ -49,7 +50,7 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
             TheoryStage::Branch => {
                 branch.push(x.gen_conflict_clause());
             }
-            _ => {}
+            TheoryStage::Consistency => concat.push(x.gen_conflict_clause())
         }
     }
 
@@ -60,6 +61,11 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
 
     if !branch.is_empty() {
         let clause = ConflictClause::combine(branch.as_slice());
+        result.push(clause);
+    }
+    
+    if !concat.is_empty(){
+        let clause = ConflictClause::combine(concat.as_slice());
         result.push(clause);
     }
     result

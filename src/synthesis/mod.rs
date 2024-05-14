@@ -104,21 +104,21 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
 
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
-            let mut workers = vec![];
             for idx in 0..self.builder.parallel {
                 let t = theory_builder.clone();
                 let r = resp_sender.clone();
                 let (req_sender, req_receiver) = std::sync::mpsc::channel();
                 req_channels.push(req_sender);
-                workers.push(s.spawn(move || -> Result<(), CrackersError> {
+                s.spawn(move || -> Result<(), CrackersError> {
                     let z3 = Context::new(&Config::new());
                     let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
                     event!(Level::TRACE, "Created worker {}", idx);
                     worker.run();
+                    std::mem::drop(worker);
                     Ok(())
-                }));
+                });
             }
-
+            std::mem::drop(resp_sender);
             let mut blacklist = HashMap::new();
             for (i, x) in req_channels.iter().enumerate() {
                 let active: Vec<&SlotAssignments> = blacklist.values().collect();
@@ -151,7 +151,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     response.assignment
                                 );
 
-                                req_channels = vec![];
+                                req_channels.clear();
 
                                 return Ok(DecisionResult::AssignmentFound(response.assignment));
                             }
@@ -167,14 +167,8 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 let new_assignment = self.outer_problem.get_assignments(&active);
                                 match new_assignment {
                                     None => {
-                                        event!(
-                                            Level::ERROR,
-                                            "Outer SAT returned UNSAT! No solution found! :("
-                                        );
                                         // drop the senders
-                                        req_channels = vec![];
-
-                                        return Ok(DecisionResult::Unsat);
+                                        req_channels.clear();
                                     }
                                     Some(a) => {
                                         blacklist.insert(response.idx, a.clone());
@@ -195,7 +189,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                     }
                 }
             }
-            unreachable!()
+            event!(
+                Level::ERROR,
+                "Outer SAT returned UNSAT! No solution found! :("
+            );
+            return Ok(DecisionResult::Unsat);
         })
     }
 }

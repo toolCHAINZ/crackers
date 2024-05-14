@@ -119,9 +119,6 @@ impl<'ctx> PcodeTheory<'ctx> {
                 &[Decision {
                     index,
                     choice: slot_assignments.choice(index),
-                }, Decision {
-                    index: index + 1,
-                    choice: slot_assignments.choice(index + 1),
                 }],
                 concat,
                 TheoryStage::Consistency,
@@ -155,11 +152,11 @@ impl<'ctx> PcodeTheory<'ctx> {
             .first()
             .map(|f| &f[slot_assignments.choice(0)])
             .ok_or(EmptyAssignment)?;
-        self.solver.assert(&assert_state_constraints(
+        self.solver.assert_and_track(&assert_state_constraints(
             &self.z3,
             &self.preconditions,
             &first_gadget.get_original_state(),
-        )?);
+        )?, &Bool::fresh_const(&self.z3, "pre"));
         Ok(())
     }
 
@@ -172,11 +169,11 @@ impl<'ctx> PcodeTheory<'ctx> {
             .last()
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
-        self.solver.assert(&assert_state_constraints(
+        self.solver.assert_and_track(&assert_state_constraints(
             &self.z3,
             &self.postconditions,
             &last_gadget.get_final_state(),
-        )?);
+        )?, &Bool::fresh_const(&self.z3, "post"));
         Ok(())
     }
 
@@ -189,7 +186,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         match self.solver.check() {
             SatResult::Unsat => {
                 let unsat_core = self.solver.get_unsat_core();
-                event!(Level::TRACE, "Unsat core: {:?}", unsat_core);
+                event!(Level::DEBUG, "Unsat core: {:?}", unsat_core);
                 for b in &unsat_core {
                     if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(b)) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
