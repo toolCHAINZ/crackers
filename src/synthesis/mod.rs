@@ -1,8 +1,9 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
+use jingle::modeling::{ModeledBlock, ModelingContext};
 use tracing::{event, instrument, Level};
-use z3::{Config, Context};
+use z3::{Config, Context, Solver};
 
 use pcode_theory::conflict_clause::ConflictClause;
 
@@ -10,8 +11,10 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
+use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
+use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
@@ -38,13 +41,14 @@ impl PartialOrd for Decision {
 }
 
 #[derive(Debug)]
-pub enum DecisionResult {
+pub enum DecisionResult<'ctx, T: ModelingContext<'ctx>> {
     ConflictsFound(SlotAssignments, Vec<ConflictClause>),
-    AssignmentFound(SlotAssignments),
+    AssignmentFound(AssignmentModel<'ctx, T>),
     Unsat,
 }
 
 pub struct AssignmentSynthesis<'ctx> {
+    z3: &'ctx Context,
     outer_problem: OuterProblem<'ctx>,
     library: GadgetLibrary,
     builder: SynthesisBuilder,
@@ -86,6 +90,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         };
 
         Ok(AssignmentSynthesis {
+            z3,
             outer_problem,
             library,
             builder,
@@ -93,7 +98,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     }
 
     #[instrument(skip_all)]
-    pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
+    pub fn decide(&mut self) -> Result<DecisionResult<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         let mut req_channels = vec![];
         let theory_builder = PcodeTheoryBuilder::new(&self.library)
             .with_pointer_invariants(&self.builder.pointer_invariants)
@@ -152,8 +157,10 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 );
 
                                 req_channels.clear();
-
-                                return Ok(DecisionResult::AssignmentFound(response.assignment));
+                                let a = theory_builder.build_assignment(self.z3, response.assignment)?;
+                                let solver = Solver::new_for_logic(self.z3, "QF_ABV").unwrap();
+                                let model = a.check(self.z3, &solver)?;
+                                return Ok(DecisionResult::AssignmentFound(model));
                             }
                             Some(c) => {
                                 event!(

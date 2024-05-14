@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use jingle::modeling::{ModelingContext, State};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use z3::{Context, SatResult, Solver};
 use z3::ast::Bool;
 
@@ -8,21 +8,21 @@ use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
 
-pub struct PcodeAssignment<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> {
-    spec_trace: &'ctx [S],
-    eval_trace: &'ctx [T],
-    preconditions: &'ctx [Arc<StateConstraintGenerator>],
-    postconditions: &'ctx [Arc<StateConstraintGenerator>],
-    pointer_invariants: &'ctx [Arc<PointerConstraintGenerator>],
+pub struct PcodeAssignment<'ctx> {
+    spec_trace: Vec<ModeledInstruction<'ctx>>,
+    eval_trace: Vec<ModeledBlock<'ctx>>,
+    preconditions: Vec<Arc<StateConstraintGenerator>>,
+    postconditions: Vec<Arc<StateConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeAssignment<'ctx, S, T> {
+impl<'ctx> PcodeAssignment<'ctx> {
     pub fn new(
-        spec_trace: &'ctx [S],
-        eval_trace: &'ctx [T],
-        preconditions: &'ctx [Arc<StateConstraintGenerator>],
-        postconditions: &'ctx [Arc<StateConstraintGenerator>],
-        pointer_invariants: &'ctx [Arc<PointerConstraintGenerator>],
+        spec_trace: Vec<ModeledInstruction<'ctx>>,
+        eval_trace: Vec<ModeledBlock<'ctx>>,
+        preconditions: Vec<Arc<StateConstraintGenerator>>,
+        postconditions: Vec<Arc<StateConstraintGenerator>>,
+        pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
     ) -> Self {
         Self {
             spec_trace,
@@ -33,28 +33,28 @@ impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeAssi
         }
     }
 
-    pub fn check(&self, z3: &'ctx Context, solver: &Solver<'ctx>) -> Result<AssignmentModel<'ctx, T>, CrackersError> {
+    pub fn check(&self, z3: &'ctx Context, solver: &Solver<'ctx>) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         solver.assert(&assert_state_constraints(
             z3,
             &self.preconditions,
-            self.eval_trace.get_original_state(),
+            self.eval_trace.as_slice().get_original_state(),
         )?);
         solver.assert(&assert_state_constraints(
             z3,
             &self.postconditions,
-            self.eval_trace.get_final_state(),
+            self.eval_trace.as_slice().get_final_state(),
         )?);
-        solver.assert(&assert_concat(z3, self.spec_trace)?);
-        solver.assert(&assert_concat(z3, self.eval_trace)?);
+        solver.assert(&assert_concat(z3, &self.spec_trace)?);
+        solver.assert(&assert_concat(z3, &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?)
         }
-        for (spec_inst, trace_inst) in self.spec_trace.iter().zip(self.eval_trace) {
+        for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {
             solver.assert(&assert_compatible_semantics(
                 z3,
                 spec_inst,
                 trace_inst,
-                self.pointer_invariants,
+                &self.pointer_invariants,
             )?);
         }
         match solver.check(){

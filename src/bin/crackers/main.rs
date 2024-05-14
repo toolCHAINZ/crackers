@@ -21,7 +21,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let sub = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_max_level(Level::DEBUG)
         .finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     let args = Arguments::parse();
@@ -33,7 +33,7 @@ fn main() {
     if let Ok(res) = res {
         match res {
             DecisionResult::ConflictsFound(_, _) => {}
-            DecisionResult::AssignmentFound(_a) => todo!(""),
+            DecisionResult::AssignmentFound(a) => println!("{}", a) ,
             DecisionResult::Unsat => {}
         }
     }

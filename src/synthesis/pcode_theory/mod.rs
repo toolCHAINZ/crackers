@@ -25,54 +25,34 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod builder;
 pub mod conflict_clause;
-mod pcode_assignment;
+pub mod pcode_assignment;
 mod theory_constraint;
 pub mod theory_worker;
 
-pub struct PcodeTheory<'ctx> {
+pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> {
     z3: &'ctx Context,
     solver: Solver<'ctx>,
-    templates: Vec<ModeledInstruction<'ctx>>,
-    gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
+    templates: Vec<S>,
+    gadget_candidates: Vec<Vec<T>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
 }
 
-impl<'ctx> PcodeTheory<'ctx> {
+impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheory<'ctx, S,T> {
     pub fn new(
         z3: &'ctx Context,
-        templates: &[Instruction],
-        library: &GadgetLibrary,
-        candidates_per_slot: usize,
+        templates: Vec<S>,
+        gadget_candidates: Vec<Vec<T>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
-        let mut modeled_templates = vec![];
-        let mut gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = vec![];
-        for template in templates.iter() {
-            modeled_templates.push(ModeledInstruction::new(template.clone(), library, z3)?);
-            let candidates: Vec<ModeledBlock<'ctx>> = library
-                .get_gadgets_for_instruction(z3, template)?
-                .take(candidates_per_slot)
-                .map(|g| {
-                    ModeledBlock::read(z3, library, g.instructions.clone().into_iter()).unwrap()
-                })
-                .collect();
-            event!(
-                Level::DEBUG,
-                "Instruction {} has {} candidates",
-                template.disassembly,
-                candidates.len()
-            );
-            gadget_candidates.push(candidates);
-        }
         let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         Ok(Self {
             z3,
             solver,
-            templates: modeled_templates,
+            templates,
             gadget_candidates,
             preconditions,
             postconditions,
@@ -84,7 +64,7 @@ impl<'ctx> PcodeTheory<'ctx> {
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         event!(Level::TRACE, "Resetting solver");
-        let gadgets: Vec<ModeledBlock> = slot_assignments
+        let gadgets: Vec<T> = slot_assignments
             .choices()
             .iter()
             .enumerate()
@@ -138,48 +118,46 @@ impl<'ctx> PcodeTheory<'ctx> {
             ))
         }
 
-        let  conflicts = self.collect_conflicts(&assertions, slot_assignments)?;
-        if let Some(_) = conflicts{
-            return Ok(conflicts);
-        }else{
-            self.assert_preconditions(slot_assignments)?;
-            self.assert_postconditions(slot_assignments)?;
-            self.collect_conflicts(&assertions, slot_assignments)
-        }
+        let pre = self.assert_preconditions(slot_assignments)?;
+        let post = self.assert_postconditions(slot_assignments)?;
+        let pre_bool = Bool::fresh_const(self.z3, "pre");
+        let post_bool = Bool::fresh_const(self.z3, "post");
+            self.solver.assert_and_track(&pre, &pre_bool);
+            self.solver.assert_and_track(&post, &post_bool);
+        self.collect_conflicts(&assertions, slot_assignments)
+
     }
 
     fn assert_preconditions(
         &self,
         slot_assignments: &SlotAssignments,
-    ) -> Result<(), CrackersError> {
+    ) -> Result<Bool<'ctx>, CrackersError> {
         let first_gadget = &self
             .gadget_candidates
             .first()
             .map(|f| &f[slot_assignments.choice(0)])
             .ok_or(EmptyAssignment)?;
-        self.solver.assert_and_track(&assert_state_constraints(
+        assert_state_constraints(
             &self.z3,
-            &self.preconditions,
+            &self.postconditions,
             &first_gadget.get_original_state(),
-        )?, &Bool::fresh_const(&self.z3, "pre"));
-        Ok(())
+        )
     }
 
     fn assert_postconditions(
         &self,
         slot_assignments: &SlotAssignments,
-    ) -> Result<(), CrackersError> {
+    ) -> Result<Bool<'ctx>, CrackersError> {
         let last_gadget = &self
             .gadget_candidates
             .last()
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
-        self.solver.assert_and_track(&assert_state_constraints(
+        assert_state_constraints(
             &self.z3,
             &self.postconditions,
             &last_gadget.get_final_state(),
-        )?, &Bool::fresh_const(&self.z3, "post"));
-        Ok(())
+        )
     }
 
     fn collect_conflicts(
@@ -214,5 +192,4 @@ impl<'ctx> PcodeTheory<'ctx> {
             SatResult::Sat => Ok(None),
         }
     }
-    
 }

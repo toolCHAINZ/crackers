@@ -1,12 +1,16 @@
 use std::sync::Arc;
 
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
+use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::PcodeTheory;
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Clone)]
 pub struct PcodeTheoryBuilder<'lib> {
@@ -29,17 +33,44 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
             candidates_per_slot: 200,
         }
     }
-    pub fn build(self, z3: &Context) -> Result<PcodeTheory, CrackersError> {
+    pub fn build<'ctx>(
+        self,
+        z3: &'ctx Context,
+    ) -> Result<PcodeTheory<ModeledInstruction<'ctx>, ModeledBlock<'ctx>>, CrackersError> {
+        let modeled_templates = self.model_instructions(z3)?;
+        let gadget_candidates = self.model_candidates(z3)?;
+
         let t = PcodeTheory::new(
             z3,
-            &self.templates,
-            self.library,
-            self.candidates_per_slot,
+            modeled_templates,
+            gadget_candidates,
             self.preconditions,
             self.postconditions,
             self.pointer_invariants,
         )?;
         Ok(t)
+    }
+
+    pub fn build_assignment<'ctx>(
+        &'ctx self,
+        z3: &'ctx Context,
+        slot_assignments: SlotAssignments,
+    ) -> Result<PcodeAssignment, CrackersError> {
+        let modeled_templates = self.model_instructions(z3)?;
+        let gadget_candidates = self.model_candidates(z3)?;
+        let selected_candidates: Vec<ModeledBlock<'ctx>> = slot_assignments
+            .choices()
+            .iter()
+            .enumerate()
+            .map(|(i, c)| gadget_candidates[i][*c].clone())
+            .collect();
+        Ok(PcodeAssignment::new(
+            modeled_templates,
+            selected_candidates,
+            self.preconditions.clone(),
+            self.postconditions.clone(),
+            self.pointer_invariants.clone(),
+        ))
     }
 
     pub fn with_templates<T: Iterator<Item = Instruction>>(mut self, templates: T) -> Self {
@@ -68,5 +99,36 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     pub fn with_max_candidates(mut self, candidates: usize) -> Self {
         self.candidates_per_slot = candidates;
         self
+    }
+
+    fn model_instructions<'ctx>(&self, z3: &'ctx Context) -> Result<Vec<ModeledInstruction<'ctx>>, CrackersError> {
+        let mut modeled_templates = vec![];
+        for template in &self.templates {
+            modeled_templates.push(ModeledInstruction::new(template.clone(), self.library, z3)?);
+        }
+        Ok(modeled_templates)
+    }
+
+    fn model_candidates<'ctx>(&self, z3: &'ctx Context) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError> {
+        let mut gadget_candidates = vec![];
+        for template in self.templates.iter() {
+            let candidates: Vec<ModeledBlock<'ctx>> = self
+                .library
+                .get_gadgets_for_instruction(z3, template)?
+                .take(self.candidates_per_slot)
+                .map(|g| {
+                    ModeledBlock::read(z3, self.library, g.instructions.clone().into_iter())
+                        .unwrap()
+                })
+                .collect();
+            event!(
+                Level::DEBUG,
+                "Instruction {} has {} candidates",
+                template.disassembly,
+                candidates.len()
+            );
+            gadget_candidates.push(candidates);
+        }
+        Ok(gadget_candidates)
     }
 }
