@@ -20,12 +20,12 @@ impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
         for (i, assignment) in self.assignment.choices.iter().enumerate() {
             let token = if self.conflict.includes_index(i){
                 if unit {
-                    format!("{}", assignment).red()
+                    format!("{:04}", assignment).red()
                 }else{
-                    format!("{}", assignment).yellow()
+                    format!("{:04}", assignment).yellow()
                 }
             }else{
-                format!("{}", assignment).normal()
+                format!("{:04}", assignment).normal()
             };
             if i > 0 {
                 write!(f, ", {}", token)?;
