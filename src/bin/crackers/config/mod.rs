@@ -12,10 +12,7 @@ use crackers::gadget::library::builder::GadgetLibraryBuilder;
 use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
 
-use crate::config::constraint::{
-    Constraint, gen_memory_constraint, gen_pointer_range_invariant,
-    gen_register_constraint, gen_register_pointer_constraint,
-};
+use crate::config::constraint::{Constraint, gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint, gen_register_pointer_constraint};
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
@@ -159,7 +156,7 @@ impl CrackersConfig {
             }
             if let Some(pointer) = &c.pointer {
                 b = b
-                    .with_pointer_invariant(Arc::new(gen_pointer_range_invariant(pointer.clone())));
+                    .with_pointer_invariant(Arc::new(gen_pointer_range_transition_invariant(pointer.clone())));
             }
         }
         let thing = b

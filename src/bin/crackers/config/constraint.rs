@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use jingle::modeling::State;
+use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleError::UnmodeledSpace;
@@ -14,7 +14,7 @@ use crackers::error::CrackersError;
 pub struct Constraint {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
-    pub pointer: Option<PointerRangeConstraint>,
+    pub pointer: Option<PointerRangeConstraints>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,11 +33,17 @@ pub struct MemoryEqualityConstraint {
 }
 
 #[derive(Copy, Clone, Debug, Deserialize)]
-pub struct PointerRangeConstraint {
+pub struct PointerRangeConstraints {
+    pub read: Option<PointerRange>,
+    pub write: Option<PointerRange>,
+}
+#[derive(Copy, Clone, Debug, Deserialize)]
+pub struct PointerRange {
     pub min: u64,
     pub max: u64,
 }
 
+/// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint<'ctx>(
     m: MemoryEqualityConstraint,
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
@@ -52,6 +58,8 @@ pub fn gen_memory_constraint<'ctx>(
     };
 }
 
+/// Generates a state constraint that a given varnode must be equal to a given value
+/// todo: can consolidate this with the above one I think
 pub fn gen_register_constraint<'ctx>(
     vn: VarNode,
     value: u64,
@@ -67,10 +75,12 @@ pub fn gen_register_constraint<'ctx>(
     };
 }
 
+/// Generates a constraint enforcing that the given varnode contains a pointer into the default
+/// code space, pointing to the provided string
 pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
-    m: Option<PointerRangeConstraint>,
+    m: Option<PointerRangeConstraints>,
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
 {
     return move |z3, state| {
@@ -92,8 +102,8 @@ pub fn gen_register_pointer_constraint<'ctx>(
             pointer,
         });
         let mut constraint = data._eq(&val);
-        if let Some(c) = &m {
-            let callback = gen_pointer_range_invariant(c.clone());
+        if let Some(c) = m.map(|m|m.read).flatten() {
+            let callback = gen_pointer_range_state_invariant(c);
             let cc = callback(z3, &resolved, &state)?;
             if let Some(b) = cc {
                 constraint = Bool::and(z3, &[constraint, b])
@@ -103,8 +113,10 @@ pub fn gen_register_pointer_constraint<'ctx>(
     };
 }
 
-pub fn gen_pointer_range_invariant<'ctx>(
-    m: PointerRangeConstraint,
+/// Generates an invariant enforcing that the given varnode, read from a given state, is within
+/// the given range.
+pub fn gen_pointer_range_state_invariant<'ctx>(
+    m: PointerRange,
 ) -> impl for<'a, 'b> Fn(
     &'a Context,
     &'b ResolvedVarnode<'a>,
@@ -136,5 +148,34 @@ pub fn gen_pointer_range_invariant<'ctx>(
                 Ok(Some(constraint))
             }
         }
+    };
+}
+
+pub fn gen_pointer_range_transition_invariant<'ctx>(
+    m: PointerRangeConstraints,
+) -> impl for<'a, 'b> Fn(&'a Context, &'b ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+       + Send
+       + Sync
+       + Clone
+       + 'static {
+    return move |z3, block| {
+        let mut bools = vec![];
+        if let Some(r) = m.read{
+            let inv = gen_pointer_range_state_invariant(r);
+            for x in block.get_inputs() {
+                if let Some(c) = inv(z3, &x, block.get_final_state())?{
+                    bools.push(c);
+                }
+            }
+        }
+        if let Some(r) = m.write{
+            let inv = gen_pointer_range_state_invariant(r);
+            for x in block.get_outputs() {
+                if let Some(c) = inv(z3, &x, block.get_final_state())?{
+                    bools.push(c);
+                }
+            }
+        }
+        Ok(Some(Bool::and(z3, &bools)))
     };
 }

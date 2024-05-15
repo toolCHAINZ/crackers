@@ -6,14 +6,14 @@ use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::builder::{TransitionConstraintGenerator, StateConstraintGenerator};
 
 pub struct PcodeAssignment<'ctx> {
     spec_trace: Vec<ModeledInstruction<'ctx>>,
     eval_trace: Vec<ModeledBlock<'ctx>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
-    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
 impl<'ctx> PcodeAssignment<'ctx> {
@@ -22,7 +22,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
         eval_trace: Vec<ModeledBlock<'ctx>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
-        pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+        pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Self {
         Self {
             spec_trace,
@@ -83,11 +83,11 @@ pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
     Ok(Bool::and(z3, &bools))
 }
 
-pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx>>(
+pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
     z3: &'ctx Context,
     spec: &S,
-    item: &T,
-    invariants: &[Arc<PointerConstraintGenerator>],
+    item: &ModeledBlock<'ctx>,
+    invariants: &[Arc<TransitionConstraintGenerator>],
 ) -> Result<Bool<'ctx>, CrackersError> {
     let mut bools = vec![];
     // First, all outputs of the item under test must be assignable to the same values
@@ -100,10 +100,9 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>, T: ModelingCo
     }
     // Thirdly, every input and output address must pass our pointer constraints
     for invariant in invariants.iter() {
-        for x in item.get_inputs().union(&item.get_outputs()) {
-            if let Ok(Some(b)) = invariant(z3, x, item.get_original_state()) {
-                bools.push(b);
-            }
+        let inv = invariant(z3, item)?;
+        if let Some(b) = inv{
+            bools.push(b)
         }
     }
     Ok(Bool::and(&z3, &bools))

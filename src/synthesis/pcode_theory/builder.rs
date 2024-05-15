@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::library::GadgetLibrary;
-use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::builder::{TransitionConstraintGenerator, StateConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::slot_assignments::SlotAssignments;
@@ -18,7 +18,7 @@ pub struct PcodeTheoryBuilder<'lib> {
     library: &'lib GadgetLibrary,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
-    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     candidates_per_slot: usize,
 }
 
@@ -36,7 +36,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     pub fn build<'ctx>(
         self,
         z3: &'ctx Context,
-    ) -> Result<PcodeTheory<ModeledInstruction<'ctx>, ModeledBlock<'ctx>>, CrackersError> {
+    ) -> Result<PcodeTheory<ModeledInstruction<'ctx>>, CrackersError> {
         let modeled_templates = self.model_instructions(z3)?;
         let gadget_candidates = self.model_candidates(z3)?;
 
@@ -90,7 +90,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
 
     pub fn with_pointer_invariants(
         mut self,
-        invariants: &[Arc<PointerConstraintGenerator>],
+        invariants: &[Arc<TransitionConstraintGenerator>],
     ) -> Self {
         self.pointer_invariants = invariants.to_vec();
         self

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use jingle::modeling::State;
+use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use jingle::varnode::ResolvedVarnode;
@@ -24,10 +24,9 @@ pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a
     + Send
     + Sync
     + 'static;
-pub type PointerConstraintGenerator = dyn for<'a, 'b> Fn(
+pub type TransitionConstraintGenerator = dyn for<'a, 'b> Fn(
         &'a Context,
-        &'b ResolvedVarnode<'a>,
-        &'b State<'a>,
+        &'b ModeledBlock<'a>,
     ) -> Result<Option<Bool<'a>>, CrackersError>
     + Send
     + Sync
@@ -40,7 +39,7 @@ pub struct SynthesisBuilder {
     pub(crate) instructions: Vec<Instruction>,
     pub(crate) preconditions: Vec<Arc<StateConstraintGenerator>>,
     pub(crate) postconditions: Vec<Arc<StateConstraintGenerator>>,
-    pub(crate) pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+    pub(crate) pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
 impl Default for SynthesisBuilder {
@@ -93,7 +92,7 @@ impl SynthesisBuilder {
         self
     }
 
-    pub fn with_pointer_invariant(mut self, strat: Arc<PointerConstraintGenerator>) -> Self {
+    pub fn with_pointer_invariant(mut self, strat: Arc<TransitionConstraintGenerator>) -> Self {
         self.pointer_invariants.push(strat);
         self
     }

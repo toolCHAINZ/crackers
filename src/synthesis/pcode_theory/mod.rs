@@ -4,18 +4,16 @@ use std::sync::Arc;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
-use z3::ast::{Ast, Bool};
-use z3::{Context, Model, SatResult, Solver};
+use z3::ast::Bool;
+use z3::{Context, SatResult, Solver};
 
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
-use crate::gadget::library::GadgetLibrary;
-use crate::gadget::Gadget;
-use crate::synthesis::builder::{PointerConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{
-    assert_compatible_semantics, assert_concat, assert_state_constraints, PcodeAssignment,
+    assert_compatible_semantics, assert_concat, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
     gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
@@ -29,24 +27,24 @@ pub mod pcode_assignment;
 mod theory_constraint;
 pub mod theory_worker;
 
-pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> {
+pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     templates: Vec<S>,
-    gadget_candidates: Vec<Vec<T>>,
+    gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
-    pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+    pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
-impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheory<'ctx, S, T> {
+impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
     pub fn new(
         z3: &'ctx Context,
         templates: Vec<S>,
-        gadget_candidates: Vec<Vec<T>>,
+        gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
-        pointer_invariants: Vec<Arc<PointerConstraintGenerator>>,
+        pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
         let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
         Ok(Self {
@@ -64,7 +62,7 @@ impl<'ctx, S: ModelingContext<'ctx>, T: ModelingContext<'ctx> + Clone> PcodeTheo
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
         event!(Level::TRACE, "Resetting solver");
-        let gadgets: Vec<T> = slot_assignments
+        let gadgets: Vec<ModeledBlock<'ctx>> = slot_assignments
             .choices()
             .iter()
             .enumerate()

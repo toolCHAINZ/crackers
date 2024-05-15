@@ -1,6 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::modeling::ModeledInstruction;
 use tracing::{event, instrument, Level};
 use z3::Context;
 
@@ -20,7 +20,7 @@ pub struct TheoryWorker<'ctx> {
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
     receiver: Receiver<SlotAssignments>,
-    theory: PcodeTheory<'ctx, ModeledInstruction<'ctx>, ModeledBlock<'ctx>>,
+    theory: PcodeTheory<'ctx, ModeledInstruction<'ctx>>,
 }
 
 impl<'ctx> TheoryWorker<'ctx> {
@@ -66,10 +66,6 @@ impl<'ctx> TheoryWorker<'ctx> {
                 }
             }
         }
-        event!(
-            Level::TRACE,
-            "Worker {} exiting",
-            self.id
-        );
+        event!(Level::TRACE, "Worker {} exiting", self.id);
     }
 }
