@@ -57,11 +57,11 @@ impl SlotAssignments {
 
     pub(crate) fn display_conflict<'a>(
         &'a self,
-        conflicts: &'a [ConflictClause],
+        conflicts: &'a ConflictClause,
     ) -> SlotAssignmentConflictDisplay {
         SlotAssignmentConflictDisplay {
             assignment: self,
-            conflicts,
+            conflict: conflicts,
         }
     }
 }

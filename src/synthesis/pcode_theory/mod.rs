@@ -60,7 +60,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
     pub fn check_assignment(
         &self,
         slot_assignments: &SlotAssignments,
-    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+    ) -> Result<Option<ConflictClause>, CrackersError> {
         event!(Level::TRACE, "Resetting solver");
         let gadgets: Vec<ModeledBlock<'ctx>> = slot_assignments
             .choices()
@@ -100,7 +100,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
                 TheoryStage::Consistency,
             ))
         }
-        for (index, (spec, g)) in self.templates.iter().zip(gadgets).enumerate() {
+        for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
             let sem = Bool::fresh_const(self.z3, "c");
             self.solver.assert_and_track(
                 &assert_compatible_semantics(self.z3, spec, &g, &self.pointer_invariants)?,
@@ -120,6 +120,12 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         let post = self.assert_postconditions(slot_assignments)?;
         self.solver.assert(&pre);
         self.solver.assert(&post);
+        event!(Level::TRACE, "Evaluating chain:");
+        for x in &gadgets {
+            for i in &x.instructions {
+                event!(Level::TRACE, "{}", &i.disassembly)
+            }
+        }
         self.collect_conflicts(&assertions, slot_assignments)
     }
 
@@ -159,7 +165,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         &self,
         assertions: &[ConjunctiveConstraint<'ctx>],
         assignments: &SlotAssignments,
-    ) -> Result<Option<Vec<ConflictClause>>, CrackersError> {
+    ) -> Result<Option<ConflictClause>, CrackersError> {
         let mut constraints = Vec::new();
         match self.solver.check() {
             SatResult::Unsat => {
@@ -178,10 +184,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
                     }
                 }
                 let clauses = gen_conflict_clauses(constraints.as_slice());
-                if clauses.is_empty() {
-                    return Ok(Some(vec![assignments.as_conflict_clause()]));
-                }
-                Ok(Some(clauses))
+                Ok(Some(clauses.unwrap_or(assignments.as_conflict_clause())))
             }
             SatResult::Unknown => Err(TheoryTimeout),
             SatResult::Sat => Ok(None),

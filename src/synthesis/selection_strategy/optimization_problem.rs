@@ -42,32 +42,30 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         }
         prob
     }
-    fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments> {
-        let terms: Vec<Bool> = blacklist
-            .iter()
-            .map(|s| {
-                let decisions: Vec<&Bool<'ctx>> = s
-                    .to_decisions()
-                    .iter()
-                    .map(|d| self.get_decision_variable(d))
-                    .collect();
-                Bool::and(self.z3, &decisions).not()
-            })
-            .collect();
-        match self.solver.check(&terms) {
+    fn get_assignments(&self) -> Option<SlotAssignments> {
+
+        match self.solver.check(&[]) {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
             SatResult::Sat => {
                 let model = self.solver.get_model()?;
-                SlotAssignments::create_from_model(model, self.variables.as_slice())
+                let assignment = SlotAssignments::create_from_model(model, self.variables.as_slice());
+                if let Some(a) = &assignment{
+                    let decisions: Vec<&Bool<'ctx>> = a
+                        .to_decisions()
+                        .iter()
+                        .map(|d| self.get_decision_variable(d))
+                        .collect();
+                    self.solver.assert(&Bool::and(self.z3, &decisions).not());
+                }
+                assignment
             }
         }
     }
 
-    fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
-        for clause in clauses {
+    fn add_theory_clauses(&mut self, clause: &ConflictClause) {
             match clause {
                 ConflictClause::Unit(d) => {
                     let var = self.get_decision_variable(d);
@@ -80,6 +78,5 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
                         .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
                 }
             }
-        }
     }
 }

@@ -41,9 +41,9 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
 
-    fn get_assignments(&self, blacklist: &[&SlotAssignments]) -> Option<SlotAssignments>;
+    fn get_assignments(&self) -> Option<SlotAssignments>;
 
-    fn add_theory_clauses(&mut self, clauses: &[ConflictClause]);
+    fn add_theory_clauses(&mut self, clause: &ConflictClause);
 
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
         format!("i{}_g{}", target_index, gadget_index)
@@ -58,15 +58,14 @@ pub enum OuterProblem<'ctx> {
 impl<'ctx> OuterProblem<'ctx> {
     pub(crate) fn get_assignments(
         &self,
-        blacklist: &[&SlotAssignments],
     ) -> Option<SlotAssignments> {
         match self {
-            OuterProblem::SatProb(s) => s.get_assignments(blacklist),
-            OuterProblem::OptimizeProb(o) => o.get_assignments(blacklist),
+            OuterProblem::SatProb(s) => s.get_assignments(),
+            OuterProblem::OptimizeProb(o) => o.get_assignments(),
         }
     }
 
-    pub(crate) fn add_theory_clauses(&mut self, clauses: &[ConflictClause]) {
+    pub(crate) fn add_theory_clauses(&mut self, clauses: &ConflictClause) {
         match self {
             OuterProblem::SatProb(s) => s.add_theory_clauses(clauses),
             OuterProblem::OptimizeProb(o) => o.add_theory_clauses(clauses),

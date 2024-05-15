@@ -124,16 +124,13 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 });
             }
             std::mem::drop(resp_sender);
-            let mut blacklist = HashMap::new();
             for (i, x) in req_channels.iter().enumerate() {
-                let active: Vec<&SlotAssignments> = blacklist.values().collect();
                 event!(
                     Level::TRACE,
                     "Asking outer procedure for initial assignments"
                 );
-                if let Some(assignment) = self.outer_problem.get_assignments(&active) {
+                if let Some(assignment) = self.outer_problem.get_assignments() {
                     event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
-                    blacklist.insert(i, assignment.clone());
                     x.send(assignment).unwrap();
                 }
             }
@@ -173,15 +170,13 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     response.assignment.display_conflict(&c)
                                 );
                                 self.outer_problem.add_theory_clauses(&c);
-                                let active: Vec<&SlotAssignments> = blacklist.values().collect();
-                                let new_assignment = self.outer_problem.get_assignments(&active);
+                                let new_assignment = self.outer_problem.get_assignments();
                                 match new_assignment {
                                     None => {
                                         // drop the senders
                                         req_channels.clear();
                                     }
                                     Some(a) => {
-                                        blacklist.insert(response.idx, a.clone());
                                         req_channels[response.idx].send(a).unwrap();
                                     }
                                 }

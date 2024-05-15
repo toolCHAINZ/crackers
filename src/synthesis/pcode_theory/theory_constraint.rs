@@ -1,7 +1,8 @@
+use std::vec;
 use z3::ast::Bool;
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::Decision;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
@@ -28,7 +29,6 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
         &self.boolean
     }
 
-
     pub fn gen_conflict_clause(&self) -> ConflictClause {
         match self.constraint_type {
             TheoryStage::Branch => ConflictClause::Unit(self.decisions[0]),
@@ -37,7 +37,9 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 }
 
-pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Vec<ConflictClause> {
+pub(crate) fn gen_conflict_clauses(
+    constraints: &[&ConjunctiveConstraint],
+) -> Option<ConflictClause> {
     let mut result = Vec::new();
     let mut combined_semantics = Vec::new();
     let mut branch = Vec::new();
@@ -50,7 +52,7 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
             TheoryStage::Branch => {
                 branch.push(x.gen_conflict_clause());
             }
-            TheoryStage::Consistency => concat.push(x.gen_conflict_clause())
+            TheoryStage::Consistency => concat.push(x.gen_conflict_clause()),
         }
     }
 
@@ -63,10 +65,14 @@ pub(crate) fn gen_conflict_clauses(constraints: &[&ConjunctiveConstraint]) -> Ve
         let clause = ConflictClause::combine(branch.as_slice());
         result.push(clause);
     }
-    
-    if !concat.is_empty() && result.is_empty(){
+
+    if !concat.is_empty() && result.is_empty() {
         let clause = ConflictClause::combine(concat.as_slice());
         result.push(clause);
     }
-    result
+    if result.len() == 0 {
+        None
+    } else {
+        Some(ConflictClause::combine(result.as_slice()))
+    }
 }

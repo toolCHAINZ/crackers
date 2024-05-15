@@ -13,7 +13,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 pub struct TheoryWorkerResponse {
     pub idx: usize,
     pub assignment: SlotAssignments,
-    pub theory_result: Result<Option<Vec<ConflictClause>>, CrackersError>,
+    pub theory_result: Result<Option<ConflictClause>, CrackersError>,
 }
 
 pub struct TheoryWorker<'ctx> {
