@@ -11,11 +11,19 @@ pub struct SatProblem<'ctx> {
     variables: Vec<Vec<Bool<'ctx>>>,
     z3: &'ctx Context,
     solver: Solver<'ctx>,
+    last_conflict: Option<ConflictClause>
 }
 
 impl<'ctx> SatProblem<'ctx> {
     fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
         &self.variables[var.index][var.choice]
+    }
+
+    fn get_last_conflict_refutation(&self) -> Option<Bool<'ctx>>{
+        self.last_conflict.clone().map(|c| {
+            let decisions: Vec<&Bool<'ctx>> = c.decisions().iter().map(|d| self.get_decision_variable(d)).collect();
+            Bool::or(self.z3, &decisions).not()
+        })
     }
 }
 
@@ -24,7 +32,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
-            solver: Solver::new_for_logic(z3, "QF_FD").unwrap(),
+            solver: Solver::new(z3), last_conflict: None,
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -41,7 +49,14 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
     }
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
-        match self.solver.check() {
+        let sat_result = match self.get_last_conflict_refutation(){
+            None => self.solver.check(),
+            Some(c) => match self.solver.check_assumptions(&[c]){
+                SatResult::Sat => SatResult::Sat,
+                _ => self.solver.check()
+            }
+        };
+        match sat_result {
             SatResult::Unsat => None,
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
@@ -63,6 +78,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
     }
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause) {
+            self.last_conflict = Some(clause.clone());
             match clause {
                 ConflictClause::Unit(d) => {
                     let var = self.get_decision_variable(d);

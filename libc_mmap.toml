@@ -3,11 +3,11 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "sat"
-max_candidates_per_slot = 200
+max_candidates_per_slot = 1000
 parallel = 6
 
 [specification]
-path = "bin/mmap_call.bin"
+path = "bin/mmap_call2.bin"
 max_instructions = 7
 
 [library]
@@ -35,8 +35,15 @@ R15 = 0x400538
 GS = 0
 FS = 0
 
+[constraint.postcondition.register]
+RSI = 1024
+RDX = 0x7b
+RCX = 0x20
 
+[constraint.pointer.read]
+min = 0x7ffffffde000
+max = 0x7ffffffff000
 
-[constraint.pointer]
-min = 0x7fffffffde00
+[constraint.pointer.write]
+min = 0x7ffffffde000
 max = 0x7ffffffff000

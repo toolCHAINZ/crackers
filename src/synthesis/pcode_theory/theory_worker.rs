@@ -39,7 +39,7 @@ impl<'ctx> TheoryWorker<'ctx> {
         })
     }
 
-    #[instrument(skip_all)]
+    #[instrument(skip(self), fields(id = %self.id))]
     pub fn run(&self) {
         event!(
             Level::TRACE,

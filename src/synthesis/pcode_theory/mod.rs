@@ -4,22 +4,22 @@ use std::sync::Arc;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
-use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
+use z3::ast::Bool;
 
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 pub mod builder;
 pub mod conflict_clause;

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
-use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::{TransitionConstraintGenerator, StateConstraintGenerator};
+use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
 pub struct PcodeAssignment<'ctx> {
     spec_trace: Vec<ModeledInstruction<'ctx>>,
@@ -92,7 +92,7 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
     let mut bools = vec![];
     // First, all outputs of the item under test must be assignable to the same values
     // as in our specification computation
-    bools.push(item.refines(spec)?);
+    bools.push(item.upholds_postcondition(spec)?);
     // Secondly, if the specification has some control flow behavior, the item must be able
     // to have the same control flow behavior
     if let Some(b) = spec.branch_comparison(item)? {

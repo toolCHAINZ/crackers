@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
@@ -61,5 +61,14 @@ impl SpaceManager for Gadget{
 
     fn get_code_space_idx(&self) -> usize {
         self.code_space_idx
+    }
+}
+
+impl Display for Gadget{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for x in &self.instructions {
+            writeln!(f, "{:x}\t{}",x.address, x.disassembly)?;
+        }
+        Ok(())
     }
 }

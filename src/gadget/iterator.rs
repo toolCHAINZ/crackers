@@ -53,7 +53,8 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
                             continue;
                         }
                     };
-                let isolated_check = h.refines(&self.instr).ok()?;
+                return Some(x);
+                let isolated_check = h.upholds_postcondition(&self.instr).ok()?;
                 if self.solver.check_assumptions(&[isolated_check]) == SatResult::Sat {
                     return Some(x);
                 }

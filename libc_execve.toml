@@ -43,7 +43,7 @@ RDX = 0
 RDI = "/bin/sh"
 
 [constraint.pointer.read]
-min = 0x7fffffffde00
+min = 0x7ffffffde000
 max = 0x7ffffffff000
 
 [constraint.pointer.write]

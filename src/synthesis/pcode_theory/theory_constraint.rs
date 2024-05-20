@@ -1,8 +1,7 @@
-use std::vec;
 use z3::ast::Bool;
 
-use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
@@ -45,6 +44,7 @@ pub(crate) fn gen_conflict_clauses(
     let mut branch = Vec::new();
     let mut concat = Vec::new();
     for x in constraints {
+        result.push(x.gen_conflict_clause());
         match x.constraint_type {
             TheoryStage::CombinedSemantics => {
                 combined_semantics.push(x.gen_conflict_clause());
@@ -56,6 +56,11 @@ pub(crate) fn gen_conflict_clauses(
         }
     }
 
+    return if result.len() == 0 {
+        None
+    } else {
+        Some(ConflictClause::combine(result.as_slice()))
+    };
     if !combined_semantics.is_empty() {
         let clause = ConflictClause::combine(combined_semantics.as_slice());
         result.push(clause);

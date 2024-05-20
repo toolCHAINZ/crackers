@@ -6,8 +6,8 @@ use std::path::Path;
 use jingle::JingleError;
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
+use rand::{random, SeedableRng};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
@@ -83,10 +83,9 @@ impl GadgetLibrary {
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
         if let Some(random_sample_size) = builder.random_sample_size {
-            let mut rng = match builder.random_sample_seed {
-                None => StdRng::from_entropy(),
-                Some(a) => StdRng::seed_from_u64(a),
-            };
+            let seed = builder.random_sample_seed.unwrap_or(random());
+            event!(Level::INFO, "Using seed: {}", seed);
+            let mut rng = StdRng::seed_from_u64(seed as u64);
             let rand_gadgets = lib
                 .gadgets
                 .choose_multiple(&mut rng, random_sample_size)
