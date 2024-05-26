@@ -44,13 +44,13 @@ impl Gadget {
             .any(|i| i.ops.iter().any(|o| blacklist.contains(&o.opcode())))
     }
 
-    pub fn model<'ctx>(&self, z3: &'ctx Context) -> Result<ModeledBlock<'ctx>, CrackersError>{
+    pub fn model<'ctx>(&self, z3: &'ctx Context) -> Result<ModeledBlock<'ctx>, CrackersError> {
         let blk = ModeledBlock::read(z3, self, self.instructions.clone().into_iter())?;
         Ok(blk)
     }
 }
 
-impl SpaceManager for Gadget{
+impl SpaceManager for Gadget {
     fn get_space_info(&self, idx: usize) -> Option<&SpaceInfo> {
         self.spaces.get(idx)
     }
@@ -64,10 +64,10 @@ impl SpaceManager for Gadget{
     }
 }
 
-impl Display for Gadget{
+impl Display for Gadget {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for x in &self.instructions {
-            writeln!(f, "{:x}\t{}",x.address, x.disassembly)?;
+            writeln!(f, "{:x}\t{}", x.address, x.disassembly)?;
         }
         Ok(())
     }

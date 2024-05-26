@@ -102,7 +102,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
             pointer,
         });
         let mut constraint = data._eq(&val);
-        if let Some(c) = m.map(|m|m.read).flatten() {
+        if let Some(c) = m.map(|m| m.read).flatten() {
             let callback = gen_pointer_range_state_invariant(c);
             let cc = callback(z3, &resolved, &state)?;
             if let Some(b) = cc {
@@ -160,18 +160,18 @@ pub fn gen_pointer_range_transition_invariant<'ctx>(
        + 'static {
     return move |z3, block| {
         let mut bools = vec![];
-        if let Some(r) = m.read{
+        if let Some(r) = m.read {
             let inv = gen_pointer_range_state_invariant(r);
             for x in block.get_inputs() {
-                if let Some(c) = inv(z3, &x, block.get_final_state())?{
+                if let Some(c) = inv(z3, &x, block.get_final_state())? {
                     bools.push(c);
                 }
             }
         }
-        if let Some(r) = m.write{
+        if let Some(r) = m.write {
             let inv = gen_pointer_range_state_invariant(r);
             for x in block.get_outputs() {
-                if let Some(c) = inv(z3, &x, block.get_final_state())?{
+                if let Some(c) = inv(z3, &x, block.get_final_state())? {
                     bools.push(c);
                 }
             }

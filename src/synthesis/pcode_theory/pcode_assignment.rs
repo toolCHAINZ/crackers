@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
-use z3::{Context, SatResult, Solver};
 use z3::ast::Bool;
+use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
@@ -101,7 +101,7 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
     // Thirdly, every input and output address must pass our pointer constraints
     for invariant in invariants.iter() {
         let inv = invariant(z3, item)?;
-        if let Some(b) = inv{
+        if let Some(b) = inv {
             bools.push(b)
         }
     }

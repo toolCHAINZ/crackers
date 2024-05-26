@@ -5,6 +5,7 @@ ghidra_path = "/Applications/ghidra"
 strategy = "sat"
 max_candidates_per_slot = 200
 parallel = 8
+log_level = "TRACE"
 
 [specification]
 path = "bin/execve_instrs.bin"

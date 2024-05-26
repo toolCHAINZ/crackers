@@ -1,13 +1,13 @@
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
+use jingle::JingleError;
 use tracing::{event, Level};
 use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct GadgetIterator<'a, 'ctx> {
     z3: &'ctx Context,
@@ -46,13 +46,17 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
             if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr.instr))
                 && syscall_cond
             {
-                    let h = match ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter()){
-                        Ok(h) => {h}
-                        Err(e) => {
-                            event!(Level::TRACE, "{:?}", e);
-                            continue;
-                        }
-                    };
+                let h = match ModeledBlock::read(
+                    self.z3,
+                    self.library,
+                    x.instructions.clone().into_iter(),
+                ) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        event!(Level::TRACE, "{:?}", e);
+                        continue;
+                    }
+                };
                 return Some(x);
                 let isolated_check = h.upholds_postcondition(&self.instr).ok()?;
                 if self.solver.check_assumptions(&[isolated_check]) == SatResult::Sat {

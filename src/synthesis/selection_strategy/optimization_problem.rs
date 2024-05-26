@@ -1,10 +1,10 @@
-use z3::{Context, Optimize, SatResult};
 use z3::ast::{Ast, Bool};
+use z3::{Context, Optimize, SatResult};
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -43,7 +43,6 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         prob
     }
     fn get_assignments(&self) -> Option<SlotAssignments> {
-
         match self.solver.check(&[]) {
             SatResult::Unsat => None,
             SatResult::Unknown => {
@@ -51,8 +50,9 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
             }
             SatResult::Sat => {
                 let model = self.solver.get_model()?;
-                let assignment = SlotAssignments::create_from_model(model, self.variables.as_slice());
-                if let Some(a) = &assignment{
+                let assignment =
+                    SlotAssignments::create_from_model(model, self.variables.as_slice());
+                if let Some(a) = &assignment {
                     let decisions: Vec<&Bool<'ctx>> = a
                         .to_decisions()
                         .iter()
@@ -66,17 +66,17 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
     }
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause) {
-            match clause {
-                ConflictClause::Unit(d) => {
-                    let var = self.get_decision_variable(d);
-                    self.solver.assert(&var.not());
-                }
-                ConflictClause::Conjunction(v) => {
-                    let choices: Vec<&Bool<'ctx>> =
-                        v.iter().map(|b| self.get_decision_variable(b)).collect();
-                    self.solver
-                        .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
-                }
+        match clause {
+            ConflictClause::Unit(d) => {
+                let var = self.get_decision_variable(d);
+                self.solver.assert(&var.not());
             }
+            ConflictClause::Conjunction(v) => {
+                let choices: Vec<&Bool<'ctx>> =
+                    v.iter().map(|b| self.get_decision_variable(b)).collect();
+                self.solver
+                    .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
+            }
+        }
     }
 }
