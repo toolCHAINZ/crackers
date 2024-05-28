@@ -24,10 +24,7 @@ pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a
     + Send
     + Sync
     + 'static;
-pub type TransitionConstraintGenerator = dyn for<'a, 'b> Fn(
-        &'a Context,
-        &'b ModeledBlock<'a>,
-    ) -> Result<Option<Bool<'a>>, CrackersError>
+pub type TransitionConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
     + Send
     + Sync
     + 'static;

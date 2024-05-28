@@ -1,7 +1,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
+use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use object::File;
 use serde::Deserialize;
@@ -9,10 +9,13 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
-use crackers::synthesis::AssignmentSynthesis;
 use crackers::synthesis::builder::SynthesisBuilder;
+use crackers::synthesis::AssignmentSynthesis;
 
-use crate::config::constraint::{Constraint, gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint, gen_register_pointer_constraint};
+use crate::config::constraint::{
+    gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint,
+    gen_register_pointer_constraint, Constraint,
+};
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
@@ -32,7 +35,7 @@ pub struct CrackersConfig {
     library: LibraryConfig,
     sleigh: SleighConfig,
     constraint: Option<Constraint>,
-    synthesis: Option<SynthesisConfig>,
+    pub(crate) synthesis: Option<SynthesisConfig>,
 }
 
 impl CrackersConfig {
@@ -155,8 +158,9 @@ impl CrackersConfig {
                 }
             }
             if let Some(pointer) = &c.pointer {
-                b = b
-                    .with_pointer_invariant(Arc::new(gen_pointer_range_transition_invariant(pointer.clone())));
+                b = b.with_pointer_invariant(Arc::new(gen_pointer_range_transition_invariant(
+                    pointer.clone(),
+                )));
             }
         }
         let thing = b

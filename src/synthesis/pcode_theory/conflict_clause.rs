@@ -27,10 +27,10 @@ impl ConflictClause {
         }
     }
 
-    pub fn includes_index(&self, d: usize) -> bool{
-        match self{
+    pub fn includes_index(&self, d: usize) -> bool {
+        match self {
             ConflictClause::Unit(i) => i.index == d,
-            ConflictClause::Conjunction(i) => i.iter().any(|ii|ii.index == d)
+            ConflictClause::Conjunction(i) => i.iter().any(|ii| ii.index == d),
         }
     }
 }

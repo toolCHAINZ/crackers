@@ -56,9 +56,7 @@ pub enum OuterProblem<'ctx> {
 }
 
 impl<'ctx> OuterProblem<'ctx> {
-    pub(crate) fn get_assignments(
-        &self,
-    ) -> Option<SlotAssignments> {
+    pub(crate) fn get_assignments(&self) -> Option<SlotAssignments> {
         match self {
             OuterProblem::SatProb(s) => s.get_assignments(),
             OuterProblem::OptimizeProb(o) => o.get_assignments(),

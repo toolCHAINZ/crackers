@@ -13,18 +13,18 @@ pub(crate) struct SlotAssignmentConflictDisplay<'a> {
 impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
-        let unit = match self.conflict{
+        let unit = match self.conflict {
             ConflictClause::Unit(_) => true,
-            ConflictClause::Conjunction(c)=>c.len() == 1
+            ConflictClause::Conjunction(c) => c.len() == 1,
         };
         for (i, assignment) in self.assignment.choices.iter().enumerate() {
-            let token = if self.conflict.includes_index(i){
+            let token = if self.conflict.includes_index(i) {
                 if unit {
                     format!("{:04}", assignment).red()
-                }else{
+                } else {
                     format!("{:04}", assignment).yellow()
                 }
-            }else{
+            } else {
                 format!("{:04}", assignment).normal()
             };
             if i > 0 {

@@ -83,7 +83,7 @@ impl From<&Instruction> for OutputSignature {
 impl From<&Gadget> for OutputSignature {
     fn from(value: &Gadget) -> Self {
         let mut outputs = Vec::new();
-        for op in value.instructions.iter().flat_map(|i| &i.ops){
+        for op in value.instructions.iter().flat_map(|i| &i.ops) {
             if let Some(op) = op.output() {
                 outputs.push(op);
             }

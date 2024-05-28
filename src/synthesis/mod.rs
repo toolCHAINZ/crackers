@@ -9,17 +9,17 @@ use pcode_theory::conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -155,7 +155,8 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 dbg!("huh");
                                 req_channels.clear();
                                 let t = theory_builder.clone();
-                                let a :PcodeAssignment<'ctx> = t.build_assignment(self.z3, response.assignment)?;
+                                let a: PcodeAssignment<'ctx> =
+                                    t.build_assignment(self.z3, response.assignment)?;
                                 dbg!("huh2");
                                 let solver = Solver::new(self.z3);
                                 let model = a.check(self.z3, &solver)?;

@@ -4,22 +4,22 @@ use std::sync::Arc;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
-use z3::{Context, SatResult, Solver};
 use z3::ast::Bool;
+use z3::{Context, SatResult, Solver};
 
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
-    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
+    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 pub mod builder;
 pub mod conflict_clause;
@@ -118,8 +118,20 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
 
         let pre = self.assert_preconditions(slot_assignments)?;
         let post = self.assert_postconditions(slot_assignments)?;
-        self.solver.assert(&pre);
-        self.solver.assert(&post);
+        let pre_bool = Bool::fresh_const(self.z3, "pre");
+        let post_bool = Bool::fresh_const(self.z3, "post");
+        self.solver.assert_and_track(&pre, &pre_bool);
+        self.solver.assert_and_track(&post, &post_bool);
+        assertions.push(ConjunctiveConstraint::new(
+            &[],
+            pre_bool,
+            TheoryStage::Precondition,
+        ));
+        assertions.push(ConjunctiveConstraint::new(
+            &[],
+            post_bool,
+            TheoryStage::Precondition,
+        ));
         event!(Level::TRACE, "Evaluating chain:");
         for x in &gadgets {
             for i in &x.instructions {

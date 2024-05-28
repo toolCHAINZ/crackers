@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use jingle::JingleError;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::OpCode;
+use jingle::JingleError;
 
 use crate::gadget::library::GadgetLibrary;
 

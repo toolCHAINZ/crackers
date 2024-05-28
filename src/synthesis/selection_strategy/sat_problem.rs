@@ -1,17 +1,17 @@
-use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
+use z3::{Context, SatResult, Solver};
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::SelectionStrategy;
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
     variables: Vec<Vec<Bool<'ctx>>>,
     z3: &'ctx Context,
     solver: Solver<'ctx>,
-    last_conflict: Option<ConflictClause>
+    last_conflict: Option<ConflictClause>,
 }
 
 impl<'ctx> SatProblem<'ctx> {
@@ -19,9 +19,13 @@ impl<'ctx> SatProblem<'ctx> {
         &self.variables[var.index][var.choice]
     }
 
-    fn get_last_conflict_refutation(&self) -> Option<Bool<'ctx>>{
+    fn get_last_conflict_refutation(&self) -> Option<Bool<'ctx>> {
         self.last_conflict.clone().map(|c| {
-            let decisions: Vec<&Bool<'ctx>> = c.decisions().iter().map(|d| self.get_decision_variable(d)).collect();
+            let decisions: Vec<&Bool<'ctx>> = c
+                .decisions()
+                .iter()
+                .map(|d| self.get_decision_variable(d))
+                .collect();
             Bool::or(self.z3, &decisions).not()
         })
     }
@@ -32,7 +36,8 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3,
-            solver: Solver::new(z3), last_conflict: None,
+            solver: Solver::new(z3),
+            last_conflict: None,
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -49,12 +54,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
     }
 
     fn get_assignments(&self) -> Option<SlotAssignments> {
-        let sat_result = match self.get_last_conflict_refutation(){
+        let sat_result = match self.get_last_conflict_refutation() {
             None => self.solver.check(),
-            Some(c) => match self.solver.check_assumptions(&[c]){
+            Some(c) => match self.solver.check_assumptions(&[c]) {
                 SatResult::Sat => SatResult::Sat,
-                _ => self.solver.check()
-            }
+                _ => self.solver.check(),
+            },
         };
         match sat_result {
             SatResult::Unsat => None,
@@ -63,8 +68,9 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             }
             SatResult::Sat => {
                 let model = self.solver.get_model()?;
-                let assignment = SlotAssignments::create_from_model(model, self.variables.as_slice());
-                if let Some(a) = &assignment{
+                let assignment =
+                    SlotAssignments::create_from_model(model, self.variables.as_slice());
+                if let Some(a) = &assignment {
                     let decisions: Vec<&Bool<'ctx>> = a
                         .to_decisions()
                         .iter()
@@ -78,20 +84,18 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
     }
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause) {
-            self.last_conflict = Some(clause.clone());
-            match clause {
-                ConflictClause::Unit(d) => {
-                    let var = self.get_decision_variable(d);
-                    self.solver.assert(&var.not());
-                }
-                ConflictClause::Conjunction(v) => {
-                    let choices: Vec<&Bool> =
-                        v.iter().map(|b| self.get_decision_variable(b)).collect();
-                    self.solver
-                        .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
-                }
+        self.last_conflict = Some(clause.clone());
+        match clause {
+            ConflictClause::Unit(d) => {
+                let var = self.get_decision_variable(d);
+                self.solver.assert(&var.not());
             }
-
+            ConflictClause::Conjunction(v) => {
+                let choices: Vec<&Bool> = v.iter().map(|b| self.get_decision_variable(b)).collect();
+                self.solver
+                    .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
+            }
+        }
     }
 }
 
@@ -99,10 +103,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
-    use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::SelectionStrategy;
+    use crate::synthesis::Decision;
 
     #[test]
     fn test_assignment() {
