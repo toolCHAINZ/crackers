@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModelingContext, };
 use tracing::{event, Level};
 use z3::{Context, SatResult, Solver};
@@ -26,7 +27,7 @@ mod theory_constraint;
 pub mod theory_worker;
 
 pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
-    z3: &'ctx Context,
+    j: JingleContext<'ctx>,
     solver: Solver<'ctx>,
     templates: Vec<S>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
@@ -37,16 +38,16 @@ pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
 
 impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
     pub fn new(
-        z3: &'ctx Context,
+        j: JingleContext<'ctx>,
         templates: Vec<S>,
         gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
-        let solver = Solver::new_for_logic(z3, "QF_ABV").unwrap();
+        let solver = Solver::new_for_logic(&j.z3, "QF_ABV").unwrap();
         Ok(Self {
-            z3,
+            j,
             solver,
             templates,
             gadget_candidates,
@@ -70,12 +71,12 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
         self.solver
-            .assert(&assert_concat(self.z3, &self.templates)?);
+            .assert(&assert_concat(self.j.z3, &self.templates)?);
 
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         for (index, x) in gadgets.windows(2).enumerate() {
-            let branch = Bool::fresh_const(self.z3, "b");
-            let concat = Bool::fresh_const(self.z3, "m");
+            let branch = Bool::fresh_const(self.j.z3, "b");
+            let concat = Bool::fresh_const(self.j.z3, "m");
             self.solver
                 .assert_and_track(&x[0].assert_concat(&x[1])?, &concat);
 
@@ -99,9 +100,9 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             ))
         }
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
-            let sem = Bool::fresh_const(self.z3, "c");
+            let sem = Bool::fresh_const(self.j.z3, "c");
             self.solver.assert_and_track(
-                &assert_compatible_semantics(self.z3, spec, &g, &self.pointer_invariants)?,
+                &assert_compatible_semantics(self.j.z3, spec, &g, &self.pointer_invariants)?,
                 &sem,
             );
             assertions.push(ConjunctiveConstraint::new(
@@ -116,8 +117,8 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
 
         let pre = self.assert_preconditions(slot_assignments)?;
         let post = self.assert_postconditions(slot_assignments)?;
-        let pre_bool = Bool::fresh_const(self.z3, "pre");
-        let post_bool = Bool::fresh_const(self.z3, "post");
+        let pre_bool = Bool::fresh_const(self.j.z3, "pre");
+        let post_bool = Bool::fresh_const(self.j.z3, "post");
         self.solver.assert_and_track(&pre, &pre_bool);
         self.solver.assert_and_track(&post, &post_bool);
         assertions.push(ConjunctiveConstraint::new(
@@ -149,7 +150,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             .map(|f| &f[slot_assignments.choice(0)])
             .ok_or(EmptyAssignment)?;
         assert_state_constraints(
-            &self.z3,
+            self.j.z3,
             &self.preconditions,
             &first_gadget.get_original_state(),
         )
@@ -165,7 +166,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
             .ok_or(EmptyAssignment)?;
         assert_state_constraints(
-            &self.z3,
+            self.j.z3,
             &self.postconditions,
             &last_gadget.get_final_state(),
         )

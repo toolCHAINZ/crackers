@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
 use tracing::{event, Level};
@@ -39,9 +40,9 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     ) -> Result<PcodeTheory<ModeledInstruction<'ctx>>, CrackersError> {
         let modeled_templates = self.model_instructions(z3)?;
         let gadget_candidates = self.model_candidates(z3)?;
-
+        let j = JingleContext::new(z3, self.library);
         let t = PcodeTheory::new(
-            z3,
+            j,
             modeled_templates,
             gadget_candidates,
             self.preconditions,

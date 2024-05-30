@@ -3,21 +3,21 @@ use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::sleigh::context::SleighContext;
+use rand::{random, SeedableRng};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand::{random, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
+use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -137,13 +137,27 @@ impl SpaceManager for GadgetLibrary {
     }
 }
 
+impl RegisterManager for GadgetLibrary{
+    fn get_register(&self, name: &str) -> Option<VarNode> {
+        todo!()
+    }
+
+    fn get_register_name(&self, location: VarNode) -> Option<&str> {
+        todo!()
+    }
+
+    fn get_registers(&self) -> Vec<(VarNode, String)> {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::GadgetLibrary;
