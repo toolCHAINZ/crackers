@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
 use jingle::modeling::{ModeledBlock, ModelingContext};
 use tracing::{event, instrument, Level};
@@ -9,17 +8,17 @@ use pcode_theory::conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::Gadget;
+use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;

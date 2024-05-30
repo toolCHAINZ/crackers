@@ -3,7 +3,6 @@ use std::sync::Arc;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
-use jingle::varnode::ResolvedVarnode;
 use serde::Deserialize;
 use z3::ast::Bool;
 use z3::Context;
