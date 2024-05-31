@@ -2,23 +2,26 @@ use serde::Deserialize;
 use tracing::Level;
 
 use crackers::synthesis::builder::SynthesisSelectionStrategy;
+
 #[derive(Copy, Clone, Debug, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum CrackersLogLevel {
-    TRACE,
-    DEBUG,
-    WARN,
-    INFO,
-    ERROR,
+    #[serde(rename = "TRACE")]
+    Trace,
+    Debug,
+    Warn,
+    Info,
+    Error,
 }
 
 impl From<CrackersLogLevel> for Level {
     fn from(value: CrackersLogLevel) -> Self {
         match value {
-            CrackersLogLevel::TRACE => Level::TRACE,
-            CrackersLogLevel::DEBUG => Level::DEBUG,
-            CrackersLogLevel::WARN => Level::WARN,
-            CrackersLogLevel::INFO => Level::INFO,
-            CrackersLogLevel::ERROR => Level::ERROR,
+            CrackersLogLevel::Trace => Level::TRACE,
+            CrackersLogLevel::Debug => Level::DEBUG,
+            CrackersLogLevel::Warn => Level::WARN,
+            CrackersLogLevel::Info => Level::INFO,
+            CrackersLogLevel::Error => Level::ERROR,
         }
     }
 }
@@ -37,7 +40,7 @@ impl Default for SynthesisConfig {
             strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             max_candidates_per_slot: 50,
             parallel: 4,
-            log_level: CrackersLogLevel::INFO,
+            log_level: CrackersLogLevel::Info,
         }
     }
 }

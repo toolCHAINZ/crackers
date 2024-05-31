@@ -21,7 +21,7 @@ fn main() {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let args = Arguments::parse();
-    let cfg_bytes = fs::read(&args.cfg_path).unwrap();
+    let cfg_bytes = fs::read(args.cfg_path).unwrap();
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
     let level = p

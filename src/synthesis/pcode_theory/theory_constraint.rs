@@ -3,6 +3,8 @@ use z3::ast::Bool;
 use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 
+const AGGRESSIVE: bool = true;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
     CombinedSemantics,
@@ -59,6 +61,9 @@ pub(crate) fn gen_conflict_clauses(
     }
 
     if !semantics.is_empty() {
+        if AGGRESSIVE {
+            return Some(ConflictClause::combine(semantics.as_slice()));
+        }
         match (pre.is_empty(), post.is_empty()) {
             (true, true) => {
                 let clause = ConflictClause::combine(semantics.as_slice());
@@ -68,12 +73,12 @@ pub(crate) fn gen_conflict_clauses(
                 // only post-condition
                 let max_index = semantics
                     .into_iter()
-                    .map(|c| c.decisions().into_iter().map(|d| d.index).max().unwrap())
+                    .map(|c| c.decisions().iter().map(|d| d.index).max().unwrap())
                     .max()
                     .unwrap();
                 let clauses: Vec<ConflictClause> = concat
                     .into_iter()
-                    .filter(|f| f.decisions().into_iter().all(|d| d.index > max_index))
+                    .filter(|f| f.decisions().iter().all(|d| d.index > max_index))
                     .collect();
                 result.push(ConflictClause::combine(&clauses))
             }
@@ -81,12 +86,12 @@ pub(crate) fn gen_conflict_clauses(
                 // only pre-condition
                 let min_index = semantics
                     .into_iter()
-                    .map(|c| c.decisions().into_iter().map(|d| d.index).min().unwrap())
+                    .map(|c| c.decisions().iter().map(|d| d.index).min().unwrap())
                     .min()
                     .unwrap();
                 let clauses: Vec<ConflictClause> = concat
                     .into_iter()
-                    .filter(|f| f.decisions().into_iter().all(|d| d.index <= min_index))
+                    .filter(|f| f.decisions().iter().all(|d| d.index <= min_index))
                     .collect();
                 result.push(ConflictClause::combine(&clauses))
             }
@@ -97,11 +102,9 @@ pub(crate) fn gen_conflict_clauses(
             }
         }
         Some(ConflictClause::combine(result.as_slice()))
+    } else if result.is_empty() {
+        None
     } else {
-        if result.is_empty() {
-            None
-        } else {
-            Some(ConflictClause::combine(result.as_slice()))
-        }
+        Some(ConflictClause::combine(result.as_slice()))
     }
 }

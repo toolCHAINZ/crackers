@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
-use jingle::JingleError::UnmodeledSpace;
 use serde::Deserialize;
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
@@ -44,7 +44,7 @@ pub struct PointerRange {
 }
 
 /// Generates a state constraint that a given varnode must be equal to a given value
-pub fn gen_memory_constraint<'ctx>(
+pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
        + Send
@@ -60,7 +60,7 @@ pub fn gen_memory_constraint<'ctx>(
 
 /// Generates a state constraint that a given varnode must be equal to a given value
 /// todo: can consolidate this with the above one I think
-pub fn gen_register_constraint<'ctx>(
+pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
@@ -102,9 +102,9 @@ pub fn gen_register_pointer_constraint<'ctx>(
             pointer,
         });
         let mut constraint = data._eq(&val);
-        if let Some(c) = m.map(|m| m.read).flatten() {
+        if let Some(c) = m.and_then(|m| m.read) {
             let callback = gen_pointer_range_state_invariant(c);
-            let cc = callback(z3, &resolved, &state)?;
+            let cc = callback(z3, &resolved, state)?;
             if let Some(b) = cc {
                 constraint = Bool::and(z3, &[constraint, b])
             }
@@ -151,7 +151,7 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
     };
 }
 
-pub fn gen_pointer_range_transition_invariant<'ctx>(
+pub fn gen_pointer_range_transition_invariant(
     m: PointerRangeConstraints,
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
        + Send

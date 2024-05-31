@@ -1,7 +1,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
+use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use object::File;
 use serde::Deserialize;
@@ -9,12 +9,12 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crackers::gadget::library::builder::GadgetLibraryBuilder;
-use crackers::synthesis::builder::SynthesisBuilder;
 use crackers::synthesis::AssignmentSynthesis;
+use crackers::synthesis::builder::SynthesisBuilder;
 
 use crate::config::constraint::{
-    gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint,
-    gen_register_pointer_constraint, Constraint,
+    Constraint, gen_memory_constraint, gen_pointer_range_transition_invariant,
+    gen_register_constraint, gen_register_pointer_constraint,
 };
 use crate::config::library::LibraryConfig;
 use crate::config::sleigh::SleighConfig;
@@ -106,7 +106,7 @@ impl CrackersConfig {
                 }
                 if let Some(reg) = &pre.register {
                     for (name, value) in reg {
-                        if let Some(vn) = library_sleigh.get_register(&name) {
+                        if let Some(vn) = library_sleigh.get_register(name) {
                             b = b.with_precondition(Arc::new(gen_register_constraint(
                                 vn,
                                 *value as u64,
@@ -118,11 +118,11 @@ impl CrackersConfig {
                 }
                 if let Some(pointer) = &pre.pointer {
                     for (name, value) in pointer {
-                        if let Some(vn) = library_sleigh.get_register(&name) {
+                        if let Some(vn) = library_sleigh.get_register(name) {
                             b = b.with_precondition(Arc::new(gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
-                                c.pointer.clone(),
+                                c.pointer,
                             )))
                         }
                     }
@@ -135,7 +135,7 @@ impl CrackersConfig {
                 }
                 if let Some(reg) = &post.register {
                     for (name, value) in reg {
-                        if let Some(vn) = library_sleigh.get_register(&name) {
+                        if let Some(vn) = library_sleigh.get_register(name) {
                             b = b.with_postcondition(Arc::new(gen_register_constraint(
                                 vn,
                                 *value as u64,
@@ -147,11 +147,11 @@ impl CrackersConfig {
                 }
                 if let Some(pointer) = &post.pointer {
                     for (name, value) in pointer {
-                        if let Some(vn) = library_sleigh.get_register(&name) {
+                        if let Some(vn) = library_sleigh.get_register(name) {
                             b = b.with_postcondition(Arc::new(gen_register_pointer_constraint(
                                 vn,
                                 value.clone(),
-                                c.pointer.clone(),
+                                c.pointer,
                             )))
                         }
                     }
@@ -159,12 +159,12 @@ impl CrackersConfig {
             }
             if let Some(pointer) = &c.pointer {
                 b = b.with_pointer_invariant(Arc::new(gen_pointer_range_transition_invariant(
-                    pointer.clone(),
+                    *pointer,
                 )));
             }
         }
         let thing = b
-            .build(&z3, &library_sleigh)
+            .build(z3, &library_sleigh)
             .map_err(|_| ConfigLoad)
             .unwrap();
         Ok(thing)

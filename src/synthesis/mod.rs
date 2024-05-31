@@ -198,7 +198,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 Level::ERROR,
                 "Outer SAT returned UNSAT! No solution found! :("
             );
-            return Ok(DecisionResult::Unsat);
+            Ok(DecisionResult::Unsat)
         })
     }
 }

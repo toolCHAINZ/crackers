@@ -45,7 +45,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
-        let solver = Solver::new_for_logic(&j.z3, "QF_ABV").unwrap();
+        let solver = Solver::new_for_logic(j.z3, "QF_ABV").unwrap();
         Ok(Self {
             j,
             solver,
@@ -107,7 +107,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             assertions.push(ConjunctiveConstraint::new(
                 &[Decision {
                     index,
-                    choice: choice.clone(),
+                    choice: *choice,
                 }],
                 concat,
                 TheoryStage::Consistency,
@@ -116,7 +116,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
             let sem = Bool::fresh_const(self.j.z3, "c");
             self.solver.assert_and_track(
-                &assert_compatible_semantics(self.j.z3, spec, &g, &self.pointer_invariants)?,
+                &assert_compatible_semantics(self.j.z3, spec, g, &self.pointer_invariants)?,
                 &sem,
             );
             assertions.push(ConjunctiveConstraint::new(
@@ -166,7 +166,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         assert_state_constraints(
             self.j.z3,
             &self.preconditions,
-            &first_gadget.get_original_state(),
+            first_gadget.get_original_state(),
         )
     }
 

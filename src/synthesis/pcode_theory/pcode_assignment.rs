@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
-use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
@@ -105,7 +105,7 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
             bools.push(b)
         }
     }
-    Ok(Bool::and(&z3, &bools))
+    Ok(Bool::and(z3, &bools))
 }
 
 pub fn assert_state_constraints<'ctx>(
