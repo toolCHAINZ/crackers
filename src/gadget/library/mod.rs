@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::Path;
 
 use jingle::JingleError;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use rand::{random, SeedableRng};
 use rand::rngs::StdRng;
@@ -137,20 +137,6 @@ impl SpaceManager for GadgetLibrary {
     }
 }
 
-impl RegisterManager for GadgetLibrary{
-    fn get_register(&self, name: &str) -> Option<VarNode> {
-        todo!()
-    }
-
-    fn get_register_name(&self, location: VarNode) -> Option<&str> {
-        todo!()
-    }
-
-    fn get_registers(&self) -> Vec<(VarNode, String)> {
-        todo!()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -160,6 +146,7 @@ mod tests {
     use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
+    use crate::gadget::library::builder::GadgetLibraryBuilder;
     use crate::gadget::library::GadgetLibrary;
 
     #[test]
@@ -175,6 +162,6 @@ mod tests {
             .set_image(Image::try_from(elf).unwrap())
             .build("x86:LE:64:default")
             .unwrap();
-        let _lib = GadgetLibrary::build_from_image(&bin_sleigh, 4).unwrap();
+        let _lib = GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryBuilder::default()).unwrap();
     }
 }

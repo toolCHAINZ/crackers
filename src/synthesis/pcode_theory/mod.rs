@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use jingle::JingleContext;
-use jingle::modeling::{ModeledBlock, ModelingContext, };
+use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use tracing::{event, Level};
-use z3::{Context, SatResult, Solver};
+use z3::{SatResult, Solver};
 use z3::ast::Bool;
 
 use conflict_clause::ConflictClause;
@@ -70,6 +70,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
 
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
+        let final_state = self.j.fresh_state();
         self.solver
             .assert(&assert_concat(self.j.z3, &self.templates)?);
 
@@ -99,6 +100,19 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
                 TheoryStage::Consistency,
             ))
         }
+        if let Some(((index,g), choice)) = gadgets.iter().enumerate().last().zip(slot_assignments.choices().last()){
+            let concat = Bool::fresh_const(self.j.z3, "m");
+            self.solver
+                .assert_and_track(&g.get_final_state()._eq(&final_state)?, &concat);
+            assertions.push(ConjunctiveConstraint::new(
+                &[Decision {
+                    index,
+                    choice: choice.clone(),
+                }],
+                concat,
+                TheoryStage::Consistency,
+            ))
+        }
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
             let sem = Bool::fresh_const(self.j.z3, "c");
             self.solver.assert_and_track(
@@ -116,7 +130,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         }
 
         let pre = self.assert_preconditions(slot_assignments)?;
-        let post = self.assert_postconditions(slot_assignments)?;
+        let post = self.assert_postconditions(&final_state)?;
         let pre_bool = Bool::fresh_const(self.j.z3, "pre");
         let post_bool = Bool::fresh_const(self.j.z3, "post");
         self.solver.assert_and_track(&pre, &pre_bool);
@@ -129,7 +143,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         assertions.push(ConjunctiveConstraint::new(
             &[],
             post_bool,
-            TheoryStage::Precondition,
+            TheoryStage::Postcondition,
         ));
         event!(Level::TRACE, "Evaluating chain:");
         for x in &gadgets {
@@ -158,18 +172,9 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
 
     fn assert_postconditions(
         &self,
-        slot_assignments: &SlotAssignments,
+        state: &State<'ctx>,
     ) -> Result<Bool<'ctx>, CrackersError> {
-        let last_gadget = &self
-            .gadget_candidates
-            .last()
-            .map(|f| &f[slot_assignments.choice(self.gadget_candidates.len() - 1)])
-            .ok_or(EmptyAssignment)?;
-        assert_state_constraints(
-            self.j.z3,
-            &self.postconditions,
-            &last_gadget.get_final_state(),
-        )
+        assert_state_constraints(self.j.z3, &self.postconditions, state)
     }
 
     fn collect_conflicts(

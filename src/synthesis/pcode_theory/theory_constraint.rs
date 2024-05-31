@@ -9,7 +9,6 @@ pub enum TheoryStage {
     Consistency,
     Branch,
     Precondition,
-    #[allow(unused)]
     Postcondition,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,6 +98,10 @@ pub(crate) fn gen_conflict_clauses(
         }
         Some(ConflictClause::combine(result.as_slice()))
     } else {
-        None
+        if result.is_empty() {
+            None
+        } else {
+            Some(ConflictClause::combine(result.as_slice()))
+        }
     }
 }
