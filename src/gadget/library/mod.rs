@@ -24,7 +24,6 @@ pub mod builder;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
-    pub(crate) ancestor_graph: HashMap<u64, HashSet<u64>>,
     spaces: Vec<SpaceInfo>,
     default_code_space_index: usize,
 }
@@ -48,7 +47,6 @@ impl GadgetLibrary {
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            ancestor_graph: HashMap::new(),
             spaces: sleigh.get_all_space_info().to_vec(),
             default_code_space_index: sleigh.get_code_space_idx(),
         };
@@ -62,13 +60,6 @@ impl GadgetLibrary {
                 let instrs: Vec<Instruction> =
                     sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
-                    for x in instrs.iter().skip(1) {
-                        if let Some(v) = lib.ancestor_graph.get_mut(&x.address) {
-                            v.insert(curr);
-                        } else {
-                            lib.ancestor_graph.insert(x.address, HashSet::from([curr]));
-                        }
-                    }
                     let gadget = Gadget {
                         code_space_idx: sleigh.get_code_space_idx(),
                         spaces: sleigh.get_all_space_info().to_vec(),

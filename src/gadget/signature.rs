@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, VarNode};
 
 use crate::gadget::Gadget;
@@ -74,6 +75,20 @@ impl From<&Instruction> for OutputSignature {
         for op in &value.ops {
             if let Some(op) = op.output() {
                 outputs.push(op);
+            }
+        }
+        Self { outputs }
+    }
+}
+
+impl<'ctx> From<&ModeledBlock<'ctx>> for OutputSignature {
+    fn from(value: &ModeledBlock) -> Self {
+        let mut outputs = Vec::new();
+        for x in &value.instructions {
+            for op in &x.ops {
+                if let Some(op) = op.output() {
+                    outputs.push(op);
+                }
             }
         }
         Self { outputs }

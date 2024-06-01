@@ -12,6 +12,7 @@ mod error;
 mod iterator;
 pub mod library;
 pub mod signature;
+mod another_iterator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gadget {
