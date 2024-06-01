@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
+use std::slice::Iter;
 
 use jingle::JingleError;
+use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use rand::{random, SeedableRng};
@@ -15,6 +17,7 @@ use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
+use crate::gadget::another_iterator::TraceCandidateIterator;
 use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
@@ -33,6 +36,13 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
+    pub fn get_candidates_for_trace<'a, 'ctx>(
+        &'a self,
+        z3: &'ctx Context,
+        trace: &[ModeledBlock<'ctx>],
+    ) -> impl Iterator<Item = Vec<Option<Gadget>>> + 'ctx {
+        TraceCandidateIterator::new(z3, self.gadgets.clone().into_iter(), trace.to_vec())
+    }
     pub fn get_gadgets_for_instruction<'a, 'ctx>(
         &'a self,
         z3: &'ctx Context,
@@ -153,6 +163,7 @@ mod tests {
             .set_image(Image::try_from(elf).unwrap())
             .build("x86:LE:64:default")
             .unwrap();
-        let _lib = GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryBuilder::default()).unwrap();
+        let _lib =
+            GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryBuilder::default()).unwrap();
     }
 }
