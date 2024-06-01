@@ -1,24 +1,28 @@
+use jingle::JingleError;
+use jingle::modeling::ModeledBlock;
 use rand::{random, SeedableRng};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use tracing::{event, Level};
+use z3::Context;
 
+use crate::error::CrackersError;
 use crate::gadget::Gadget;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CandidateBuilder {
     random_sample_size: Option<usize>,
-    random_sample_seed: Option<usize>,
+    random_sample_seed: Option<i64>,
 }
 
 impl CandidateBuilder {
-    pub fn with_random_sample_seed(mut self, seed: usize) -> Self {
-        self.random_sample_seed = Some(seed);
+    pub fn with_random_sample_seed(mut self, seed: Option<i64>) -> Self {
+        self.random_sample_seed = seed;
         self
     }
 
-    pub fn with_random_sample_size(mut self, size: usize) -> Self {
-        self.random_sample_size = Some(size);
+    pub fn with_random_sample_size(mut self, size: Option<usize>) -> Self {
+        self.random_sample_size = size;
         self
     }
 
@@ -49,6 +53,21 @@ impl CandidateBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct Candidates {
-    candidates: Vec<Vec<Gadget>>,
+    pub candidates: Vec<Vec<Gadget>>,
+}
+
+impl Candidates{
+    pub fn model<'ctx>(&self, z3: &'ctx Context) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError>{
+        let mut result = vec![];
+        for x in &self.candidates {
+            let mut v = vec![];
+            for g in x {
+                v.push(g.model(z3)?);
+            }
+            result.push(v)
+        }
+        Ok(result)
+    }
 }

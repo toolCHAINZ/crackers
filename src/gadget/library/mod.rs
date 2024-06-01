@@ -5,7 +5,7 @@ use std::path::Path;
 use std::slice::Iter;
 
 use jingle::JingleError;
-use jingle::modeling::ModeledBlock;
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use rand::{random, SeedableRng};
@@ -39,7 +39,7 @@ impl GadgetLibrary {
     pub fn get_candidates_for_trace<'a, 'ctx>(
         &'a self,
         z3: &'ctx Context,
-        trace: &[ModeledBlock<'ctx>],
+        trace: &[ModeledInstruction<'ctx>],
     ) -> impl Iterator<Item = Vec<Option<Gadget>>> + 'ctx {
         TraceCandidateIterator::new(z3, self.gadgets.clone().into_iter(), trace.to_vec())
     }

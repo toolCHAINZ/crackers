@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
+use std::iter::once;
 
-use jingle::modeling::{ModeledBlock, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
@@ -8,6 +9,7 @@ use pcode_theory::conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
+use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
@@ -50,6 +52,7 @@ pub struct AssignmentSynthesis<'ctx> {
     z3: &'ctx Context,
     outer_problem: OuterProblem<'ctx>,
     library: GadgetLibrary,
+    candidates: Candidates,
     builder: SynthesisBuilder,
 }
 
@@ -64,33 +67,28 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
+        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
+            .iter()
+            .map(|i| ModeledInstruction::new(i.clone(), &library, z3).unwrap())
+            .collect();
 
-        let mut gadget_candidates: Vec<Vec<&Gadget>> = vec![];
-        for template in instrs.iter() {
-            let candidates: Vec<&Gadget> = library
-                .get_gadgets_for_instruction(z3, template)?
-                .take(builder.candidates_per_slot)
-                .collect();
-            event!(
-                Level::DEBUG,
-                "Instruction {} has {} candidates",
-                template.disassembly,
-                candidates.len()
-            );
-            gadget_candidates.push(candidates);
-        }
+        let candidates = CandidateBuilder::default()
+            .with_random_sample_size(Some(builder.candidates_per_slot))
+            .with_random_sample_seed(builder.gadget_library_builder.random_sample_seed)
+            .build(library.get_candidates_for_trace(z3, modeled_instrs.as_slice()));
         let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
-                SatProb(SatProblem::initialize(z3, &gadget_candidates))
+                SatProb(SatProblem::initialize(z3, &candidates.candidates))
             }
             SynthesisSelectionStrategy::OptimizeStrategy => {
-                OptimizeProb(OptimizationProblem::initialize(z3, &gadget_candidates))
+                OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
             }
         };
 
         Ok(AssignmentSynthesis {
             z3,
             outer_problem,
+            candidates,
             library,
             builder,
         })
@@ -99,7 +97,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn decide(&mut self) -> Result<DecisionResult<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         let mut req_channels = vec![];
-        let theory_builder = PcodeTheoryBuilder::new(&self.library)
+        let theory_builder = PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
             .with_pointer_invariants(&self.builder.pointer_invariants)
             .with_preconditions(&self.builder.preconditions)
             .with_postconditions(&self.builder.postconditions)

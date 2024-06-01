@@ -3,10 +3,10 @@ use std::sync::Arc;
 use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
-use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::gadget::candidates::Candidates;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
@@ -17,6 +17,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 pub struct PcodeTheoryBuilder<'lib> {
     templates: Vec<Instruction>,
     library: &'lib GadgetLibrary,
+    candidates: Candidates,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
@@ -24,10 +25,12 @@ pub struct PcodeTheoryBuilder<'lib> {
 }
 
 impl<'lib> PcodeTheoryBuilder<'lib> {
-    pub fn new(library: &'lib GadgetLibrary) -> PcodeTheoryBuilder<'lib> {
+    // todo: this is gross
+    pub fn new(candidates: Candidates, library: &'lib GadgetLibrary) -> PcodeTheoryBuilder {
         Self {
             templates: Default::default(),
             library,
+            candidates,
             preconditions: vec![],
             postconditions: vec![],
             pointer_invariants: vec![],
@@ -36,7 +39,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     }
     pub fn build(self, z3: &Context) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
         let modeled_templates = self.model_instructions(z3)?;
-        let gadget_candidates = self.model_candidates(z3)?;
+        let gadget_candidates = self.candidates.model(z3)?;
         let j = JingleContext::new(z3, self.library);
         let t = PcodeTheory::new(
             j,
@@ -55,7 +58,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         slot_assignments: SlotAssignments,
     ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
         let modeled_templates: Vec<ModeledInstruction<'ctx>> = self.model_instructions(z3)?;
-        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.model_candidates(z3)?;
+        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.candidates.model(z3)?;
         let selected_candidates: Vec<ModeledBlock<'ctx>> = slot_assignments
             .choices()
             .iter()
@@ -110,29 +113,4 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         Ok(modeled_templates)
     }
 
-    fn model_candidates<'ctx>(
-        &self,
-        z3: &'ctx Context,
-    ) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError> {
-        let mut gadget_candidates = vec![];
-        for template in self.templates.iter() {
-            let candidates: Vec<ModeledBlock<'ctx>> = self
-                .library
-                .get_gadgets_for_instruction(z3, template)?
-                .take(self.candidates_per_slot)
-                .map(|g| {
-                    ModeledBlock::read(z3, self.library, g.instructions.clone().into_iter())
-                        .unwrap()
-                })
-                .collect();
-            event!(
-                Level::INFO,
-                "Instruction {} has {} candidates",
-                template.disassembly,
-                candidates.len()
-            );
-            gadget_candidates.push(candidates);
-        }
-        Ok(gadget_candidates)
-    }
 }

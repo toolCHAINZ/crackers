@@ -1,5 +1,5 @@
-use jingle::modeling::{ModeledBlock, ModelingContext};
-use z3::{Context, SatResult, Solver};
+use jingle::modeling::ModeledInstruction;
+use z3::{Context, Solver};
 
 use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
@@ -11,14 +11,14 @@ where
     z3: &'ctx Context,
     solver: Solver<'ctx>,
     gadgets: T,
-    trace: Vec<ModeledBlock<'ctx>>,
+    trace: Vec<ModeledInstruction<'ctx>>,
 }
 
 impl<'ctx, T> TraceCandidateIterator<'ctx, T>
 where
     T: Iterator<Item = Gadget>,
 {
-    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledBlock<'ctx>>) -> Self {
+    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
         let solver = Solver::new(z3);
         Self {
             z3,
@@ -41,20 +41,15 @@ where
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
-                .map(|i| OutputSignature::from(i).covers(&gadget_signature))
+                .map(|i| gadget_signature.covers(&OutputSignature::from(&i.instr)))
                 .collect();
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
-                if let Ok(model) = model {
+                if let Ok(_) = model {
                     let result = is_candidate.iter().enumerate().map(|(i, c)| match c {
                         false => None,
                         true => {
-                            let t = &self.trace[i];
-                            let check = model.upholds_postcondition(t).ok()?;
-                            match self.solver.check_assumptions(&[check]) {
-                                SatResult::Sat => Some(gadget.clone()),
-                                _ => None,
-                            }
+                            return Some(gadget.clone());
                         }
                     });
                     return Some(result.collect());
