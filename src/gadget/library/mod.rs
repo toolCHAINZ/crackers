@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
+use std::slice::Iter;
 
 use jingle::JingleError;
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
 use rand::{random, SeedableRng};
@@ -15,6 +17,7 @@ use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
+use crate::gadget::another_iterator::TraceCandidateIterator;
 use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
@@ -24,7 +27,6 @@ pub mod builder;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
-    pub(crate) ancestor_graph: HashMap<u64, HashSet<u64>>,
     spaces: Vec<SpaceInfo>,
     default_code_space_index: usize,
 }
@@ -34,6 +36,13 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
+    pub fn get_candidates_for_trace<'a, 'ctx>(
+        &'a self,
+        z3: &'ctx Context,
+        trace: &[ModeledInstruction<'ctx>],
+    ) -> impl Iterator<Item = Vec<Option<Gadget>>> + 'ctx {
+        TraceCandidateIterator::new(z3, self.gadgets.clone().into_iter(), trace.to_vec())
+    }
     pub fn get_gadgets_for_instruction<'a, 'ctx>(
         &'a self,
         z3: &'ctx Context,
@@ -48,7 +57,6 @@ impl GadgetLibrary {
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            ancestor_graph: HashMap::new(),
             spaces: sleigh.get_all_space_info().to_vec(),
             default_code_space_index: sleigh.get_code_space_idx(),
         };
@@ -62,13 +70,6 @@ impl GadgetLibrary {
                 let instrs: Vec<Instruction> =
                     sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
-                    for x in instrs.iter().skip(1) {
-                        if let Some(v) = lib.ancestor_graph.get_mut(&x.address) {
-                            v.insert(curr);
-                        } else {
-                            lib.ancestor_graph.insert(x.address, HashSet::from([curr]));
-                        }
-                    }
                     let gadget = Gadget {
                         code_space_idx: sleigh.get_code_space_idx(),
                         spaces: sleigh.get_all_space_info().to_vec(),
@@ -162,6 +163,7 @@ mod tests {
             .set_image(Image::try_from(elf).unwrap())
             .build("x86:LE:64:default")
             .unwrap();
-        let _lib = GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryBuilder::default()).unwrap();
+        let _lib =
+            GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryBuilder::default()).unwrap();
     }
 }
