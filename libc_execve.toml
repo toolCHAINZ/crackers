@@ -3,9 +3,9 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "sat"
-max_candidates_per_slot = 200
-parallel = 8
-log_level = "TRACE"
+max_candidates_per_slot = 400
+parallel = 4
+log_level = "INFO"
 
 [specification]
 path = "bin/execve_instrs.bin"

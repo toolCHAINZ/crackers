@@ -3,7 +3,7 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "sat"
-max_candidates_per_slot = 200
+max_candidates_per_slot = 400
 parallel = 4
 log_level = "INFO"
 
@@ -14,32 +14,19 @@ max_instructions = 7
 [library]
 path = "bin/libc_wrapper"
 max_gadget_length = 6
-random_sample_size = 10000
+random_sample_seed = -6176588044108070433
 
 [constraint.precondition.register]
-RAX = 0
-RCX = 0x440f30
-RDX = 0x7fffffffe608
-RBX = 0x400538
 RSP = 0x7fffffffe638
 RBP = 0x403af0
-RSI = 0x7fffffffe5f8
-RDI = 1
-R8 = 0
-R9 = 6
-R10 = 0x36f8
-R11 = 0x206
-R12 = 0x403b90
-R13 = 0x0
-R14 = 0x4ae018
-R15 = 0x400538
-GS = 0
-FS = 0
 
 [constraint.postcondition.register]
+RDI = 0x00007fffffffe0a8
 RSI = 1024
 RDX = 0x7b
 RCX = 0x20
+R8 = -1
+R9 = 16
 
 [constraint.pointer.read]
 min = 0x7ffffffde000
