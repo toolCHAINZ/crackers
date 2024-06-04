@@ -1,10 +1,10 @@
-use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
+use z3::ast::{Ast, Bool};
 
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::{InstrLen, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -42,7 +42,7 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         }
         prob
     }
-    fn get_assignments(&self) -> Option<SlotAssignments> {
+    fn get_assignments(&mut self) -> Option<SlotAssignments> {
         match self.solver.check(&[]) {
             SatResult::Unsat => None,
             SatResult::Unknown => {

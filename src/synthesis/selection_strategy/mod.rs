@@ -41,7 +41,7 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
 
-    fn get_assignments(&self) -> Option<SlotAssignments>;
+    fn get_assignments(&mut self) -> Option<SlotAssignments>;
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause);
 
@@ -56,7 +56,7 @@ pub enum OuterProblem<'ctx> {
 }
 
 impl<'ctx> OuterProblem<'ctx> {
-    pub(crate) fn get_assignments(&self) -> Option<SlotAssignments> {
+    pub(crate) fn get_assignments(&mut self) -> Option<SlotAssignments> {
         match self {
             OuterProblem::SatProb(s) => s.get_assignments(),
             OuterProblem::OptimizeProb(o) => o.get_assignments(),
