@@ -1,8 +1,8 @@
 use jingle::modeling::ModeledInstruction;
 use z3::{Context, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, T>
 where
@@ -41,10 +41,11 @@ where
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
-                .map(|i| gadget_signature.covers(&OutputSignature::from(&i.instr)) && !i.instr.has_syscall()
-                    || gadget.instructions
-                    .iter()
-                    .any(|gi| gi.ops_equal(&i.instr)))
+                .map(|i| {
+                    gadget_signature.covers(&OutputSignature::from(&i.instr))
+                        && !i.instr.has_syscall()
+                        || gadget.instructions.iter().any(|gi| gi.ops_equal(&i.instr))
+                })
                 .collect();
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);

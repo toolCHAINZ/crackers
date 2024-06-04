@@ -8,12 +8,12 @@ use z3::Context;
 
 use crate::error::CrackersError;
 
+mod another_iterator;
+pub mod candidates;
 mod error;
 mod iterator;
 pub mod library;
 pub mod signature;
-mod another_iterator;
-pub mod candidates;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gadget {

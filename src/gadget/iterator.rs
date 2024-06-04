@@ -4,9 +4,9 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct GadgetIterator<'a, 'ctx> {
     z3: &'ctx Context,
@@ -43,11 +43,8 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
             if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr.instr))
                 && syscall_cond
             {
-               match ModeledBlock::read(
-                    self.z3,
-                    self.library,
-                    x.instructions.clone().into_iter(),
-                ) {
+                match ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter())
+                {
                     Ok(h) => h,
                     Err(e) => {
                         event!(Level::TRACE, "{:?}", e);

@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use jingle::JingleError;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::OpCode;
+use jingle::JingleError;
 
 use crate::gadget::library::GadgetLibrary;
 
@@ -67,7 +67,7 @@ impl Default for GadgetLibraryBuilder {
                 OpCode::CPUI_FLOAT_TRUNC,
                 OpCode::CPUI_CPOOLREF,
                 OpCode::CPUI_CAST,
-                OpCode::CPUI_MULTIEQUAL
+                OpCode::CPUI_MULTIEQUAL,
             ]),
             random_sample_size: None,
             random_sample_seed: None,

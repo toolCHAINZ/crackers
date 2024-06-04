@@ -1,8 +1,8 @@
-use jingle::JingleError;
 use jingle::modeling::ModeledBlock;
-use rand::{random, SeedableRng};
+use jingle::JingleError;
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
+use rand::{random, SeedableRng};
 use tracing::{event, Level};
 use z3::Context;
 
@@ -27,7 +27,10 @@ impl CandidateBuilder {
         self
     }
 
-    pub fn build<T: Iterator<Item = Vec<Option<Gadget>>>>(&self, iter: T) -> Result<Candidates, CrackersError> {
+    pub fn build<T: Iterator<Item = Vec<Option<Gadget>>>>(
+        &self,
+        iter: T,
+    ) -> Result<Candidates, CrackersError> {
         let mut candidates = vec![];
         for x in iter {
             if candidates.len() == 0 {
@@ -45,16 +48,15 @@ impl CandidateBuilder {
             let seed = self.random_sample_seed.unwrap_or(random());
             let mut rng = StdRng::seed_from_u64(seed as u64);
             event!(Level::INFO, "Using seed: {}", seed);
-             candidates = candidates
+            candidates = candidates
                 .into_iter()
                 .map(|c| c.choose_multiple(&mut rng, s).cloned().collect())
                 .collect();
         }
-        if let Some((index,_)) = candidates.iter().enumerate().find(|(i,f)|f.is_empty()){
-            Err(UnsimulatedOperation {index})
-        }else{
-            
-        Ok(Candidates { candidates })
+        if let Some((index, _)) = candidates.iter().enumerate().find(|(i, f)| f.is_empty()) {
+            Err(UnsimulatedOperation { index })
+        } else {
+            Ok(Candidates { candidates })
         }
     }
 }
@@ -64,8 +66,11 @@ pub struct Candidates {
     pub candidates: Vec<Vec<Gadget>>,
 }
 
-impl Candidates{
-    pub fn model<'ctx>(&self, z3: &'ctx Context) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError>{
+impl Candidates {
+    pub fn model<'ctx>(
+        &self,
+        z3: &'ctx Context,
+    ) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError> {
         let mut result = vec![];
         for x in &self.candidates {
             let mut v = vec![];

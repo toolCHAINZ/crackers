@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::Instruction;
+use jingle::JingleContext;
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -112,5 +112,4 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         }
         Ok(modeled_templates)
     }
-
 }

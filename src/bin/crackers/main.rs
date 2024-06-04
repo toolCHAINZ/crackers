@@ -31,21 +31,24 @@ fn main() {
         .unwrap_or(Level::INFO);
     let sub = FmtSubscriber::builder().with_max_level(level).finish();
     tracing::subscriber::set_global_default(sub).unwrap();
-    match p.resolve(&z3){
-        Ok(mut p) => {
-            match p.decide(){
-                Ok(res) => match res {
-                    DecisionResult::ConflictsFound(_, _) => {}
-                    DecisionResult::AssignmentFound(a) => {
-                        event!(Level::INFO, "Synthesis successful :)");
-                        println!("{}", a)
-                    }
-                    DecisionResult::Unsat => {
-                        event!(Level::ERROR, "Synthesis unsuccessful :(");
-                    }
-                }                Err(e) => {event!(Level::ERROR, "Synthesis error: {}", e)}
+    match p.resolve(&z3) {
+        Ok(mut p) => match p.decide() {
+            Ok(res) => match res {
+                DecisionResult::ConflictsFound(_, _) => {}
+                DecisionResult::AssignmentFound(a) => {
+                    event!(Level::INFO, "Synthesis successful :)");
+                    println!("{}", a)
+                }
+                DecisionResult::Unsat => {
+                    event!(Level::ERROR, "Synthesis unsuccessful :(");
+                }
+            },
+            Err(e) => {
+                event!(Level::ERROR, "Synthesis error: {}", e)
             }
+        },
+        Err(e) => {
+            event!(Level::ERROR, "Error setting up synthesis: {}", e)
         }
-        Err(e) => {event!(Level::ERROR, "Error setting up synthesis: {}", e)}
     };
 }

@@ -4,13 +4,13 @@ use std::fs::File;
 use std::path::Path;
 use std::slice::Iter;
 
-use jingle::JingleError;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::sleigh::context::SleighContext;
-use rand::{random, SeedableRng};
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::JingleError;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
+use rand::{random, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
@@ -18,9 +18,9 @@ use z3::Context;
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -143,8 +143,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::builder::GadgetLibraryBuilder;
