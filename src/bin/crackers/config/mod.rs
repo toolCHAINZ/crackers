@@ -165,6 +165,6 @@ impl CrackersConfig {
             }
         }
         b.build(z3, &library_sleigh)
-            .map_err(|c| CrackersBinError::from(c))
+            .map_err(CrackersBinError::from)
     }
 }

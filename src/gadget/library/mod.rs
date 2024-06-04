@@ -1,10 +1,8 @@
-use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
-use std::slice::Iter;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::modeling::{ModeledInstruction};
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
@@ -36,8 +34,8 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_candidates_for_trace<'a, 'ctx>(
-        &'a self,
+    pub fn get_candidates_for_trace<'ctx>(
+        &self,
         z3: &'ctx Context,
         trace: &[ModeledInstruction<'ctx>],
     ) -> impl Iterator<Item = Vec<Option<Gadget>>> + 'ctx {

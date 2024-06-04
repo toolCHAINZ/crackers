@@ -1,8 +1,7 @@
 use jingle::modeling::ModeledBlock;
-use jingle::JingleError;
+use rand::{random, SeedableRng};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
-use rand::{random, SeedableRng};
 use tracing::{event, Level};
 use z3::Context;
 
@@ -33,7 +32,7 @@ impl CandidateBuilder {
     ) -> Result<Candidates, CrackersError> {
         let mut candidates = vec![];
         for x in iter {
-            if candidates.len() == 0 {
+            if candidates.is_empty() {
                 for _ in &x {
                     candidates.push(vec![])
                 }
@@ -53,7 +52,7 @@ impl CandidateBuilder {
                 .map(|c| c.choose_multiple(&mut rng, s).cloned().collect())
                 .collect();
         }
-        if let Some((index, _)) = candidates.iter().enumerate().find(|(i, f)| f.is_empty()) {
+        if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
             Err(UnsimulatedOperation { index })
         } else {
             Ok(Candidates { candidates })

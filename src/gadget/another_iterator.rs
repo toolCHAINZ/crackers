@@ -1,15 +1,15 @@
 use jingle::modeling::ModeledInstruction;
 use z3::{Context, Solver};
 
-use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
+use crate::gadget::signature::OutputSignature;
 
 pub struct TraceCandidateIterator<'ctx, T>
 where
     T: Iterator<Item = Gadget>,
 {
     z3: &'ctx Context,
-    solver: Solver<'ctx>,
+    _solver: Solver<'ctx>,
     gadgets: T,
     trace: Vec<ModeledInstruction<'ctx>>,
 }
@@ -19,10 +19,10 @@ where
     T: Iterator<Item = Gadget>,
 {
     pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
-        let solver = Solver::new(z3);
+        let _solver = Solver::new(z3);
         Self {
             z3,
-            solver,
+            _solver,
             gadgets,
             trace,
         }
@@ -50,10 +50,10 @@ where
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
                 if let Ok(_) = model {
-                    let result = is_candidate.iter().enumerate().map(|(i, c)| match c {
+                    let result = is_candidate.iter().map(|c| match c {
                         false => None,
                         true => {
-                            return Some(gadget.clone());
+                            Some(gadget.clone())
                         }
                     });
                     return Some(result.collect());

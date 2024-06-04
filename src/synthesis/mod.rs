@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::iter::once;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use tracing::{event, instrument, Level};
@@ -11,7 +10,6 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
-use crate::gadget::Gadget;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
