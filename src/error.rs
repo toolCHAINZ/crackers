@@ -11,6 +11,10 @@ pub enum CrackersError {
     LibraryDeserialization,
     #[error("Encountered an error serializing a gadget library")]
     LibrarySerialization,
+    #[error("Specification Operation #{index} has no match")]
+    UnsimulatedOperation{
+        index: usize,
+    },
     #[error("Inner Pcode Theory Solver timed out")]
     TheoryTimeout,
     #[error("Z3 failed to return a model for a given assignment")]

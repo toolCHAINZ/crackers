@@ -13,8 +13,7 @@ max_instructions = 5
 
 [library]
 path = "bin/libc_wrapper"
-max_gadget_length = 8
-random_sample_size = 10000
+max_gadget_length = 6
 
 
 [constraint.precondition.register]

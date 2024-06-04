@@ -41,51 +41,51 @@ pub struct CrackersConfig {
 impl CrackersConfig {
     fn get_sleigh_builder(&self) -> Result<SleighContextBuilder, CrackersBinError> {
         let builder = SleighContextBuilder::load_ghidra_installation(&self.sleigh.ghidra_path)
-            .map_err(|_| ConfigLoad)?;
+            .map_err(|_| ConfigLoad("Could not load sleigh".to_string()))?;
         Ok(builder)
     }
 
     fn load_library_image(&self) -> Result<Vec<u8>, CrackersBinError> {
-        let data = fs::read(&self.library.path).map_err(|_| ConfigLoad)?;
+        let data = fs::read(&self.library.path).map_err(|_| ConfigLoad("Could not load image".to_string()))?;
         Ok(data)
     }
 
     fn load_spec(&self) -> Result<Image, CrackersBinError> {
-        let data = fs::read(&self.specification.path).map_err(|_| ConfigLoad)?;
+        let data = fs::read(&self.specification.path).map_err(|_| ConfigLoad("Could not load sleigh spec".to_string()))?;
         Ok(Image::from(data))
     }
     pub fn resolve<'z3>(
         &self,
         z3: &'z3 Context,
     ) -> Result<AssignmentSynthesis<'z3>, CrackersBinError> {
-        let spec_sleigh_builder = self.get_sleigh_builder().unwrap();
-        let library_sleigh_builder = self.get_sleigh_builder().unwrap();
+        let spec_sleigh_builder = self.get_sleigh_builder()?;
+        let library_sleigh_builder = self.get_sleigh_builder()?;
 
-        let data = self.load_library_image().unwrap();
-        let library_image = File::parse(&*data).map_err(|_| ConfigLoad).unwrap();
-        let spec_image = self.load_spec().unwrap();
+        let data = self.load_library_image()?;
+        let library_image = File::parse(&*data).map_err(|_| ConfigLoad("Could not parse provided library binary".to_string()))?;
+        let spec_image = self.load_spec()?;
 
         let architecture_str = map_gimli_architecture(&library_image)
-            .ok_or(ConfigLoad)
-            .unwrap();
+            .ok_or(ConfigLoad("Could not identify library binary's architecture".to_string()))
+            ?;
         event!(
             Level::INFO,
             "Using SLEIGH architecture {}",
             architecture_str
         );
         let library_image = Image::try_from(library_image)
-            .map_err(|_| ConfigLoad)
-            .unwrap();
+            .map_err(|_| ConfigLoad("Could not convert library image for usage in sleigh".to_string()))
+            ?;
         let spec_sleigh = spec_sleigh_builder
             .set_image(spec_image)
             .build(architecture_str)
-            .map_err(|_| ConfigLoad)
-            .unwrap();
+            .map_err(|_| ConfigLoad("Could not build sleigh context for chain".to_string()))
+            ?;
         let library_sleigh = library_sleigh_builder
             .set_image(library_image)
             .build(architecture_str)
-            .map_err(|_| ConfigLoad)
-            .unwrap();
+            .map_err(|_| ConfigLoad("Could not build sleigh context for library".to_string()))
+            ?;
 
         let gadget_library_params = GadgetLibraryBuilder::default()
             .max_gadget_length(self.library.max_gadget_length)
@@ -163,10 +163,6 @@ impl CrackersConfig {
                 )));
             }
         }
-        let thing = b
-            .build(z3, &library_sleigh)
-            .map_err(|_| ConfigLoad)
-            .unwrap();
-        Ok(thing)
+         b.build(z3, &library_sleigh).map_err(|c|CrackersBinError::from(c))
     }
 }

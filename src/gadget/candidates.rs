@@ -7,6 +7,7 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::error::CrackersError::UnsimulatedOperation;
 use crate::gadget::Gadget;
 
 #[derive(Clone, Debug, Default)]
@@ -26,7 +27,7 @@ impl CandidateBuilder {
         self
     }
 
-    pub fn build<T: Iterator<Item = Vec<Option<Gadget>>>>(&self, iter: T) -> Candidates {
+    pub fn build<T: Iterator<Item = Vec<Option<Gadget>>>>(&self, iter: T) -> Result<Candidates, CrackersError> {
         let mut candidates = vec![];
         for x in iter {
             if candidates.len() == 0 {
@@ -49,7 +50,12 @@ impl CandidateBuilder {
                 .map(|c| c.choose_multiple(&mut rng, s).cloned().collect())
                 .collect();
         }
-        Candidates { candidates }
+        if let Some((index,_)) = candidates.iter().enumerate().find(|(i,f)|f.is_empty()){
+            Err(UnsimulatedOperation {index})
+        }else{
+            
+        Ok(Candidates { candidates })
+        }
     }
 }
 

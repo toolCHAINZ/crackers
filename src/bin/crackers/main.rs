@@ -1,11 +1,11 @@
 use std::fs;
 
 use clap::Parser;
-use tracing::Level;
+use tracing::{event, Level};
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
 
-use crackers::synthesis::{AssignmentSynthesis, DecisionResult};
+use crackers::synthesis::DecisionResult;
 
 use crate::config::CrackersConfig;
 
@@ -31,11 +31,21 @@ fn main() {
         .unwrap_or(Level::INFO);
     let sub = FmtSubscriber::builder().with_max_level(level).finish();
     tracing::subscriber::set_global_default(sub).unwrap();
-    let mut p: AssignmentSynthesis = p.resolve(&z3).unwrap();
-    let res = p.decide().unwrap();
-    match res {
-        DecisionResult::ConflictsFound(_, _) => {}
-        DecisionResult::AssignmentFound(a) => println!("{}", a),
-        DecisionResult::Unsat => {}
-    }
+    match p.resolve(&z3){
+        Ok(mut p) => {
+            match p.decide(){
+                Ok(res) => match res {
+                    DecisionResult::ConflictsFound(_, _) => {}
+                    DecisionResult::AssignmentFound(a) => {
+                        event!(Level::INFO, "Synthesis successful :)");
+                        println!("{}", a)
+                    }
+                    DecisionResult::Unsat => {
+                        event!(Level::ERROR, "Synthesis unsuccessful :(");
+                    }
+                }                Err(e) => {event!(Level::ERROR, "Synthesis error: {}", e)}
+            }
+        }
+        Err(e) => {event!(Level::ERROR, "Error setting up synthesis: {}", e)}
+    };
 }
