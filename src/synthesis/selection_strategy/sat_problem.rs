@@ -70,7 +70,9 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             _ => self.solver.check(),
         };
         match sat_result {
-            SatResult::Unsat => None,
+            SatResult::Unsat => { 
+                dbg!(self.solver.get_unsat_core());
+                None },
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
@@ -97,12 +99,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         match clause {
             ConflictClause::Unit(d) => {
                 let var = self.get_decision_variable(d);
-                self.solver.assert(&var.not());
+                self.solver.assert_and_track(&var.not(), &Bool::fresh_const(self.z3, &format!("{}-{}-", d.index, d.choice)));
             }
             ConflictClause::Conjunction(v) => {
                 let choices: Vec<&Bool> = v.iter().map(|b| self.get_decision_variable(b)).collect();
                 self.solver
-                    .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
+                    .assert_and_track(&Bool::and(self.z3, choices.as_slice()).not().simplify(), &Bool::fresh_const(self.z3,"hi"));
             }
         }
     }

@@ -1,36 +1,48 @@
-use std::slice;
+use std::collections::HashSet;
 
 use crate::synthesis::Decision;
 
 #[derive(Debug, Clone)]
-pub enum ConflictClause {
-    Unit(Decision),
-    Conjunction(Vec<Decision>),
+pub struct ConflictClause {
+    decisions: Vec<Decision>,
+    pub precondition: bool,
+    pub postcondition: bool,
 }
 
 impl ConflictClause {
     pub fn combine(clauses: &[ConflictClause]) -> Self {
-        let mut result = vec![];
+        let mut decisions = HashSet::new();
+        let mut precondition = false;
+        let mut postcondition = false;
         for x in clauses {
-            match x {
-                ConflictClause::Conjunction(v) => result.extend(v.clone()),
-                ConflictClause::Unit(d) => result.push(*d),
+            for decision in &x.decisions {
+                decisions.insert(*decision);
             }
+            precondition = precondition | x.precondition;
+            postcondition = postcondition | x.postcondition;
         }
-        ConflictClause::Conjunction(result)
+        Self {
+            decisions: decisions.into_iter().collect(),
+            precondition,
+            postcondition,
+        }
     }
 
     pub fn decisions(&self) -> &[Decision] {
-        match self {
-            ConflictClause::Unit(decision) => slice::from_ref(decision),
-            ConflictClause::Conjunction(d) => d.as_slice(),
-        }
+        self.decisions.as_slice()
     }
 
     pub fn includes_index(&self, d: usize) -> bool {
-        match self {
-            ConflictClause::Unit(i) => i.index == d,
-            ConflictClause::Conjunction(i) => i.iter().any(|ii| ii.index == d),
+        self.decisions.iter().any(|i| i.index == d)
+    }
+}
+
+impl From<Vec<Decision>> for ConflictClause {
+    fn from(value: Vec<Decision>) -> Self {
+        Self {
+            decisions: value,
+            precondition: false,
+            postcondition: false,
         }
     }
 }

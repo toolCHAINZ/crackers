@@ -12,11 +12,12 @@ pub(crate) struct SlotAssignmentConflictDisplay<'a> {
 
 impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[")?;
-        let unit = match self.conflict {
-            ConflictClause::Unit(_) => true,
-            ConflictClause::Conjunction(c) => c.len() == 1,
+        match self.conflict.precondition {
+            true => write!(f, "!")?,
+            false => write!(f, " ")?,
         };
+        write!(f, "[")?;
+        let unit = self.conflict.decisions().len() == 1;
         for (i, assignment) in self.assignment.choices.iter().enumerate() {
             let token = if self.conflict.includes_index(i) {
                 if unit {
@@ -33,6 +34,11 @@ impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
                 write!(f, "{}", token)?;
             }
         }
-        write!(f, "]")
+        write!(f, "]")?;
+        match self.conflict.postcondition {
+            true => write!(f, "!")?,
+            false => write!(f, " ")?,
+        };
+        Ok(())
     }
 }

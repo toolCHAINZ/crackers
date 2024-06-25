@@ -15,10 +15,10 @@ use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -27,7 +27,7 @@ mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Decision {
     pub index: usize,
     pub choice: usize,
