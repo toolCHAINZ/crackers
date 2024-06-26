@@ -379,7 +379,7 @@ dependencies = [
 [[package]]
 name = "jingle"
 version = "0.1.1"
-source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#3b4c06a6196dc32ed9dd5d160712468047352883"
+source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#3e46d9d007d521ab4c42c7dfbe02bc3cdf233a75"
 dependencies = [
  "jingle_sleigh",
  "serde",
@@ -391,7 +391,7 @@ dependencies = [
 [[package]]
 name = "jingle_sleigh"
 version = "0.1.1"
-source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#3b4c06a6196dc32ed9dd5d160712468047352883"
+source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#3e46d9d007d521ab4c42c7dfbe02bc3cdf233a75"
 dependencies = [
  "cxx",
  "cxx-build",
@@ -428,7 +428,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.5",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -1171,7 +1171,7 @@ checksum = "791978798f0597cfc70478424c2b4fdc2b7a8024aaff78497ef00f24ef674193"
 [[package]]
 name = "z3"
 version = "0.12.1"
-source = "git+https://github.com/prove-rs/z3.rs.git?rev=1971033#19710337ae280c06bc4da912c6745291e3078109"
+source = "git+https://github.com/prove-rs/z3.rs.git?rev=c126e07#c126e0735c008d37f0112db92091010e9f80f767"
 dependencies = [
  "log",
  "num",
@@ -1181,7 +1181,7 @@ dependencies = [
 [[package]]
 name = "z3-sys"
 version = "0.8.1"
-source = "git+https://github.com/prove-rs/z3.rs.git?rev=1971033#19710337ae280c06bc4da912c6745291e3078109"
+source = "git+https://github.com/prove-rs/z3.rs.git?rev=c126e07#c126e0735c008d37f0112db92091010e9f80f767"
 dependencies = [
  "bindgen",
  "cmake",

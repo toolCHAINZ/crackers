@@ -54,9 +54,9 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             }
             prob.variables.push(vars);
         }
-        for slot in &prob.variables {
+        for (i,slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            prob.solver.assert(&Bool::pb_eq(z3, &pbs, 1))
+            prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &Bool::fresh_const(z3, &format!("slot_{}",i)))
         }
         prob
     }
@@ -70,9 +70,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             _ => self.solver.check(),
         };
         match sat_result {
-            SatResult::Unsat => { 
+            SatResult::Unsat => {
                 dbg!(self.solver.get_unsat_core());
-                None },
+                None
+            }
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
@@ -96,17 +97,13 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause) {
         self.last_conflict = Some(clause.clone());
-        match clause {
-            ConflictClause::Unit(d) => {
-                let var = self.get_decision_variable(d);
-                self.solver.assert_and_track(&var.not(), &Bool::fresh_const(self.z3, &format!("{}-{}-", d.index, d.choice)));
-            }
-            ConflictClause::Conjunction(v) => {
-                let choices: Vec<&Bool> = v.iter().map(|b| self.get_decision_variable(b)).collect();
-                self.solver
-                    .assert_and_track(&Bool::and(self.z3, choices.as_slice()).not().simplify(), &Bool::fresh_const(self.z3,"hi"));
-            }
-        }
+        let choices: Vec<&Bool> = clause
+            .decisions()
+            .iter()
+            .map(|b| self.get_decision_variable(b))
+            .collect();
+        self.solver
+            .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
     }
 }
 

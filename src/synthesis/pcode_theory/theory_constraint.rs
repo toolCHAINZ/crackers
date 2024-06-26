@@ -33,10 +33,10 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
-        match self.constraint_type {
-            TheoryStage::Branch => ConflictClause::Unit(self.decisions[0]),
-            _ => ConflictClause::Conjunction(self.decisions.clone()),
-        }
+        let mut clause = ConflictClause::from(self.decisions.clone());
+        clause.precondition = matches!(self.constraint_type, TheoryStage::Precondition);
+        clause.postcondition = matches!(self.constraint_type, TheoryStage::Postcondition);
+        clause
     }
 }
 

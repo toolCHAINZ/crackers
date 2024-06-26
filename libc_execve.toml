@@ -3,7 +3,7 @@ ghidra_path = "/Applications/ghidra"
 
 [synthesis]
 strategy = "sat"
-max_candidates_per_slot = 50
+max_candidates_per_slot = 400
 parallel = 4
 log_level = "INFO"
 
