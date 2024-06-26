@@ -15,7 +15,8 @@ use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionStrategy};
+use crate::synthesis::selection_strategy::{AssignmentResult, OuterProblem, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
@@ -43,7 +44,7 @@ impl PartialOrd for Decision {
 pub enum DecisionResult<'ctx, T: ModelingContext<'ctx>> {
     ConflictsFound(SlotAssignments, Vec<ConflictClause>),
     AssignmentFound(AssignmentModel<'ctx, T>),
-    Unsat,
+    Unsat(SelectionFailure),
 }
 
 pub struct AssignmentSynthesis<'ctx> {
@@ -101,7 +102,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_postconditions(&self.builder.postconditions)
             .with_max_candidates(self.builder.candidates_per_slot)
             .with_templates(self.builder.instructions.clone().into_iter());
-
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
             for idx in 0..self.builder.parallel {
@@ -124,9 +124,15 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                     Level::TRACE,
                     "Asking outer procedure for initial assignments"
                 );
-                if let Some(assignment) = self.outer_problem.get_assignments() {
-                    event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
-                    x.send(assignment).unwrap();
+                if let Ok(assignment) = self.outer_problem.get_assignments() {
+                    match assignment {
+                        Success(assignment) => {
+                            event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
+                            x.send(assignment).unwrap();
+                        }
+                        Failure(_) => {}
+                    }
+
                 }
             }
             event!(Level::TRACE, "Done sending initial jobs");
@@ -166,13 +172,14 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     response.assignment.display_conflict(&c)
                                 );
                                 self.outer_problem.add_theory_clauses(&c);
-                                let new_assignment = self.outer_problem.get_assignments();
+                                let new_assignment = self.outer_problem.get_assignments()?;
                                 match new_assignment {
-                                    None => {
+                                    Failure(a) => {
                                         // drop the senders
                                         req_channels.clear();
+                                        return Ok(DecisionResult::Unsat(a));
                                     }
-                                    Some(a) => {
+                                    Success(a) => {
                                         req_channels[response.idx].send(a).unwrap();
                                     }
                                 }
@@ -194,7 +201,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 Level::ERROR,
                 "Outer SAT returned UNSAT! No solution found! :("
             );
-            Ok(DecisionResult::Unsat)
+            unreachable!()
         })
     }
 }

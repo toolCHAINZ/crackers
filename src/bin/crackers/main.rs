@@ -39,8 +39,8 @@ fn main() {
                     event!(Level::INFO, "Synthesis successful :)");
                     println!("{}", a)
                 }
-                DecisionResult::Unsat => {
-                    event!(Level::ERROR, "Synthesis unsuccessful :(");
+                DecisionResult::Unsat(a) => {
+                    event!(Level::ERROR, "Synthesis unsuccessful: {:?}", a);
                 }
             },
             Err(e) => {

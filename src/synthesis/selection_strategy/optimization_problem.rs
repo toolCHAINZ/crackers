@@ -42,7 +42,7 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         let mut prob = Self {
             variables: Default::default(),
             z3,
-            solver: Optimize::new(z3),
+            solver: Optimize::new(z3), index_bools: Vec::with_capacity(gadgets.len())
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -78,7 +78,7 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
                         .map(|d| self.get_decision_variable(d))
                         .collect();
                     self.solver.assert(&Bool::and(self.z3, &decisions).not());
-                
+
                 Ok(Success(assignment))
             }
         }
