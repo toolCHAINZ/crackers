@@ -1,6 +1,8 @@
 use z3::ast::Bool;
 use z3::Model;
 
+use crate::error::CrackersError;
+use crate::error::CrackersError::ModelParsingError;
 use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
@@ -37,7 +39,7 @@ impl SlotAssignments {
     pub fn create_from_model<'ctx>(
         model: Model<'ctx>,
         variables: &[Vec<Bool<'ctx>>],
-    ) -> Option<Self> {
+    ) -> Result<Self, CrackersError> {
         let mut choices = Vec::with_capacity(variables.len());
         for slot_choices in variables {
             let idx = slot_choices.iter().position(|v| {
@@ -49,10 +51,10 @@ impl SlotAssignments {
             if let Some(idx) = idx {
                 choices.push(idx);
             } else {
-                return None;
+                return Err(ModelParsingError);
             }
         }
-        Some(Self { choices })
+        Ok(Self { choices })
     }
 
     pub(crate) fn display_conflict<'a>(

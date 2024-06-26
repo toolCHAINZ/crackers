@@ -1,6 +1,7 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use z3::Context;
 
+use crate::error::CrackersError;
 use crate::gadget::Gadget;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
@@ -38,10 +39,19 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum AssignmentResult{
+    Success(SlotAssignments),
+    Failure(SelectionFailure)
+}
+#[derive(Clone, Debug)]
+pub struct SelectionFailure{
+    indexes: Vec<usize>
+}
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
 
-    fn get_assignments(&mut self) -> Option<SlotAssignments>;
+    fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError>;
 
     fn add_theory_clauses(&mut self, clause: &ConflictClause);
 
@@ -56,7 +66,7 @@ pub enum OuterProblem<'ctx> {
 }
 
 impl<'ctx> OuterProblem<'ctx> {
-    pub(crate) fn get_assignments(&mut self) -> Option<SlotAssignments> {
+    pub(crate) fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError> {
         match self {
             OuterProblem::SatProb(s) => s.get_assignments(),
             OuterProblem::OptimizeProb(o) => o.get_assignments(),

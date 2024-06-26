@@ -19,6 +19,8 @@ pub enum CrackersError {
     ModelGenerationError,
     #[error("Outer gadget assignment solver timed out.")]
     BooleanAssignmentTimeout,
+    #[error("Unexpected terms found in assignment model")]
+    ModelParsingError,
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
 }

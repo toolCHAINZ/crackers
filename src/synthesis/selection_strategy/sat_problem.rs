@@ -1,9 +1,12 @@
 use z3::{Context, SatResult, Solver};
 use z3::ast::{Ast, Bool};
 
+use crate::error::CrackersError;
+use crate::error::CrackersError::ModelGenerationError;
 use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
-use crate::synthesis::selection_strategy::SelectionStrategy;
+use crate::synthesis::selection_strategy::{AssignmentResult, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug, Clone)]
@@ -13,6 +16,7 @@ pub struct SatProblem<'ctx> {
     solver: Solver<'ctx>,
     last_conflict: Option<ConflictClause>,
     last_assignment: Option<SlotAssignments>,
+    index_bools: Vec<Bool<'ctx>>,
 }
 
 impl<'ctx> SatProblem<'ctx> {
@@ -37,6 +41,18 @@ impl<'ctx> SatProblem<'ctx> {
             return Bool::or(self.z3, &decisions).not();
         })
     }
+
+    fn get_unsat_reason(&self, core: Vec<Bool<'ctx>>) -> SelectionFailure {
+        SelectionFailure {
+            indexes: self
+                .index_bools
+                .iter()
+                .enumerate()
+                .filter(|(_, t)| core.iter().any(|c| *c == **t))
+                .map(|(i, _)| i)
+                .collect(),
+        }
+    }
 }
 impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
     fn initialize<T>(z3: &'ctx Context, gadgets: &[Vec<T>]) -> SatProblem<'ctx> {
@@ -46,6 +62,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             solver: Solver::new(z3),
             last_conflict: None,
             last_assignment: None,
+            index_bools: Vec::with_capacity(gadgets.len()),
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -54,14 +71,16 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             }
             prob.variables.push(vars);
         }
-        for (i,slot) in prob.variables.iter().enumerate() {
+        for (i, slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &Bool::fresh_const(z3, &format!("slot_{}",i)))
+            let b = Bool::fresh_const(z3, &format!("slot_{}", i));
+            prob.index_bools.push(b.clone());
+            prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b);
         }
         prob
     }
 
-    fn get_assignments(&mut self) -> Option<SlotAssignments> {
+    fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError> {
         let sat_result = match self.get_last_conflict_refutation() {
             Some(c) => match self.solver.check_assumptions(&[c]) {
                 SatResult::Sat => SatResult::Sat,
@@ -71,26 +90,24 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         };
         match sat_result {
             SatResult::Unsat => {
-                dbg!(self.solver.get_unsat_core());
-                None
+                Ok(Failure(self.get_unsat_reason(self.solver.get_unsat_core())))
             }
             SatResult::Unknown => {
                 unreachable!("outer SAT solver timed out (this really shouldn't happen)!")
             }
             SatResult::Sat => {
-                let model = self.solver.get_model()?;
+                let model = self.solver.get_model().ok_or(ModelGenerationError)?;
                 let assignment =
-                    SlotAssignments::create_from_model(model, self.variables.as_slice());
-                if let Some(a) = &assignment {
-                    self.last_assignment = Some(a.clone());
-                    let decisions: Vec<&Bool<'ctx>> = a
+                    SlotAssignments::create_from_model(model, self.variables.as_slice())?;
+                    self.last_assignment = Some(assignment.clone());
+                    let decisions: Vec<&Bool<'ctx>> = assignment
                         .to_decisions()
                         .iter()
                         .map(|d| self.get_decision_variable(d))
                         .collect();
                     self.solver.assert(&Bool::and(self.z3, &decisions).not());
-                }
-                assignment
+                
+                Ok(Success(assignment))
             }
         }
     }
