@@ -1,6 +1,8 @@
 use jingle::JingleError;
 use thiserror::Error;
 
+use crate::config::error::CrackersConfigError;
+
 #[derive(Debug, Error)]
 pub enum CrackersError {
     #[error("The specification computation had no operations")]
@@ -21,6 +23,8 @@ pub enum CrackersError {
     BooleanAssignmentTimeout,
     #[error("Unexpected terms found in assignment model")]
     ModelParsingError,
+    #[error("An error initializing crackers from a config file")]
+    Config(#[from] CrackersConfigError),
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
 }

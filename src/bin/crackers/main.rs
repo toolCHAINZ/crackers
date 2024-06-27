@@ -9,7 +9,6 @@ use crackers::synthesis::DecisionResult;
 
 use crate::config::CrackersConfig;
 
-mod config;
 mod error;
 
 #[derive(Parser, Debug)]

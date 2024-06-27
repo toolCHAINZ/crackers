@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
+use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
-use jingle::JingleError::UnmodeledSpace;
 use serde::Deserialize;
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
 
-use crackers::error::CrackersError;
+use crate::error::CrackersError;
 
 #[derive(Debug, Deserialize)]
 pub struct Constraint {

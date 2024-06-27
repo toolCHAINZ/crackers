@@ -1,32 +1,24 @@
 use std::collections::HashSet;
 
+use jingle::JingleError;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::OpCode;
-use jingle::JingleError;
 
+use crate::config::random::RandomConfig;
 use crate::gadget::library::GadgetLibrary;
 
 pub struct GadgetLibraryBuilder {
     pub(crate) max_gadget_length: usize,
     pub(crate) operation_blacklist: HashSet<OpCode>,
-    pub(crate) random_sample_size: Option<usize>,
-    pub(crate) random_sample_seed: Option<i64>,
+    random: Option<RandomConfig>
 }
 
 impl GadgetLibraryBuilder {
-    pub fn max_gadget_length(mut self, l: usize) -> Self {
+    pub fn max_gadget_length(&mut self, l: usize) {
         self.max_gadget_length = l;
-        self
     }
-
-    pub fn random_sample_size(mut self, l: Option<usize>) -> Self {
-        self.random_sample_size = l;
-        self
-    }
-
-    pub fn random_sample_seed(mut self, l: Option<i64>) -> Self {
-        self.random_sample_seed = l;
-        self
+    pub fn random(&mut self, random: RandomConfig){
+        self.random = Some(random)
     }
     pub fn build(&self, sleigh: &SleighContext) -> Result<GadgetLibrary, JingleError> {
         GadgetLibrary::build_from_image(sleigh, self)

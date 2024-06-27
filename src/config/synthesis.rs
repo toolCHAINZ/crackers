@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use tracing::Level;
 
-use crackers::synthesis::builder::SynthesisSelectionStrategy;
+use crate::synthesis::builder::SynthesisSelectionStrategy;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
