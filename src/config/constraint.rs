@@ -41,6 +41,9 @@ impl Constraint {
             .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
     }
 
+    pub fn get_pointer_constraints(&self) -> impl Iterator<Item = Arc<TransitionConstraintGenerator>> + '_{
+        self.pointer.iter().map(|c| c.constraints())
+    }
 
 }
 

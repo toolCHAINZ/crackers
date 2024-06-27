@@ -85,7 +85,9 @@ impl CrackersConfig {
             for x in c.get_postconditions(&library_sleigh){
                 b.with_postcondition(x);
             }
-
+            for x in c.get_pointer_constraints(){
+                b.with_pointer_invariant(x);
+            }
         }
         b.build(z3, &library_sleigh)
     }
