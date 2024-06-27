@@ -7,7 +7,7 @@ edition = "2021"
 
 [[bin]]
 name = "crackers"
-required-features = ["tracing-subscriber", "toml", "gimli", "clap"]
+required-features = ["tracing-subscriber", "toml", "clap"]
 
 [features]
 default = ["tracing-subscriber", "toml", "clap"]

@@ -1,7 +1,7 @@
 use jingle::modeling::ModeledBlock;
-use rand::{random, SeedableRng};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
+use rand::{random, SeedableRng};
 use tracing::{event, Level};
 use z3::Context;
 
@@ -11,17 +11,17 @@ use crate::gadget::Gadget;
 
 #[derive(Clone, Debug, Default)]
 pub struct CandidateBuilder {
-    random_sample_size: Option<usize>,
-    random_sample_seed: Option<i64>,
+    random_sample_size: usize,
+    random_sample_seed: i64,
 }
 
 impl CandidateBuilder {
-    pub fn with_random_sample_seed(mut self, seed: Option<i64>) -> Self {
+    pub fn with_random_sample_seed(mut self, seed: i64) -> Self {
         self.random_sample_seed = seed;
         self
     }
 
-    pub fn with_random_sample_size(mut self, size: Option<usize>) -> Self {
+    pub fn with_random_sample_size(mut self, size: usize) -> Self {
         self.random_sample_size = size;
         self
     }
@@ -43,15 +43,14 @@ impl CandidateBuilder {
                 }
             }
         }
-        if let Some(s) = self.random_sample_size {
-            let seed = self.random_sample_seed.unwrap_or(random());
-            let mut rng = StdRng::seed_from_u64(seed as u64);
-            event!(Level::INFO, "Using seed: {}", seed);
-            candidates = candidates
-                .into_iter()
-                .map(|c| c.choose_multiple(&mut rng, s).cloned().collect())
-                .collect();
-        }
+        let seed = self.random_sample_seed as u64;
+        let mut rng = StdRng::seed_from_u64(seed);
+        event!(Level::INFO, "Using seed: {}", seed);
+        candidates = candidates
+            .into_iter()
+            .map(|c| c.choose_multiple(&mut rng, seed as usize).cloned().collect())
+            .collect();
+
         if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
             Err(UnsimulatedOperation { index })
         } else {

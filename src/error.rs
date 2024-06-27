@@ -23,7 +23,7 @@ pub enum CrackersError {
     BooleanAssignmentTimeout,
     #[error("Unexpected terms found in assignment model")]
     ModelParsingError,
-    #[error("An error initializing crackers from a config file")]
+    #[error("Config error: {0}")]
     Config(#[from] CrackersConfigError),
     #[error("Jingle error")]
     Jingle(#[from] JingleError),

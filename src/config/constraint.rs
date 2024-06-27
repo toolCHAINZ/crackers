@@ -1,14 +1,19 @@
 use std::collections::HashMap;
+use std::iter::once;
+use std::sync::Arc;
 
-use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::{IndirectVarNode, SpaceManager, VarNode};
+use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::JingleError::UnmodeledSpace;
 use serde::Deserialize;
+use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
 #[derive(Debug, Deserialize)]
 pub struct Constraint {
@@ -17,11 +22,74 @@ pub struct Constraint {
     pub pointer: Option<PointerRangeConstraints>,
 }
 
+impl Constraint {
+    pub fn get_preconditions<'a>(
+        &'a self,
+        sleigh: &'a SleighContext,
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a{
+        self.precondition
+            .iter()
+            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+    }
+
+    pub fn get_postconditions<'a>(
+        &'a self,
+        sleigh: &'a SleighContext,
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
+        self.postcondition
+            .iter()
+            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+    }
+
+
+}
+
 #[derive(Debug, Deserialize)]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,
     pub memory: Option<MemoryEqualityConstraint>,
+}
+
+impl StateEqualityConstraint {
+    pub fn constraints<'a>(
+        &'a self,
+        sleigh: &'a SleighContext,
+        c: Option<PointerRangeConstraints>,
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
+        let c1 = c.clone();
+        let register_iterator = self.register.iter().flat_map(|map| {
+            map.iter().filter_map(|(name, value)| {
+                if let Some(vn) = sleigh.get_register(name) {
+                    Some(Arc::new(gen_register_constraint(vn, *value as u64)) as Arc<StateConstraintGenerator>)
+                } else {
+                    event!(Level::WARN, "Unrecognized register name: {}", name);
+                    None
+                }
+            })
+        });
+        let memory_iterator = self
+            .memory
+            .iter()
+            .map(|c| Arc::new(gen_memory_constraint(c.clone())) as Arc<StateConstraintGenerator>);
+        let pointer_iterator = self.pointer.iter().flat_map(move |map| {
+            map.iter().filter_map(move |(name, value)| {
+                if let Some(vn) = sleigh.get_register(name) {
+                    Some(Arc::new(gen_register_pointer_constraint(
+                        vn,
+                        value.clone(),
+                        c1,
+                    )) as Arc<StateConstraintGenerator>)
+                } else {
+                    event!(Level::WARN, "Unrecognized register name: {}", name);
+                    None
+                }
+            })
+        });
+        register_iterator
+            .chain(memory_iterator)
+            .chain(pointer_iterator)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -36,6 +104,12 @@ pub struct MemoryEqualityConstraint {
 pub struct PointerRangeConstraints {
     pub read: Option<PointerRange>,
     pub write: Option<PointerRange>,
+}
+
+impl PointerRangeConstraints {
+    pub fn constraints(&self) -> Arc<TransitionConstraintGenerator> {
+        Arc::new(gen_pointer_range_transition_invariant(*self))
+    }
 }
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub struct PointerRange {

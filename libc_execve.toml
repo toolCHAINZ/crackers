@@ -1,3 +1,5 @@
+
+
 [sleigh]
 ghidra_path = "/Applications/ghidra"
 
@@ -8,7 +10,7 @@ parallel = 4
 log_level = "INFO"
 
 [specification]
-path = "bin/execve_instrs.bin"
+path = "bin/execve.o"
 max_instructions = 5
 
 [library]

@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum CrackersConfigError{
     #[error("An error reading a file referenced from the config")]
     Io(#[from] std::io::Error),
-    #[error("An error parsing a file with gimli object")]
+    #[error("An error parsing a file with gimli object: {0}")]
     Gimli(#[from] object::Error),
     #[error("Unable to determine the architecture of the provided object file. This is a config file limitation and not a sleigh limitation.")]
     UnrecognizedArchitecture(String),

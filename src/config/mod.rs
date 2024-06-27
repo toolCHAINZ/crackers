@@ -1,38 +1,42 @@
 use std::fs;
 use std::sync::Arc;
 
-use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
+use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use serde::Deserialize;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::config::constraint::{
-    Constraint, gen_memory_constraint, gen_pointer_range_transition_invariant,
-    gen_register_constraint, gen_register_pointer_constraint,
+    gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint,
+    gen_register_pointer_constraint, Constraint,
 };
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::UnrecognizedArchitecture;
 use crate::config::library::LibraryConfig;
+use crate::config::meta::MetaConfig;
 use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
+use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::synthesis::AssignmentSynthesis;
 use crate::synthesis::builder::SynthesisBuilder;
+use crate::synthesis::AssignmentSynthesis;
 
 mod constraint;
 pub mod error;
 mod library;
+mod meta;
 mod object;
-pub mod random;
 mod sleigh;
 mod specification;
 mod synthesis;
 
 #[derive(Debug, Deserialize)]
 pub struct CrackersConfig {
+    #[serde(default)]
+    meta: MetaConfig,
     specification: SpecificationConfig,
     library: LibraryConfig,
     sleigh: SleighConfig,
@@ -58,85 +62,31 @@ impl CrackersConfig {
     pub fn resolve<'z3>(
         &self,
         z3: &'z3 Context,
-    ) -> Result<AssignmentSynthesis<'z3>, CrackersConfigError> {
+    ) -> Result<AssignmentSynthesis<'z3>, CrackersError> {
         let library_sleigh = load_sleigh(&self.library.path, &self.sleigh)?;
         let spec = load_sleigh(&self.specification.path, &self.sleigh)?;
 
-        let gadget_library_params = GadgetLibraryBuilder::default()
+        let mut gadget_library_params = GadgetLibraryBuilder::default();
+        gadget_library_params
             .max_gadget_length(self.library.max_gadget_length)
-            .random(&self.library.random);
+            .with_seed(self.meta.seed);
         let mut b = SynthesisBuilder::default();
-        b = b.with_gadget_library_builder(gadget_library_params);
-        b = b.specification(spec.read(0, self.specification.max_instructions));
+        b.with_gadget_library_builder(gadget_library_params);
+        b.specification(spec.read(0, self.specification.max_instructions));
         if let Some(a) = &self.synthesis {
-            b = b.with_selection_strategy(a.strategy);
-            b = b.candidates_per_slot(a.max_candidates_per_slot);
-            b = b.parallel(a.parallel);
+            b.with_selection_strategy(a.strategy);
+            b.candidates_per_slot(a.max_candidates_per_slot);
+            b.parallel(a.parallel).seed(self.meta.seed);
         }
-        if let Some(c) = &self.constraint {
-            if let Some(pre) = &c.precondition {
-                if let Some(mem) = &pre.memory {
-                    b = b.with_precondition(Arc::new(gen_memory_constraint(mem.clone())));
-                }
-                if let Some(reg) = &pre.register {
-                    for (name, value) in reg {
-                        if let Some(vn) = library_sleigh.get_register(name) {
-                            b = b.with_precondition(Arc::new(gen_register_constraint(
-                                vn,
-                                *value as u64,
-                            )));
-                        } else {
-                            event!(Level::WARN, "Unrecognized register name: {}", name);
-                        }
-                    }
-                }
-                if let Some(pointer) = &pre.pointer {
-                    for (name, value) in pointer {
-                        if let Some(vn) = library_sleigh.get_register(name) {
-                            b = b.with_precondition(Arc::new(gen_register_pointer_constraint(
-                                vn,
-                                value.clone(),
-                                c.pointer,
-                            )))
-                        }
-                    }
-                }
+        if let Some(c) = &self.constraint{
+            for x in c.get_preconditions(&library_sleigh) {
+                b.with_precondition(x);
             }
-            // todo: gross to repeat this stuff
-            if let Some(post) = &c.postcondition {
-                if let Some(mem) = &post.memory {
-                    b = b.with_postcondition(Arc::new(gen_memory_constraint(mem.clone())));
-                }
-                if let Some(reg) = &post.register {
-                    for (name, value) in reg {
-                        if let Some(vn) = library_sleigh.get_register(name) {
-                            b = b.with_postcondition(Arc::new(gen_register_constraint(
-                                vn,
-                                *value as u64,
-                            )));
-                        } else {
-                            event!(Level::WARN, "Unrecognized register name: {}", name);
-                        }
-                    }
-                }
-                if let Some(pointer) = &post.pointer {
-                    for (name, value) in pointer {
-                        if let Some(vn) = library_sleigh.get_register(name) {
-                            b = b.with_postcondition(Arc::new(gen_register_pointer_constraint(
-                                vn,
-                                value.clone(),
-                                c.pointer,
-                            )))
-                        }
-                    }
-                }
+            for x in c.get_postconditions(&library_sleigh){
+                b.with_postcondition(x);
             }
-            if let Some(pointer) = &c.pointer {
-                b = b.with_pointer_invariant(Arc::new(gen_pointer_range_transition_invariant(
-                    *pointer,
-                )));
-            }
+
         }
-        b.build(z3, &library_sleigh).map_err(CrackersBinError::from)
+        b.build(z3, &library_sleigh)
     }
 }

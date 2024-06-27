@@ -10,6 +10,7 @@ use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::UnrecognizedArchitecture;
 use crate::config::sleigh::SleighConfig;
 
+
 fn load_image<T: AsRef<Path>>(path: T) -> Result<(Image, &'static str), CrackersConfigError> {
     let data = fs::read(path.as_ref())?;
     let file = File::parse(&*data)?;
@@ -18,7 +19,6 @@ fn load_image<T: AsRef<Path>>(path: T) -> Result<(Image, &'static str), Crackers
         file.architecture()
     )))?;
     let img = Image::try_from(file)?;
-
     Ok((img, arch))
 }
 

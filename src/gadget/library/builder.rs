@@ -1,24 +1,33 @@
 use std::collections::HashSet;
 
-use jingle::JingleError;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::OpCode;
+use jingle::JingleError;
+use rand::random;
 
-use crate::config::random::RandomConfig;
 use crate::gadget::library::GadgetLibrary;
 
 pub struct GadgetLibraryBuilder {
     pub max_gadget_length: usize,
     pub operation_blacklist: HashSet<OpCode>,
-    pub random: Option<RandomConfig>
+    pub max_choices_per_slot: usize,
+    pub seed: i64,
 }
 
 impl GadgetLibraryBuilder {
-    pub fn max_gadget_length(&mut self, l: usize) {
+    pub fn max_gadget_length(&mut self, l: usize) -> &mut Self {
         self.max_gadget_length = l;
+        self
     }
-    pub fn random(&mut self, random: RandomConfig){
-        self.random = Some(random)
+
+    pub fn with_seed(&mut self, seed: i64) -> &mut Self {
+        self.seed = seed;
+        self
+    }
+
+    pub fn with_max_choices_per_slot(&mut self, seed: i64) -> &mut Self {
+        self.max_choices_per_slot = self.max_choices_per_slot;
+        self
     }
     pub fn build(&self, sleigh: &SleighContext) -> Result<GadgetLibrary, JingleError> {
         GadgetLibrary::build_from_image(sleigh, self)
@@ -61,7 +70,7 @@ impl Default for GadgetLibraryBuilder {
                 OpCode::CPUI_CAST,
                 OpCode::CPUI_MULTIEQUAL,
             ]),
-            random: None,
+            seed: random(), max_choices_per_slot: 50
         }
     }
 }

@@ -4,10 +4,10 @@ use clap::Parser;
 use tracing::{event, Level};
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
+use crackers::config::CrackersConfig;
 
 use crackers::synthesis::DecisionResult;
 
-use crate::config::CrackersConfig;
 
 mod error;
 
