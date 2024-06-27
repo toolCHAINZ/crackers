@@ -2,13 +2,13 @@ use std::fmt::Display;
 use std::fs::File;
 use std::path::Path;
 
-use jingle::modeling::{ModeledInstruction};
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
 use jingle::JingleError;
+use jingle::modeling::ModeledInstruction;
+use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::context::SleighContext;
+use rand::{random, SeedableRng};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand::{random, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::{event, instrument, Level};
 use z3::Context;
@@ -16,9 +16,9 @@ use z3::Context;
 use crate::error::CrackersError;
 use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::another_iterator::TraceCandidateIterator;
+use crate::gadget::Gadget;
 use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -81,13 +81,13 @@ impl GadgetLibrary {
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
-        if let Some(random_sample_size) = builder.random_sample_size {
-            let seed = builder.random_sample_seed.unwrap_or(random());
+        if let Some(r) = &builder.random {
+            let seed = r.random_seed.unwrap_or(random());
             event!(Level::INFO, "Using seed: {}", seed);
             let mut rng = StdRng::seed_from_u64(seed as u64);
             let rand_gadgets = lib
                 .gadgets
-                .choose_multiple(&mut rng, random_sample_size)
+                .choose_multiple(&mut rng, r.random_sample_size)
                 .cloned();
             event!(Level::INFO, "Randomly selected {}", rand_gadgets.len());
             lib.gadgets = rand_gadgets.collect();
@@ -141,8 +141,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::builder::GadgetLibraryBuilder;

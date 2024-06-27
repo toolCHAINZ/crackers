@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use jingle::sleigh::context::{Image, map_gimli_architecture, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
-use object::{File, Object};
 use serde::Deserialize;
 use tracing::{event, Level};
 use z3::Context;
@@ -15,6 +14,7 @@ use crate::config::constraint::{
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::UnrecognizedArchitecture;
 use crate::config::library::LibraryConfig;
+use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
@@ -25,6 +25,7 @@ use crate::synthesis::builder::SynthesisBuilder;
 mod constraint;
 pub mod error;
 mod library;
+mod object;
 pub mod random;
 mod sleigh;
 mod specification;
@@ -58,36 +59,15 @@ impl CrackersConfig {
         &self,
         z3: &'z3 Context,
     ) -> Result<AssignmentSynthesis<'z3>, CrackersConfigError> {
-        let spec_sleigh_builder = self.get_sleigh_builder()?;
-        let library_sleigh_builder = self.get_sleigh_builder()?;
-
-        let data = self.load_library_image()?;
-        let library_image = File::parse(&*data)?;
-        let spec_image = self.load_spec()?;
-
-        let architecture_str = map_gimli_architecture(&library_image).ok_or(
-            UnrecognizedArchitecture(format!("{:?}", library_image.architecture())),
-        )?;
-        event!(
-            Level::INFO,
-            "Using SLEIGH architecture {}",
-            architecture_str
-        );
-        let library_image = Image::try_from(library_image)?;
-        let spec_sleigh = spec_sleigh_builder
-            .set_image(spec_image)
-            .build(architecture_str)?;
-        let library_sleigh = library_sleigh_builder
-            .set_image(library_image)
-            .build(architecture_str)?;
+        let library_sleigh = load_sleigh(&self.library.path, &self.sleigh)?;
+        let spec = load_sleigh(&self.specification.path, &self.sleigh)?;
 
         let gadget_library_params = GadgetLibraryBuilder::default()
             .max_gadget_length(self.library.max_gadget_length)
-            .random_sample_seed(self.library.random)
-            .random_sample_size(self.library.random_sample_size);
+            .random(&self.library.random);
         let mut b = SynthesisBuilder::default();
         b = b.with_gadget_library_builder(gadget_library_params);
-        b = b.specification(spec_sleigh.read(0, self.specification.max_instructions));
+        b = b.specification(spec.read(0, self.specification.max_instructions));
         if let Some(a) = &self.synthesis {
             b = b.with_selection_strategy(a.strategy);
             b = b.candidates_per_slot(a.max_candidates_per_slot);

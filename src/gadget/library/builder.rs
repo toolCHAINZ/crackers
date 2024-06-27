@@ -8,9 +8,9 @@ use crate::config::random::RandomConfig;
 use crate::gadget::library::GadgetLibrary;
 
 pub struct GadgetLibraryBuilder {
-    pub(crate) max_gadget_length: usize,
-    pub(crate) operation_blacklist: HashSet<OpCode>,
-    random: Option<RandomConfig>
+    pub max_gadget_length: usize,
+    pub operation_blacklist: HashSet<OpCode>,
+    pub random: Option<RandomConfig>
 }
 
 impl GadgetLibraryBuilder {
@@ -61,8 +61,7 @@ impl Default for GadgetLibraryBuilder {
                 OpCode::CPUI_CAST,
                 OpCode::CPUI_MULTIEQUAL,
             ]),
-            random_sample_size: None,
-            random_sample_seed: None,
+            random: None,
         }
     }
 }
