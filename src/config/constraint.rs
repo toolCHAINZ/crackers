@@ -26,7 +26,7 @@ impl Constraint {
     pub fn get_preconditions<'a>(
         &'a self,
         sleigh: &'a SleighContext,
-    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a{
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.precondition
             .iter()
             .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
@@ -41,10 +41,11 @@ impl Constraint {
             .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
     }
 
-    pub fn get_pointer_constraints(&self) -> impl Iterator<Item = Arc<TransitionConstraintGenerator>> + '_{
+    pub fn get_pointer_constraints(
+        &self,
+    ) -> impl Iterator<Item = Arc<TransitionConstraintGenerator>> + '_ {
         self.pointer.iter().map(|c| c.constraints())
     }
-
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,7 +65,8 @@ impl StateEqualityConstraint {
         let register_iterator = self.register.iter().flat_map(|map| {
             map.iter().filter_map(|(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
-                    Some(Arc::new(gen_register_constraint(vn, *value as u64)) as Arc<StateConstraintGenerator>)
+                    Some(Arc::new(gen_register_constraint(vn, *value as u64))
+                        as Arc<StateConstraintGenerator>)
                 } else {
                     event!(Level::WARN, "Unrecognized register name: {}", name);
                     None
@@ -78,11 +80,10 @@ impl StateEqualityConstraint {
         let pointer_iterator = self.pointer.iter().flat_map(move |map| {
             map.iter().filter_map(move |(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
-                    Some(Arc::new(gen_register_pointer_constraint(
-                        vn,
-                        value.clone(),
-                        c1,
-                    )) as Arc<StateConstraintGenerator>)
+                    Some(
+                        Arc::new(gen_register_pointer_constraint(vn, value.clone(), c1))
+                            as Arc<StateConstraintGenerator>,
+                    )
                 } else {
                     event!(Level::WARN, "Unrecognized register name: {}", name);
                     None

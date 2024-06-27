@@ -40,13 +40,13 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum AssignmentResult{
+pub enum AssignmentResult {
     Success(SlotAssignments),
-    Failure(SelectionFailure)
+    Failure(SelectionFailure),
 }
 #[derive(Clone, Debug)]
-pub struct SelectionFailure{
-    indexes: Vec<usize>
+pub struct SelectionFailure {
+    indexes: Vec<usize>,
 }
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;

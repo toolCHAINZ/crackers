@@ -1,15 +1,15 @@
-use z3::{Context, Optimize, SatResult};
 use z3::ast::{Ast, Bool};
+use z3::{Context, Optimize, SatResult};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::{
     AssignmentResult, InstrLen, SelectionFailure, SelectionStrategy,
 };
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::slot_assignments::SlotAssignments;
+use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -42,7 +42,8 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         let mut prob = Self {
             variables: Default::default(),
             z3,
-            solver: Optimize::new(z3), index_bools: Vec::with_capacity(gadgets.len())
+            solver: Optimize::new(z3),
+            index_bools: Vec::with_capacity(gadgets.len()),
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
@@ -72,12 +73,12 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
                 let model = self.solver.get_model().ok_or(ModelGenerationError)?;
                 let assignment =
                     SlotAssignments::create_from_model(model, self.variables.as_slice())?;
-                    let decisions: Vec<&Bool<'ctx>> = assignment
-                        .to_decisions()
-                        .iter()
-                        .map(|d| self.get_decision_variable(d))
-                        .collect();
-                    self.solver.assert(&Bool::and(self.z3, &decisions).not());
+                let decisions: Vec<&Bool<'ctx>> = assignment
+                    .to_decisions()
+                    .iter()
+                    .map(|d| self.get_decision_variable(d))
+                    .collect();
+                self.solver.assert(&Bool::and(self.z3, &decisions).not());
 
                 Ok(Success(assignment))
             }

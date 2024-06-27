@@ -1,8 +1,8 @@
 use jingle::modeling::ModeledInstruction;
 use z3::{Context, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, T>
 where
@@ -52,9 +52,7 @@ where
                 if let Ok(_) = model {
                     let result = is_candidate.iter().map(|c| match c {
                         false => None,
-                        true => {
-                            Some(gadget.clone())
-                        }
+                        true => Some(gadget.clone()),
                     });
                     return Some(result.collect());
                 } else {

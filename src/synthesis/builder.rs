@@ -96,7 +96,10 @@ impl SynthesisBuilder {
         self
     }
 
-    pub fn with_pointer_invariant(&mut self, strat: Arc<TransitionConstraintGenerator>) -> &mut Self {
+    pub fn with_pointer_invariant(
+        &mut self,
+        strat: Arc<TransitionConstraintGenerator>,
+    ) -> &mut Self {
         self.pointer_invariants.push(strat);
         self
     }

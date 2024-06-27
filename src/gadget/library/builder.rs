@@ -70,7 +70,8 @@ impl Default for GadgetLibraryBuilder {
                 OpCode::CPUI_CAST,
                 OpCode::CPUI_MULTIEQUAL,
             ]),
-            seed: random(), max_choices_per_slot: 50
+            seed: random(),
+            max_choices_per_slot: 50,
         }
     }
 }

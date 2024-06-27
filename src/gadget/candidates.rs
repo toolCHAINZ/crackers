@@ -48,7 +48,11 @@ impl CandidateBuilder {
         event!(Level::INFO, "Using seed: {}", seed);
         candidates = candidates
             .into_iter()
-            .map(|c| c.choose_multiple(&mut rng, self.random_sample_size).cloned().collect())
+            .map(|c| {
+                c.choose_multiple(&mut rng, self.random_sample_size)
+                    .cloned()
+                    .collect()
+            })
             .collect();
 
         if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {

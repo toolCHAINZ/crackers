@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
-use z3::{Context, SatResult, Solver};
 use z3::ast::Bool;
+use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::synthesis::assignment_model::AssignmentModel;
