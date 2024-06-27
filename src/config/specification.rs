@@ -2,7 +2,7 @@ use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::{SpecMissingStartSymbol, SpecMissingTextSection};
 use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
-use jingle::sleigh::context::{Image, SleighContext};
+use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSection, ObjectSymbol};
 use serde::Deserialize;
