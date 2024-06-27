@@ -81,15 +81,6 @@ impl GadgetLibrary {
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
-            event!(Level::INFO, "Using seed: {}", builder.seed);
-            let mut rng = StdRng::seed_from_u64(builder.seed as u64);
-            let rand_gadgets = lib
-                .gadgets
-                .choose_multiple(&mut rng, builder.max_choices_per_slot)
-                .cloned();
-            event!(Level::INFO, "Randomly selected {}", rand_gadgets.len());
-            lib.gadgets = rand_gadgets.collect();
-
         Ok(lib)
     }
 

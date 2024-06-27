@@ -64,28 +64,28 @@ impl CrackersConfig {
         z3: &'z3 Context,
     ) -> Result<AssignmentSynthesis<'z3>, CrackersError> {
         let library_sleigh = load_sleigh(&self.library.path, &self.sleigh)?;
-        let spec = load_sleigh(&self.specification.path, &self.sleigh)?;
 
         let mut gadget_library_params = GadgetLibraryBuilder::default();
         gadget_library_params
             .max_gadget_length(self.library.max_gadget_length)
             .with_seed(self.meta.seed);
         let mut b = SynthesisBuilder::default();
-        b.with_gadget_library_builder(gadget_library_params);
-        b.specification(spec.read(0, self.specification.max_instructions));
+        b.with_gadget_library_builder(gadget_library_params)
+            .seed(self.meta.seed)
+            .specification(self.specification.get_spec(&self.sleigh)?.into_iter());
         if let Some(a) = &self.synthesis {
             b.with_selection_strategy(a.strategy);
             b.candidates_per_slot(a.max_candidates_per_slot);
             b.parallel(a.parallel).seed(self.meta.seed);
         }
-        if let Some(c) = &self.constraint{
+        if let Some(c) = &self.constraint {
             for x in c.get_preconditions(&library_sleigh) {
                 b.with_precondition(x);
             }
-            for x in c.get_postconditions(&library_sleigh){
+            for x in c.get_postconditions(&library_sleigh) {
                 b.with_postcondition(x);
             }
-            for x in c.get_pointer_constraints(){
+            for x in c.get_pointer_constraints() {
                 b.with_pointer_invariant(x);
             }
         }

@@ -25,8 +25,8 @@ impl GadgetLibraryBuilder {
         self
     }
 
-    pub fn with_max_choices_per_slot(&mut self, seed: i64) -> &mut Self {
-        self.max_choices_per_slot = self.max_choices_per_slot;
+    pub fn with_max_choices_per_slot(&mut self, num_choices: usize) -> &mut Self {
+        self.max_choices_per_slot = num_choices;
         self
     }
     pub fn build(&self, sleigh: &SleighContext) -> Result<GadgetLibrary, JingleError> {
