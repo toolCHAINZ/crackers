@@ -1,15 +1,15 @@
-use z3::ast::{Ast, Bool};
 use z3::{Context, Optimize, SatResult};
+use z3::ast::{Ast, Bool};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::{
     AssignmentResult, InstrLen, SelectionFailure, SelectionStrategy,
 };
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug)]
 pub struct OptimizationProblem<'ctx> {
@@ -85,7 +85,7 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
         }
     }
 
-    fn add_theory_clauses(&mut self, clause: &ConflictClause) {
+    fn add_theory_clause(&mut self, clause: &ConflictClause) {
         let choices: Vec<&Bool> = clause
             .decisions()
             .iter()

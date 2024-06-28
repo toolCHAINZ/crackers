@@ -1,12 +1,7 @@
-use std::fs;
-
-use jingle::sleigh::context::{Image, SleighContextBuilder};
-use jingle::sleigh::RegisterManager;
 use serde::Deserialize;
 use z3::Context;
 
 use crate::config::constraint::Constraint;
-use crate::config::error::CrackersConfigError;
 use crate::config::library::LibraryConfig;
 use crate::config::meta::MetaConfig;
 use crate::config::object::load_sleigh;
@@ -15,8 +10,8 @@ use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryBuilder;
-use crate::synthesis::builder::SynthesisBuilder;
 use crate::synthesis::AssignmentSynthesis;
+use crate::synthesis::builder::SynthesisBuilder;
 
 pub mod constraint;
 pub mod error;
@@ -39,20 +34,6 @@ pub struct CrackersConfig {
 }
 
 impl CrackersConfig {
-    fn get_sleigh_builder(&self) -> Result<SleighContextBuilder, CrackersConfigError> {
-        let builder = SleighContextBuilder::load_ghidra_installation(&self.sleigh.ghidra_path)?;
-        Ok(builder)
-    }
-
-    fn load_library_image(&self) -> Result<Vec<u8>, CrackersConfigError> {
-        let data = fs::read(&self.library.path)?;
-        Ok(data)
-    }
-
-    fn load_spec(&self) -> Result<Image, CrackersConfigError> {
-        let data = fs::read(&self.specification.path)?;
-        Ok(Image::from(data))
-    }
     pub fn resolve<'z3>(
         &self,
         z3: &'z3 Context,

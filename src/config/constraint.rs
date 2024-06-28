@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::iter::once;
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
-use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleError::UnmodeledSpace;
+use jingle::modeling::{ModeledBlock, ModelingContext, State};
+use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
+use jingle::sleigh::context::SleighContext;
+use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use serde::Deserialize;
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
@@ -29,7 +28,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.precondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(|c| c.constraints(sleigh, self.pointer))
     }
 
     pub fn get_postconditions<'a>(
@@ -38,7 +37,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.postcondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(|c| c.constraints(sleigh, self.pointer))
     }
 
     pub fn get_pointer_constraints(
@@ -61,7 +60,7 @@ impl StateEqualityConstraint {
         sleigh: &'a SleighContext,
         c: Option<PointerRangeConstraints>,
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
-        let c1 = c.clone();
+        let c1 = c;
         let register_iterator = self.register.iter().flat_map(|map| {
             map.iter().filter_map(|(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {

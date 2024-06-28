@@ -18,8 +18,8 @@ impl ConflictClause {
             for decision in &x.decisions {
                 decisions.insert(*decision);
             }
-            precondition = precondition | x.precondition;
-            postcondition = postcondition | x.postcondition;
+            precondition |= x.precondition;
+            postcondition |= x.postcondition;
         }
         Self {
             decisions: decisions.into_iter().collect(),
@@ -37,10 +37,19 @@ impl ConflictClause {
     }
 }
 
-impl From<Vec<Decision>> for ConflictClause {
-    fn from(value: Vec<Decision>) -> Self {
+impl<'a, T: Iterator<Item = &'a Decision>> From<T> for ConflictClause {
+    fn from(value: T) -> Self {
         Self {
-            decisions: value,
+            decisions: value.cloned().collect(),
+            precondition: false,
+            postcondition: false,
+        }
+    }
+}
+impl From<Decision> for ConflictClause{
+    fn from(value: Decision) -> Self {
+        Self {
+            decisions: vec![value],
             precondition: false,
             postcondition: false,
         }
