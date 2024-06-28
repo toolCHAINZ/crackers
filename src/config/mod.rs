@@ -30,7 +30,7 @@ pub struct CrackersConfig {
     pub library: LibraryConfig,
     pub sleigh: SleighConfig,
     pub constraint: Option<Constraint>,
-    pub synthesis: Option<SynthesisConfig>,
+    pub synthesis: SynthesisConfig,
 }
 
 impl CrackersConfig {
@@ -49,11 +49,10 @@ impl CrackersConfig {
         b.gadget_library_builder(Library::Library(library))
             .seed(self.meta.seed)
             .instructions(self.specification.get_spec(&self.sleigh)?);
-        if let Some(a) = &self.synthesis {
-            b.selection_strategy(a.strategy);
-            b.candidates_per_slot(a.max_candidates_per_slot);
-            b.parallel(a.parallel).seed(self.meta.seed);
-        }
+        b.selection_strategy(self.synthesis.strategy);
+        b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
+        b.parallel(self.synthesis.parallel).seed(self.meta.seed);
+
         if let Some(c) = &self.constraint {
             b.preconditions(c.get_preconditions(&library_sleigh).collect());
             b.postconditions(c.get_postconditions(&library_sleigh).collect());
