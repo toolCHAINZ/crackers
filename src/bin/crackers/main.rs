@@ -20,11 +20,7 @@ fn main() {
     let cfg_bytes = fs::read(args.cfg_path).unwrap();
     let s = String::from_utf8(cfg_bytes).unwrap();
     let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
-    let level = p
-        .synthesis
-        .as_ref()
-        .map(|s| Level::from(s.log_level))
-        .unwrap_or(Level::INFO);
+    let level = Level::from(p.meta.log_level);
     let sub = FmtSubscriber::builder().with_max_level(level).finish();
     tracing::subscriber::set_global_default(sub).unwrap();
     match p.resolve(&z3) {

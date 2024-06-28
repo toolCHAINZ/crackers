@@ -25,11 +25,11 @@ pub mod synthesis;
 #[derive(Debug, Deserialize)]
 pub struct CrackersConfig {
     #[serde(default)]
-    meta: MetaConfig,
-    specification: SpecificationConfig,
-    library: LibraryConfig,
-    sleigh: SleighConfig,
-    constraint: Option<Constraint>,
+    pub meta: MetaConfig,
+    pub specification: SpecificationConfig,
+    pub library: LibraryConfig,
+    pub sleigh: SleighConfig,
+    pub constraint: Option<Constraint>,
     pub synthesis: Option<SynthesisConfig>,
 }
 
