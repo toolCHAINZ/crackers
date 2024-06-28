@@ -37,7 +37,7 @@ impl SpecificationConfig {
         let offset = sym.address() - section.address();
         let file_offset = offset + section.file_range().ok_or(SpecMissingTextSection)?.0;
         let sleigh = self.load_sleigh(sleigh_config)?;
-        let instrs: Vec<Instruction> = sleigh.read(file_offset, self.max_instructions).collect();
+        let instrs: Vec<Instruction> = sleigh.read_block(file_offset, self.max_instructions).collect();
         Ok(instrs)
     }
 }
