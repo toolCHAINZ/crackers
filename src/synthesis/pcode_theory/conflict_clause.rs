@@ -46,7 +46,7 @@ impl<'a, T: Iterator<Item = &'a Decision>> From<T> for ConflictClause {
         }
     }
 }
-impl From<Decision> for ConflictClause{
+impl From<Decision> for ConflictClause {
     fn from(value: Decision) -> Self {
         Self {
             decisions: vec![value],

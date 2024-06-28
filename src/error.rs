@@ -2,6 +2,8 @@ use jingle::JingleError;
 use thiserror::Error;
 
 use crate::config::error::CrackersConfigError;
+use crate::gadget::library::builder::GadgetLibraryParamsBuilderError;
+use crate::synthesis::builder::SynthesisParamsBuilderError;
 
 #[derive(Debug, Error)]
 pub enum CrackersError {
@@ -27,4 +29,8 @@ pub enum CrackersError {
     Config(#[from] CrackersConfigError),
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
+    #[error("Invalid gadget library params")]
+    LibraryConfig(#[from] GadgetLibraryParamsBuilderError),
+    #[error("Invalid synthesis params")]
+    SynthesisParams(#[from] SynthesisParamsBuilderError),
 }

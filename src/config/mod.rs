@@ -9,9 +9,9 @@ use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
-use crate::gadget::library::builder::GadgetLibraryBuilder;
+use crate::gadget::library::builder::{GadgetLibraryParams, GadgetLibraryParamsBuilder};
+use crate::synthesis::builder::{Library, SynthesisParams, SynthesisParamsBuilder};
 use crate::synthesis::AssignmentSynthesis;
-use crate::synthesis::builder::SynthesisBuilder;
 
 pub mod constraint;
 pub mod error;
@@ -40,30 +40,25 @@ impl CrackersConfig {
     ) -> Result<AssignmentSynthesis<'z3>, CrackersError> {
         let library_sleigh = load_sleigh(&self.library.path, &self.sleigh)?;
 
-        let mut gadget_library_params = GadgetLibraryBuilder::default();
-        gadget_library_params
-            .max_gadget_length(self.library.max_gadget_length)
-            .with_seed(self.meta.seed);
-        let mut b = SynthesisBuilder::default();
-        b.with_gadget_library_builder(gadget_library_params)
+        let library = GadgetLibraryParamsBuilder::default()
             .seed(self.meta.seed)
-            .specification(self.specification.get_spec(&self.sleigh)?.into_iter());
+            .max_gadget_length(self.library.max_gadget_length)
+            .build()?
+            .build(&library_sleigh)?;
+        let mut b = SynthesisParamsBuilder::default();
+        b.gadget_library_builder(Library::Library(library))
+            .seed(self.meta.seed)
+            .instructions(self.specification.get_spec(&self.sleigh)?);
         if let Some(a) = &self.synthesis {
-            b.with_selection_strategy(a.strategy);
+            b.selection_strategy(a.strategy);
             b.candidates_per_slot(a.max_candidates_per_slot);
             b.parallel(a.parallel).seed(self.meta.seed);
         }
         if let Some(c) = &self.constraint {
-            for x in c.get_preconditions(&library_sleigh) {
-                b.with_precondition(x);
-            }
-            for x in c.get_postconditions(&library_sleigh) {
-                b.with_postcondition(x);
-            }
-            for x in c.get_pointer_constraints() {
-                b.with_pointer_invariant(x);
-            }
+            b.preconditions(c.get_preconditions(&library_sleigh).collect());
+            b.postconditions(c.get_postconditions(&library_sleigh).collect());
+            b.pointer_invariants(c.get_pointer_constraints().collect());
         }
-        b.build(z3, &library_sleigh)
+        b.build()?.build(z3, &library_sleigh)
     }
 }

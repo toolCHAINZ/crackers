@@ -6,7 +6,8 @@ use crate::synthesis::builder::SynthesisSelectionStrategy;
 pub struct SynthesisConfig {
     pub strategy: SynthesisSelectionStrategy,
     pub max_candidates_per_slot: usize,
-    pub parallel: usize, }
+    pub parallel: usize,
+}
 
 impl Default for SynthesisConfig {
     fn default() -> Self {

@@ -1,8 +1,8 @@
 use jingle::modeling::ModeledInstruction;
 use z3::{Context, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, T>
 where

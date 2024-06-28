@@ -39,7 +39,7 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
     }
 }
 
-impl InstrLen for i32{
+impl InstrLen for i32 {
     fn instr_len(&self) -> usize {
         *self as usize
     }

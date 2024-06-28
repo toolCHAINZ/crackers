@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use std::collections::HashSet;
 
 use jingle::sleigh::context::SleighContext;
@@ -7,34 +8,21 @@ use rand::random;
 
 use crate::gadget::library::GadgetLibrary;
 
-pub struct GadgetLibraryBuilder {
+#[derive(Clone, Debug, Builder)]
+#[builder(default)]
+pub struct GadgetLibraryParams {
     pub max_gadget_length: usize,
     pub operation_blacklist: HashSet<OpCode>,
-    pub max_choices_per_slot: usize,
     pub seed: i64,
 }
 
-impl GadgetLibraryBuilder {
-    pub fn max_gadget_length(&mut self, l: usize) -> &mut Self {
-        self.max_gadget_length = l;
-        self
-    }
-
-    pub fn with_seed(&mut self, seed: i64) -> &mut Self {
-        self.seed = seed;
-        self
-    }
-
-    pub fn with_max_choices_per_slot(&mut self, num_choices: usize) -> &mut Self {
-        self.max_choices_per_slot = num_choices;
-        self
-    }
+impl GadgetLibraryParams {
     pub fn build(&self, sleigh: &SleighContext) -> Result<GadgetLibrary, JingleError> {
         GadgetLibrary::build_from_image(sleigh, self)
     }
 }
 
-impl Default for GadgetLibraryBuilder {
+impl Default for GadgetLibraryParams {
     fn default() -> Self {
         Self {
             max_gadget_length: 4,
@@ -71,7 +59,6 @@ impl Default for GadgetLibraryBuilder {
                 OpCode::CPUI_MULTIEQUAL,
             ]),
             seed: random(),
-            max_choices_per_slot: 50,
         }
     }
 }

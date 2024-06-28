@@ -11,16 +11,15 @@ use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::{SynthesisBuilder, SynthesisSelectionStrategy};
+use crate::synthesis::builder::{SynthesisParams, SynthesisSelectionStrategy};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy,
-};
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -53,7 +52,7 @@ pub struct AssignmentSynthesis<'ctx> {
     outer_problem: OuterProblem<'ctx>,
     library: GadgetLibrary,
     candidates: Candidates,
-    builder: SynthesisBuilder,
+    builder: SynthesisParams,
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
@@ -61,7 +60,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn new(
         z3: &'ctx Context,
         library: GadgetLibrary,
-        builder: SynthesisBuilder,
+        builder: SynthesisParams,
     ) -> Result<Self, CrackersError> {
         let instrs = &builder.instructions;
         if instrs.is_empty() {
