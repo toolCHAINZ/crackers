@@ -3,9 +3,9 @@ use z3::Model;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
-use crate::synthesis::Decision;
 
 mod display;
 
@@ -16,7 +16,7 @@ pub struct SlotAssignments {
 
 impl SlotAssignments {
     pub fn as_conflict_clause(&self) -> ConflictClause {
-        ConflictClause::from(self.to_decisions())
+        ConflictClause::from(self.to_decisions().iter())
     }
     pub fn to_decisions(&self) -> Vec<Decision> {
         let mut vec = Vec::with_capacity(self.choices.len());

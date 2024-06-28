@@ -28,7 +28,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.precondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(|c| c.constraints(sleigh, self.pointer))
     }
 
     pub fn get_postconditions<'a>(
@@ -37,7 +37,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.postcondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(|c| c.constraints(sleigh, self.pointer))
     }
 
     pub fn get_pointer_constraints(
@@ -60,7 +60,7 @@ impl StateEqualityConstraint {
         sleigh: &'a SleighContext,
         c: Option<PointerRangeConstraints>,
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
-        let c1 = c.clone();
+        let c1 = c;
         let register_iterator = self.register.iter().flat_map(|map| {
             map.iter().filter_map(|(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {

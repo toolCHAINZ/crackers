@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 
 const AGGRESSIVE: bool = true;
 
@@ -33,7 +33,7 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 
     pub fn gen_conflict_clause(&self) -> ConflictClause {
-        let mut clause = ConflictClause::from(self.decisions.clone());
+        let mut clause = ConflictClause::from(self.decisions.iter());
         clause.precondition = matches!(self.constraint_type, TheoryStage::Precondition);
         clause.postcondition = matches!(self.constraint_type, TheoryStage::Postcondition);
         clause

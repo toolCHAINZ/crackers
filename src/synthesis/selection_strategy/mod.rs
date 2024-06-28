@@ -39,12 +39,17 @@ impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
     }
 }
 
-#[derive(Clone, Debug)]
+impl InstrLen for i32{
+    fn instr_len(&self) -> usize {
+        *self as usize
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AssignmentResult {
     Success(SlotAssignments),
     Failure(SelectionFailure),
 }
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SelectionFailure {
     pub indexes: Vec<usize>,
 }
@@ -53,7 +58,7 @@ pub trait SelectionStrategy<'ctx> {
 
     fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError>;
 
-    fn add_theory_clauses(&mut self, clause: &ConflictClause);
+    fn add_theory_clause(&mut self, clause: &ConflictClause);
 
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
         format!("i{}_g{}", target_index, gadget_index)
@@ -75,8 +80,8 @@ impl<'ctx> OuterProblem<'ctx> {
 
     pub(crate) fn add_theory_clauses(&mut self, clauses: &ConflictClause) {
         match self {
-            OuterProblem::SatProb(s) => s.add_theory_clauses(clauses),
-            OuterProblem::OptimizeProb(o) => o.add_theory_clauses(clauses),
+            OuterProblem::SatProb(s) => s.add_theory_clause(clauses),
+            OuterProblem::OptimizeProb(o) => o.add_theory_clause(clauses),
         }
     }
 }

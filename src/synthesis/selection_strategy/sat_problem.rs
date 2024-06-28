@@ -1,13 +1,13 @@
-use z3::ast::{Ast, Bool};
 use z3::{Context, SatResult, Solver};
+use z3::ast::{Ast, Bool};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
-use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
-use crate::synthesis::selection_strategy::{AssignmentResult, SelectionFailure, SelectionStrategy};
-use crate::synthesis::slot_assignments::SlotAssignments;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::selection_strategy::{AssignmentResult, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem<'ctx> {
@@ -110,7 +110,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         }
     }
 
-    fn add_theory_clauses(&mut self, clause: &ConflictClause) {
+    fn add_theory_clause(&mut self, clause: &ConflictClause) {
         self.last_conflict = Some(clause.clone());
         let choices: Vec<&Bool> = clause
             .decisions()
@@ -126,10 +126,10 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
 mod tests {
     use z3::{Config, Context};
 
-    use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
-    use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-    use crate::synthesis::selection_strategy::SelectionStrategy;
     use crate::synthesis::Decision;
+    use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+    use crate::synthesis::selection_strategy::{AssignmentResult, SelectionStrategy};
+    use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 
     #[test]
     fn test_assignment() {
@@ -138,36 +138,41 @@ mod tests {
         let mut prob = SatProblem::initialize(&z3, &thing);
         let assignments = prob.get_assignments();
         // Verify that an unconstrained problem returns a model
-        assert!(assignments.is_some());
+        assert!(assignments.is_ok());
         let a = assignments.unwrap();
-        for (i, x) in a.choices().iter().enumerate() {
-            // verify that all model outputs are sane
-            assert!(x < &thing[i].len())
+        match &a {
+            AssignmentResult::Success(a) => {
+                for (i, x) in a.choices().iter().enumerate() {
+                    // verify that all model outputs are sane
+                    assert!(x < &thing[i].len())
+                }
+            }
+            AssignmentResult::Failure(_) => {
+                panic!()
+            }
         }
 
-        prob.add_theory_clauses(&[ConflictClause::Unit(Decision {
+        prob.add_theory_clause(&ConflictClause::from(Decision {
             index: 0,
             choice: 0,
-        })]);
+        }));
         let assignments2 = prob.get_assignments();
         // verify that adding a constraint still returns a model
-        assert!(assignments2.is_some());
+        assert!(assignments2.is_ok());
         let a2 = assignments2.unwrap();
         // verify that the new constraint has caused the model to change
         assert_ne!(a, a2);
         // now add clauses to make the problem UNSAT
-        prob.add_theory_clauses(&[
-            ConflictClause::Unit(Decision {
-                index: 0,
-                choice: 1,
-            }),
-            ConflictClause::Unit(Decision {
-                index: 0,
-                choice: 2,
-            }),
-        ]);
+        prob.add_theory_clause(&ConflictClause::from(Decision {
+            index: 0,
+            choice: 1,
+        }));
+        prob.add_theory_clause(&ConflictClause::from(Decision {
+            index: 0,
+            choice: 2,
+        }));
         let assignments3 = prob.get_assignments();
         // verify that we do not get a model back
-        assert!(assignments3.is_none());
+        assert!(matches!(assignments3, Ok(AssignmentResult::Failure(_))));
     }
 }
