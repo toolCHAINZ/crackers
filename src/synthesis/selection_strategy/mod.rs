@@ -46,7 +46,7 @@ pub enum AssignmentResult {
 }
 #[derive(Clone, Debug)]
 pub struct SelectionFailure {
-    indexes: Vec<usize>,
+    pub indexes: Vec<usize>,
 }
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;

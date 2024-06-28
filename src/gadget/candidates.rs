@@ -1,7 +1,7 @@
 use jingle::modeling::ModeledBlock;
 use rand::prelude::StdRng;
+use rand::SeedableRng;
 use rand::seq::SliceRandom;
-use rand::{random, SeedableRng};
 use tracing::{event, Level};
 use z3::Context;
 

@@ -1,14 +1,12 @@
 use std::fs;
 
 use clap::Parser;
-use crackers::config::CrackersConfig;
 use tracing::{event, Level};
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
 
+use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
-
-mod error;
 
 #[derive(Parser, Debug)]
 struct Arguments {
