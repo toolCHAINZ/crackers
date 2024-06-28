@@ -9,8 +9,8 @@ use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
-use crate::gadget::library::builder::{GadgetLibraryParams, GadgetLibraryParamsBuilder};
-use crate::synthesis::builder::{Library, SynthesisParams, SynthesisParamsBuilder};
+use crate::gadget::library::builder::GadgetLibraryParamsBuilder;
+use crate::synthesis::builder::{Library, SynthesisParamsBuilder};
 use crate::synthesis::AssignmentSynthesis;
 
 pub mod constraint;
