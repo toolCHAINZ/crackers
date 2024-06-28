@@ -1,18 +1,12 @@
 use std::fs;
-use std::sync::Arc;
 
-use jingle::sleigh::context::{map_gimli_architecture, Image, SleighContextBuilder};
+use jingle::sleigh::context::{Image, SleighContextBuilder};
 use jingle::sleigh::RegisterManager;
 use serde::Deserialize;
-use tracing::{event, Level};
 use z3::Context;
 
-use crate::config::constraint::{
-    gen_memory_constraint, gen_pointer_range_transition_invariant, gen_register_constraint,
-    gen_register_pointer_constraint, Constraint,
-};
+use crate::config::constraint::Constraint;
 use crate::config::error::CrackersConfigError;
-use crate::config::error::CrackersConfigError::UnrecognizedArchitecture;
 use crate::config::library::LibraryConfig;
 use crate::config::meta::MetaConfig;
 use crate::config::object::load_sleigh;
@@ -24,14 +18,14 @@ use crate::gadget::library::builder::GadgetLibraryBuilder;
 use crate::synthesis::builder::SynthesisBuilder;
 use crate::synthesis::AssignmentSynthesis;
 
-mod constraint;
+pub mod constraint;
 pub mod error;
-mod library;
-mod meta;
-mod object;
-mod sleigh;
-mod specification;
-mod synthesis;
+pub mod library;
+pub mod meta;
+pub mod object;
+pub mod sleigh;
+pub mod specification;
+pub mod synthesis;
 
 #[derive(Debug, Deserialize)]
 pub struct CrackersConfig {
