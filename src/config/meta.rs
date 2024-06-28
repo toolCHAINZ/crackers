@@ -25,7 +25,7 @@ impl From<CrackersLogLevel> for Level {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct MetaConfig {
     pub seed: i64,
     pub log_level: CrackersLogLevel,

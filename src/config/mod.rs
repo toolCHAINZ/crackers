@@ -22,7 +22,7 @@ pub mod sleigh;
 pub mod specification;
 pub mod synthesis;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct CrackersConfig {
     #[serde(default)]
     pub meta: MetaConfig,

@@ -8,7 +8,7 @@ use object::{File, Object, ObjectSection, ObjectSymbol};
 use serde::Deserialize;
 use std::fs;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,

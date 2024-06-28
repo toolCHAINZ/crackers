@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::synthesis::builder::SynthesisSelectionStrategy;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SynthesisConfig {
     pub strategy: SynthesisSelectionStrategy,
     pub max_candidates_per_slot: usize,

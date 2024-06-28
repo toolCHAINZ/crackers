@@ -14,7 +14,7 @@ use z3::Context;
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Constraint {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
@@ -47,7 +47,7 @@ impl Constraint {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,

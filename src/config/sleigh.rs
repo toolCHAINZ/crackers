@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::config::error::CrackersConfigError;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SleighConfig {
     pub ghidra_path: String,
 }
