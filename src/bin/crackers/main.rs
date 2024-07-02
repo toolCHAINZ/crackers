@@ -26,7 +26,6 @@ fn main() {
     match p.resolve(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {
-                DecisionResult::ConflictsFound(_, _) => {}
                 DecisionResult::AssignmentFound(a) => {
                     event!(Level::INFO, "Synthesis successful :)");
                     println!("{}", a)
