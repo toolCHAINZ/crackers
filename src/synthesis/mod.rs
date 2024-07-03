@@ -24,7 +24,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
 pub mod builder;
-mod pcode_theory;
+pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
 
