@@ -1,5 +1,3 @@
-
-
 [sleigh]
 ghidra_path = "/Applications/ghidra"
 
@@ -7,7 +5,7 @@ ghidra_path = "/Applications/ghidra"
 strategy = "sat"
 max_candidates_per_slot = 400
 parallel = 4
-log_level = "INFO"
+log_level = "TRACE"
 
 [specification]
 path = "bin/execve.o"

@@ -1,7 +1,7 @@
 use jingle::modeling::ModeledBlock;
 use rand::prelude::StdRng;
-use rand::seq::SliceRandom;
 use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use tracing::{event, Level};
 use z3::Context;
 
@@ -26,28 +26,14 @@ impl CandidateBuilder {
         self
     }
 
-    pub fn build<T: Iterator<Item = Vec<Option<Gadget>>>>(
+    pub fn build<T: Iterator<Item = Vec<Gadget>>>(
         &self,
         iter: T,
     ) -> Result<Candidates, CrackersError> {
-        let mut candidates = vec![];
-        for x in iter {
-            if candidates.is_empty() {
-                for _ in &x {
-                    candidates.push(vec![])
-                }
-            }
-            for (i, opt_gadget) in x.into_iter().enumerate() {
-                if let Some(g) = opt_gadget {
-                    candidates[i].push(g)
-                }
-            }
-        }
         let seed = self.random_sample_seed as u64;
         let mut rng = StdRng::seed_from_u64(seed);
         event!(Level::INFO, "Using seed: {}", seed);
-        candidates = candidates
-            .into_iter()
+        let candidates: Vec<Vec<Gadget>> = iter
             .map(|c| {
                 c.choose_multiple(&mut rng, self.random_sample_size)
                     .cloned()
