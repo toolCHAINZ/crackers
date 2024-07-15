@@ -1,14 +1,14 @@
-use derive_builder::Builder;
 use std::sync::Arc;
 
+use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
-use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use rand::random;
 use serde::Deserialize;
 use z3::ast::Bool;
 use z3::Context;
 
+use crate::config::sleigh::SleighConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::library::GadgetLibrary;
@@ -70,11 +70,11 @@ impl SynthesisParams {
     pub fn build<'a>(
         self,
         z3: &'a Context,
-        gadget_source: &SleighContext,
+        sleigh_config: &SleighConfig,
     ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
         let library = match &self.gadget_library_builder {
             Library::Library(l) => l.clone(),
-            Library::Params(p) => p.build(gadget_source)?,
+            Library::Params(p) => p.build(sleigh_config)?,
         };
         let s = AssignmentSynthesis::new(z3, library, self)?;
 
