@@ -20,11 +20,19 @@ impl CandidateBuilder {
         &self,
         iter: T,
     ) -> Result<Candidates, CrackersError> {
-        let candidates: Vec<Vec<Gadget>> = iter
+        let candidates: Vec<Vec<&Gadget>> = iter
+            .map(|v| v.iter().map(|vv| vec![*vv]).collect())
             .take(self.random_sample_size)
-            .map(|g| g.into_iter().map(|gg| gg.clone()).collect())
-            .collect();
-
+            .reduce(|mut acc: Vec<Vec<&Gadget>>, value| {
+                for (i, vector) in acc.iter_mut().enumerate() {
+                    vector.push(value[i][0]);
+                }
+                acc
+            })
+            .unwrap();
+        let candidates: Vec<Vec<Gadget>> = candidates
+            .into_iter()
+            .map(|g| g.into_iter().cloned().collect()).collect();
         if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
             Err(UnsimulatedOperation { index })
         } else {
