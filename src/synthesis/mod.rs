@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
+use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
@@ -11,7 +13,7 @@ use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::{SynthesisParams, SynthesisSelectionStrategy};
+use crate::synthesis::builder::{StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
@@ -51,15 +53,19 @@ pub struct AssignmentSynthesis<'ctx> {
     outer_problem: OuterProblem<'ctx>,
     library: GadgetLibrary,
     candidates: Candidates,
-    builder: SynthesisParams,
+    pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
+    preconditions: Vec<Arc<StateConstraintGenerator>>,
+    postconditions: Vec<Arc<StateConstraintGenerator>>,
+    candidates_per_slot: usize,
+    instructions: Vec<Instruction>,
+    parallel: usize
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn new(
         z3: &'ctx Context,
-        library: GadgetLibrary,
-        builder: SynthesisParams,
+        builder: &SynthesisParams,
     ) -> Result<Self, CrackersError> {
         let instrs = &builder.instructions;
         if instrs.is_empty() {
@@ -67,13 +73,13 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         }
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
             .iter()
-            .map(|i| ModeledInstruction::new(i.clone(), &library, z3).unwrap())
+            .map(|i| ModeledInstruction::new(i.clone(), &builder.gadget_library, z3).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
             .with_random_sample_seed(builder.seed)
-            .build(library.get_candidates_for_trace(z3, modeled_instrs.as_slice()))?;
+            .build(builder.gadget_library.get_candidates_for_trace(z3, modeled_instrs.as_slice()))?;
         let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
                 SatProb(SatProblem::initialize(z3, &candidates.candidates))
@@ -87,8 +93,13 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             z3,
             outer_problem,
             candidates,
-            library,
-            builder,
+            library: builder.gadget_library.clone(),
+            pointer_invariants: builder.pointer_invariants.clone(),
+            preconditions: builder.preconditions.clone(),
+            postconditions: builder.postconditions.clone(),
+            candidates_per_slot: builder.candidates_per_slot,
+            instructions: builder.instructions.clone(),
+            parallel: builder.parallel
         })
     }
 
@@ -96,14 +107,14 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn decide(&mut self) -> Result<DecisionResult<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         let mut req_channels = vec![];
         let theory_builder = PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
-            .with_pointer_invariants(&self.builder.pointer_invariants)
-            .with_preconditions(&self.builder.preconditions)
-            .with_postconditions(&self.builder.postconditions)
-            .with_max_candidates(self.builder.candidates_per_slot)
-            .with_templates(self.builder.instructions.clone().into_iter());
+            .with_pointer_invariants(&self.pointer_invariants)
+            .with_preconditions(&self.preconditions)
+            .with_postconditions(&self.postconditions)
+            .with_max_candidates(self.candidates_per_slot)
+            .with_templates(self.instructions.clone().into_iter());
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
-            for idx in 0..self.builder.parallel {
+            for idx in 0..self.parallel {
                 let t = theory_builder.clone();
                 let r = resp_sender.clone();
                 let (req_sender, req_receiver) = std::sync::mpsc::channel();

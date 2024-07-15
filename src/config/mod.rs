@@ -9,7 +9,7 @@ use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::synthesis::AssignmentSynthesis;
-use crate::synthesis::builder::{Library, SynthesisParamsBuilder};
+use crate::synthesis::builder::SynthesisParamsBuilder;
 
 pub mod constraint;
 pub mod error;
@@ -42,13 +42,13 @@ impl CrackersConfig {
             b.postconditions(c.get_postconditions(&library).collect());
             b.pointer_invariants(c.get_pointer_constraints().collect());
         }
-        b.gadget_library_builder(Library::Library(library))
+        b.gadget_library(library)
             .seed(self.meta.seed)
             .instructions(self.specification.get_spec(&self.sleigh)?);
         b.selection_strategy(self.synthesis.strategy);
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
         b.parallel(self.synthesis.parallel).seed(self.meta.seed);
 
-        b.build()?.build(z3, &self.sleigh)
+        b.build()?.build(z3)
     }
 }
