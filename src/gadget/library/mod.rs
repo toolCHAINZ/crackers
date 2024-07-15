@@ -1,23 +1,17 @@
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::fs::File;
-use std::path::Path;
-use std::rc::Rc;
-use std::sync::Arc;
 
 use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::sleigh::context::SleighContext;
-use serde::{Deserialize, Serialize};
-use tracing::{event, instrument, Level};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rand::seq::SliceRandom;
+use tracing::{event, Level};
 use z3::Context;
 
-use crate::error::CrackersError;
-use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::another_iterator::TraceCandidateIterator;
 use crate::gadget::Gadget;
-use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryParams;
 
 pub mod builder;
@@ -36,21 +30,16 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_candidates_for_trace<'ctx>(
-        &self,
-        z3: &'ctx Context,
-        trace: &[ModeledInstruction<'ctx>],
-    ) -> impl Iterator<Item = Vec<Gadget>> + 'ctx {
-        TraceCandidateIterator::new(z3, self.gadgets.clone().into_iter(), trace.to_vec())
-    }
-    pub fn get_gadgets_for_instruction<'a, 'ctx>(
+    pub fn get_random_candidates_for_trace<'ctx, 'a : 'ctx>(
         &'a self,
         z3: &'ctx Context,
-        i: &Instruction,
-    ) -> Result<GadgetIterator<'a, 'ctx>, CrackersError> {
-        GadgetIterator::new(z3, self, i.clone())
+        trace: &[ModeledInstruction<'ctx>],
+        seed: i64
+    ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
+        let mut rng = StdRng::seed_from_u64(seed as u64);
+        let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
+        TraceCandidateIterator::new(z3, r, trace.to_vec())
     }
-
     pub(super) fn build_from_image(
         sleigh: SleighContext,
         builder: &GadgetLibraryParams,

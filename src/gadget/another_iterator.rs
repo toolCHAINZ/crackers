@@ -1,13 +1,12 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
-use tracing::{event, Level};
 use z3::{Context, SatResult, Solver};
 
 use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
 
-pub struct TraceCandidateIterator<'ctx, T>
+pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
     z3: &'ctx Context,
     _solver: Solver<'ctx>,
@@ -15,9 +14,9 @@ where
     trace: Vec<ModeledInstruction<'ctx>>,
 }
 
-impl<'ctx, T> TraceCandidateIterator<'ctx, T>
+impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
     pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
         let _solver = Solver::new(z3);
@@ -29,17 +28,17 @@ where
         }
     }
 }
-impl<'ctx, T> Iterator for TraceCandidateIterator<'ctx, T>
+impl<'ctx, 'a, T> Iterator for TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
-    type Item = Vec<Gadget>;
+    type Item = Vec<&'a Gadget>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut next_entry = vec![vec![]; self.trace.len()];
         loop {
             let gadget = self.gadgets.next()?;
-            let gadget_signature = OutputSignature::from(&gadget);
+            let gadget_signature = OutputSignature::from(gadget);
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
@@ -60,16 +59,14 @@ where
                                 .upholds_postcondition(&self.trace[i])
                                 .unwrap();
                             match self._solver.check_assumptions(&[expr]) {
-                                SatResult::Sat => next_entry[i].push(gadget.clone()),
+                                SatResult::Sat => next_entry[i].push(gadget),
                                 _ => {}
                             }
                         }
                     })
                 }
-                let lengths: Vec<usize> = next_entry.iter().map(|b|b.len()).collect();
-                event!(Level::TRACE, "{:?}", lengths);
                 if next_entry.iter().all(|b|b.len() > 0){
-                    let new:  Vec<Gadget> = next_entry.iter_mut().map(|b|b.pop().unwrap()).collect();
+                    let new:  Vec<&Gadget> = next_entry.iter_mut().map(|b|b.pop().unwrap()).collect();
                     return Some(new);
                 }else{
                     continue

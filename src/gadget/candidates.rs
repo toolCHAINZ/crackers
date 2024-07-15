@@ -1,8 +1,4 @@
 use jingle::modeling::ModeledBlock;
-use rand::prelude::StdRng;
-use rand::SeedableRng;
-use rand::seq::SliceRandom;
-use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -12,33 +8,21 @@ use crate::gadget::Gadget;
 #[derive(Clone, Debug, Default)]
 pub struct CandidateBuilder {
     random_sample_size: usize,
-    random_sample_seed: i64,
 }
 
 impl CandidateBuilder {
-    pub fn with_random_sample_seed(mut self, seed: i64) -> Self {
-        self.random_sample_seed = seed;
-        self
-    }
-
     pub fn with_random_sample_size(mut self, size: usize) -> Self {
         self.random_sample_size = size;
         self
     }
 
-    pub fn build<T: Iterator<Item = Vec<Gadget>>>(
+    pub fn build<'a, T: Iterator<Item = Vec<&'a Gadget>>>(
         &self,
         iter: T,
     ) -> Result<Candidates, CrackersError> {
-        let seed = self.random_sample_seed as u64;
-        let mut rng = StdRng::seed_from_u64(seed);
-        event!(Level::INFO, "Using seed: {}", seed);
         let candidates: Vec<Vec<Gadget>> = iter
-            .map(|c| {
-                c.choose_multiple(&mut rng, self.random_sample_size)
-                    .cloned()
-                    .collect()
-            })
+            .take(self.random_sample_size)
+            .map(|g| g.into_iter().map(|gg| gg.clone()).collect())
             .collect();
 
         if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {

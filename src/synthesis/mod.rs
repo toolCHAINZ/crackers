@@ -78,8 +78,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
-            .with_random_sample_seed(builder.seed)
-            .build(builder.gadget_library.get_candidates_for_trace(z3, modeled_instrs.as_slice()))?;
+            .build(builder.gadget_library.get_random_candidates_for_trace(z3, modeled_instrs.as_slice(), builder.seed))?;
         let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
                 SatProb(SatProblem::initialize(z3, &candidates.candidates))
