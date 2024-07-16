@@ -49,10 +49,10 @@ pub struct SynthesisParams {
 
 impl SynthesisParams {
     pub fn build<'a>(
-        self,
+        &self,
         z3: &'a Context,
     ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
-        let s = AssignmentSynthesis::new(z3, &self)?;
+        let s = AssignmentSynthesis::new(z3, self)?;
         Ok(s)
     }
 }

@@ -9,7 +9,7 @@ use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::synthesis::AssignmentSynthesis;
-use crate::synthesis::builder::SynthesisParamsBuilder;
+use crate::synthesis::builder::{SynthesisParams, SynthesisParamsBuilder};
 
 pub mod constraint;
 pub mod error;
@@ -31,10 +31,9 @@ pub struct CrackersConfig {
 }
 
 impl CrackersConfig {
-    pub fn resolve<'z3>(
+    pub fn resolve(
         &self,
-        z3: &'z3 Context,
-    ) -> Result<AssignmentSynthesis<'z3>, CrackersError> {
+    ) -> Result<SynthesisParams, CrackersError> {
         let library = self.library.build(&self.sleigh)?;
         let mut b = SynthesisParamsBuilder::default();
         if let Some(c) = &self.constraint {
@@ -49,6 +48,7 @@ impl CrackersConfig {
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
         b.parallel(self.synthesis.parallel).seed(self.meta.seed);
 
-        b.build()?.build(z3)
+        let params = b.build()?;
+        Ok(params)
     }
 }
