@@ -35,7 +35,9 @@ impl SpecificationConfig {
             .section_by_name(".text")
             .ok_or(SpecMissingTextSection)?;
         let sleigh = self.load_sleigh(sleigh_config)?;
-        let instrs: Vec<Instruction> = sleigh.read_block(sym.address(), self.max_instructions).collect();
+        let instrs: Vec<Instruction> = sleigh
+            .read_block(sym.address(), self.max_instructions)
+            .collect();
         Ok(instrs)
     }
 }

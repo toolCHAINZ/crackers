@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::JingleError;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::Gadget;
 use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -30,11 +30,11 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_random_candidates_for_trace<'ctx, 'a : 'ctx>(
+    pub fn get_random_candidates_for_trace<'ctx, 'a: 'ctx>(
         &'a self,
         z3: &'ctx Context,
         trace: &[ModeledInstruction<'ctx>],
-        seed: i64
+        seed: i64,
     ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
@@ -119,8 +119,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::builder::GadgetLibraryParams;

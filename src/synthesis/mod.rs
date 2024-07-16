@@ -13,15 +13,18 @@ use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
-use crate::synthesis::builder::{StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy, TransitionConstraintGenerator};
+use crate::synthesis::builder::{
+    StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
+    TransitionConstraintGenerator,
+};
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -58,15 +61,12 @@ pub struct AssignmentSynthesis<'ctx> {
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     candidates_per_slot: usize,
     instructions: Vec<Instruction>,
-    parallel: usize
+    parallel: usize,
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
-    pub fn new(
-        z3: &'ctx Context,
-        builder: &SynthesisParams,
-    ) -> Result<Self, CrackersError> {
+    pub fn new(z3: &'ctx Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
         let instrs = &builder.instructions;
         if instrs.is_empty() {
             return Err(EmptySpecification);
@@ -78,7 +78,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
-            .build(builder.gadget_library.get_random_candidates_for_trace(z3, modeled_instrs.as_slice(), builder.seed))?;
+            .build(builder.gadget_library.get_random_candidates_for_trace(
+                z3,
+                modeled_instrs.as_slice(),
+                builder.seed,
+            ))?;
         let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
                 SatProb(SatProblem::initialize(z3, &candidates.candidates))
@@ -98,7 +102,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             postconditions: builder.postconditions.clone(),
             candidates_per_slot: builder.candidates_per_slot,
             instructions: builder.instructions.clone(),
-            parallel: builder.parallel
+            parallel: builder.parallel,
         })
     }
 

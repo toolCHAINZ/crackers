@@ -16,13 +16,14 @@ pub struct GadgetLibraryParams {
     #[serde(skip, default = "default_blacklist")]
     pub operation_blacklist: HashSet<OpCode>,
     pub path: String,
-    pub sample_size: Option<usize>
+    pub sample_size: Option<usize>,
 }
 
 impl GadgetLibraryParams {
     pub fn build(&self, sleigh: &SleighConfig) -> Result<GadgetLibrary, CrackersConfigError> {
         let library_sleigh = load_sleigh(&self.path, &sleigh)?;
-        GadgetLibrary::build_from_image(library_sleigh, self).map_err(|e|CrackersConfigError::Sleigh(e))
+        GadgetLibrary::build_from_image(library_sleigh, self)
+            .map_err(|e| CrackersConfigError::Sleigh(e))
     }
 }
 

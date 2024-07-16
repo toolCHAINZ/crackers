@@ -8,8 +8,8 @@ use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
-use crate::synthesis::AssignmentSynthesis;
 use crate::synthesis::builder::{SynthesisParams, SynthesisParamsBuilder};
+use crate::synthesis::AssignmentSynthesis;
 
 pub mod constraint;
 pub mod error;
@@ -31,9 +31,7 @@ pub struct CrackersConfig {
 }
 
 impl CrackersConfig {
-    pub fn resolve(
-        &self,
-    ) -> Result<SynthesisParams, CrackersError> {
+    pub fn resolve(&self) -> Result<SynthesisParams, CrackersError> {
         let library = self.library.build(&self.sleigh)?;
         let mut b = SynthesisParamsBuilder::default();
         if let Some(c) = &self.constraint {

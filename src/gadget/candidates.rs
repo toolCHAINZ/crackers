@@ -32,7 +32,8 @@ impl CandidateBuilder {
             .unwrap();
         let candidates: Vec<Vec<Gadget>> = candidates
             .into_iter()
-            .map(|g| g.into_iter().cloned().collect()).collect();
+            .map(|g| g.into_iter().cloned().collect())
+            .collect();
         if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
             Err(UnsimulatedOperation { index })
         } else {

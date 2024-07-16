@@ -1,5 +1,5 @@
-use jingle::JingleError;
 use jingle::sleigh::JingleSleighError;
+use jingle::JingleError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -18,7 +18,7 @@ pub enum CrackersConfigError {
     Sleigh(#[from] JingleError),
 }
 
-impl From<JingleSleighError> for CrackersConfigError{
+impl From<JingleSleighError> for CrackersConfigError {
     fn from(value: JingleSleighError) -> Self {
         CrackersConfigError::Sleigh(JingleError::Sleigh(value))
     }
