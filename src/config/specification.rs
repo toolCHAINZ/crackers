@@ -4,7 +4,7 @@ use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
-use object::{File, Object, ObjectSection, ObjectSymbol};
+use object::{File, Object, ObjectSymbol};
 use serde::Deserialize;
 use std::fs;
 
@@ -31,7 +31,7 @@ impl SpecificationConfig {
         let sym = gimli_file
             .symbol_by_name("_start")
             .ok_or(SpecMissingStartSymbol)?;
-        let section = gimli_file
+        let _section = gimli_file
             .section_by_name(".text")
             .ok_or(SpecMissingTextSection)?;
         let sleigh = self.load_sleigh(sleigh_config)?;

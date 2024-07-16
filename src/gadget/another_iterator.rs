@@ -57,19 +57,13 @@ where
                 .collect();
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
-                if model.is_ok() {
+                if let Ok(model) = &model {
                     if self.check_model {
                         is_candidate.iter().enumerate().for_each(|(i, c)| {
                             if *c {
-                                let expr = model.as_ref().unwrap().reaches(&self.trace[i]).unwrap();
-                                let expr2 = model
-                                    .as_ref()
-                                    .unwrap()
-                                    .upholds_postcondition(&self.trace[i])
-                                    .unwrap();
-                                match self._solver.check_assumptions(&[expr, expr2]) {
-                                    SatResult::Sat => next_entry[i].push(gadget),
-                                    _ => {}
+                                let expr = model.reaches(&self.trace[i]).unwrap();
+                                if self._solver.check_assumptions(&[expr]) == SatResult::Sat {
+                                    next_entry[i].push(gadget)
                                 }
                             }
                         })
@@ -81,7 +75,7 @@ where
                         })
                     }
                 }
-                if next_entry.iter().all(|b| b.len() > 0) {
+                if next_entry.iter().all(|b| !b.is_empty()) {
                     let new: Vec<&Gadget> =
                         next_entry.iter_mut().map(|b| b.pop().unwrap()).collect();
                     return Some(new);

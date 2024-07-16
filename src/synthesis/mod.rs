@@ -6,7 +6,6 @@ use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
-use pcode_theory::conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
@@ -25,7 +24,6 @@ use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
-use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
 pub mod builder;

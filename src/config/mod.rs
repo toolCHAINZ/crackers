@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use z3::Context;
 
 use crate::config::constraint::Constraint;
 use crate::config::meta::MetaConfig;
@@ -9,7 +8,6 @@ use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::synthesis::builder::{SynthesisParams, SynthesisParamsBuilder};
-use crate::synthesis::AssignmentSynthesis;
 
 pub mod constraint;
 pub mod error;

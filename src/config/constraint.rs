@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleError::UnmodeledSpace;
