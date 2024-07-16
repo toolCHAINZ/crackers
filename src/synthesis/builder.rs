@@ -36,15 +36,15 @@ pub enum Library {
 }
 #[derive(Clone, Builder)]
 pub struct SynthesisParams {
-    pub(crate) seed: i64,
-    pub(crate) selection_strategy: SynthesisSelectionStrategy,
-    pub(crate) gadget_library: GadgetLibrary,
-    pub(crate) candidates_per_slot: usize,
-    pub(crate) parallel: usize,
-    pub(crate) instructions: Vec<Instruction>,
-    pub(crate) preconditions: Vec<Arc<StateConstraintGenerator>>,
-    pub(crate) postconditions: Vec<Arc<StateConstraintGenerator>>,
-    pub(crate) pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
+    pub seed: i64,
+    pub selection_strategy: SynthesisSelectionStrategy,
+    pub gadget_library: GadgetLibrary,
+    pub candidates_per_slot: usize,
+    pub parallel: usize,
+    pub instructions: Vec<Instruction>,
+    pub preconditions: Vec<Arc<StateConstraintGenerator>>,
+    pub postconditions: Vec<Arc<StateConstraintGenerator>>,
+    pub pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
 impl SynthesisParams {
