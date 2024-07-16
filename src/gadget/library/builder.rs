@@ -35,9 +35,9 @@ fn default_blacklist() -> HashSet<OpCode> {
         // it from consideration
         OpCode::CPUI_BRANCH,
         OpCode::CPUI_CALL,
-        OpCode::CPUI_CBRANCH,
         // The following operations are not yet modeled by jingle, so let's save some trees
         // and not even try to model them for the time being
+        OpCode::CPUI_CBRANCH,
         OpCode::CPUI_FLOAT_ADD,
         OpCode::CPUI_FLOAT_ABS,
         OpCode::CPUI_FLOAT_CEIL,

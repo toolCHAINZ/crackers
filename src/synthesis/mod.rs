@@ -141,7 +141,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                             event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
                             x.send(assignment).unwrap();
                         }
-                        Failure(_) => {}
+                        Failure(a) => {return Ok(DecisionResult::Unsat(a))}
                     }
                 }
             }
