@@ -23,7 +23,8 @@ fn main() {
     let level = Level::from(p.meta.log_level);
     let sub = FmtSubscriber::builder().with_max_level(level).finish();
     tracing::subscriber::set_global_default(sub).unwrap();
-    match p.resolve(&z3) {
+    let params = p.resolve().unwrap();
+    match params.build(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {
                 DecisionResult::AssignmentFound(a) => {

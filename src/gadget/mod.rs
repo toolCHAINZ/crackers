@@ -11,7 +11,7 @@ use crate::error::CrackersError;
 mod another_iterator;
 pub mod candidates;
 mod error;
-mod iterator;
+// mod iterator;
 pub mod library;
 pub mod signature;
 

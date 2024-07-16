@@ -1,43 +1,51 @@
-use jingle::modeling::ModeledInstruction;
-use z3::{Context, Solver};
+use jingle::modeling::{ModeledInstruction, ModelingContext};
+use z3::{Context, SatResult, Solver};
 
 use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
 
-pub struct TraceCandidateIterator<'ctx, T>
+pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
     z3: &'ctx Context,
     _solver: Solver<'ctx>,
     gadgets: T,
     trace: Vec<ModeledInstruction<'ctx>>,
+    check_model: bool,
 }
 
-impl<'ctx, T> TraceCandidateIterator<'ctx, T>
+impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
+    pub(crate) fn new(
+        z3: &'ctx Context,
+        gadgets: T,
+        trace: Vec<ModeledInstruction<'ctx>>,
+        check_model: bool,
+    ) -> Self {
         let _solver = Solver::new(z3);
         Self {
             z3,
             _solver,
             gadgets,
             trace,
+            check_model,
         }
     }
 }
-impl<'ctx, T> Iterator for TraceCandidateIterator<'ctx, T>
+impl<'ctx, 'a, T> Iterator for TraceCandidateIterator<'ctx, 'a, T>
 where
-    T: Iterator<Item = Gadget>,
+    T: Iterator<Item = &'a Gadget>,
 {
-    type Item = Vec<Option<Gadget>>;
+    type Item = Vec<&'a Gadget>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let mut next_entry = vec![vec![]; self.trace.len()];
         loop {
             let gadget = self.gadgets.next()?;
-            let gadget_signature = OutputSignature::from(&gadget);
+            let gadget_signature = OutputSignature::from(gadget);
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
@@ -49,12 +57,28 @@ where
                 .collect();
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
-                if model.is_ok() {
-                    let result = is_candidate.iter().map(|c| match c {
-                        false => None,
-                        true => Some(gadget.clone()),
-                    });
-                    return Some(result.collect());
+                if let Ok(model) = &model {
+                    if self.check_model {
+                        is_candidate.iter().enumerate().for_each(|(i, c)| {
+                            if *c {
+                                let expr = model.reaches(&self.trace[i]).unwrap();
+                                if self._solver.check_assumptions(&[expr]) == SatResult::Sat {
+                                    next_entry[i].push(gadget)
+                                }
+                            }
+                        })
+                    } else {
+                        is_candidate.iter().enumerate().for_each(|(i, c)| {
+                            if *c {
+                                next_entry[i].push(gadget)
+                            }
+                        })
+                    }
+                }
+                if next_entry.iter().all(|b| !b.is_empty()) {
+                    let new: Vec<&Gadget> =
+                        next_entry.iter_mut().map(|b| b.pop().unwrap()).collect();
+                    return Some(new);
                 } else {
                     continue;
                 }

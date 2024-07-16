@@ -1,29 +1,28 @@
-use std::fmt::Display;
-use std::fs::File;
-use std::path::Path;
+use std::collections::HashMap;
 
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, SpaceInfo, SpaceManager};
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::JingleError;
-use serde::{Deserialize, Serialize};
-use tracing::{event, instrument, Level};
+use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
+use tracing::{event, Level};
 use z3::Context;
 
-use crate::error::CrackersError;
-use crate::error::CrackersError::{LibraryDeserialization, LibrarySerialization};
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::iterator::GadgetIterator;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::Gadget;
 
 pub mod builder;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
     spaces: Vec<SpaceInfo>,
     default_code_space_index: usize,
+    register_to_varnode: HashMap<String, VarNode>,
+    varnode_to_register: HashMap<VarNode, String>,
 }
 
 impl GadgetLibrary {
@@ -31,29 +30,34 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_candidates_for_trace<'ctx>(
-        &self,
-        z3: &'ctx Context,
-        trace: &[ModeledInstruction<'ctx>],
-    ) -> impl Iterator<Item = Vec<Option<Gadget>>> + 'ctx {
-        TraceCandidateIterator::new(z3, self.gadgets.clone().into_iter(), trace.to_vec())
-    }
-    pub fn get_gadgets_for_instruction<'a, 'ctx>(
+    pub fn get_random_candidates_for_trace<'ctx, 'a: 'ctx>(
         &'a self,
         z3: &'ctx Context,
-        i: &Instruction,
-    ) -> Result<GadgetIterator<'a, 'ctx>, CrackersError> {
-        GadgetIterator::new(z3, self, i.clone())
+        trace: &[ModeledInstruction<'ctx>],
+        seed: i64,
+    ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
+        let mut rng = StdRng::seed_from_u64(seed as u64);
+        let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
+        TraceCandidateIterator::new(z3, r, trace.to_vec(), false)
     }
-
     pub(super) fn build_from_image(
-        sleigh: &SleighContext,
+        sleigh: SleighContext,
         builder: &GadgetLibraryParams,
     ) -> Result<Self, JingleError> {
+        let spaces = sleigh.get_all_space_info().to_vec();
+        let default_code_space_index = sleigh.get_code_space_idx();
+        let mut register_to_varnode = HashMap::new();
+        let mut varnode_to_register = HashMap::new();
+        for (varnode, register) in sleigh.get_registers() {
+            register_to_varnode.insert(register.clone(), varnode.clone());
+            varnode_to_register.insert(varnode, register);
+        }
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            spaces: sleigh.get_all_space_info().to_vec(),
-            default_code_space_index: sleigh.get_code_space_idx(),
+            spaces,
+            default_code_space_index,
+            register_to_varnode,
+            varnode_to_register,
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.image.sections.iter().filter(|s| s.perms.exec) {
@@ -80,32 +84,6 @@ impl GadgetLibrary {
         }
         Ok(lib)
     }
-
-    #[instrument(skip_all, fields(%path))]
-    pub fn load_from_file<T: AsRef<Path> + Display>(path: &T) -> Result<Self, CrackersError> {
-        if let Ok(r) = File::options().read(true).open(path) {
-            event!(Level::INFO, "Loading gadget library...");
-            return rmp_serde::from_read(r).map_err(|_| LibraryDeserialization);
-        }
-        Err(LibraryDeserialization)
-    }
-
-    #[instrument(skip_all, fields(%path))]
-    pub fn write_to_file<T: AsRef<Path> + Display>(&self, path: &T) -> Result<(), CrackersError> {
-        if let Ok(r) = File::options()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open(path)
-        {
-            event!(Level::INFO, "Writing gadget library...");
-
-            return self
-                .serialize(&mut rmp_serde::Serializer::new(&r))
-                .map_err(|_| LibrarySerialization);
-        }
-        Err(LibrarySerialization)
-    }
 }
 
 impl SpaceManager for GadgetLibrary {
@@ -119,6 +97,20 @@ impl SpaceManager for GadgetLibrary {
 
     fn get_code_space_idx(&self) -> usize {
         self.default_code_space_index
+    }
+}
+
+impl RegisterManager for GadgetLibrary {
+    fn get_register(&self, name: &str) -> Option<VarNode> {
+        self.register_to_varnode.get(name).cloned()
+    }
+
+    fn get_register_name(&self, location: VarNode) -> Option<&str> {
+        self.varnode_to_register.get(&location).map(|c| c.as_str())
+    }
+
+    fn get_registers(&self) -> Vec<(VarNode, String)> {
+        self.varnode_to_register.clone().into_iter().collect()
     }
 }
 
@@ -148,6 +140,6 @@ mod tests {
             .build("x86:LE:64:default")
             .unwrap();
         let _lib =
-            GadgetLibrary::build_from_image(&bin_sleigh, &GadgetLibraryParams::default()).unwrap();
+            GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryParams::default()).unwrap();
     }
 }
