@@ -38,7 +38,7 @@ impl GadgetLibrary {
     ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
-        TraceCandidateIterator::new(z3, r, trace.to_vec())
+        TraceCandidateIterator::new(z3, r, trace.to_vec(), false)
     }
     pub(super) fn build_from_image(
         sleigh: SleighContext,

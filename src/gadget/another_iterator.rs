@@ -1,8 +1,8 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use z3::{Context, SatResult, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -12,19 +12,26 @@ where
     _solver: Solver<'ctx>,
     gadgets: T,
     trace: Vec<ModeledInstruction<'ctx>>,
+    check_model: bool,
 }
 
 impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
+    pub(crate) fn new(
+        z3: &'ctx Context,
+        gadgets: T,
+        trace: Vec<ModeledInstruction<'ctx>>,
+        check_model: bool,
+    ) -> Self {
         let _solver = Solver::new(z3);
         Self {
             z3,
             _solver,
             gadgets,
             trace,
+            check_model,
         }
     }
 }
@@ -51,27 +58,36 @@ where
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
                 if model.is_ok() {
-                    is_candidate.iter().enumerate().for_each(|(i, c)| {
-                        if *c {
-                            let expr = model
-                                .as_ref()
-                                .unwrap()
-                                .upholds_postcondition(&self.trace[i])
-                                .unwrap();
-                            match self._solver.check_assumptions(&[expr]) {
-                                SatResult::Sat => next_entry[i].push(gadget),
-                                _ => {}
+                    if self.check_model {
+                        is_candidate.iter().enumerate().for_each(|(i, c)| {
+                            if *c {
+                                let expr = model.as_ref().unwrap().reaches(&self.trace[i]).unwrap();
+                                let expr2 = model
+                                    .as_ref()
+                                    .unwrap()
+                                    .upholds_postcondition(&self.trace[i])
+                                    .unwrap();
+                                match self._solver.check_assumptions(&[expr, expr2]) {
+                                    SatResult::Sat => next_entry[i].push(gadget),
+                                    _ => {}
+                                }
                             }
-                        }
-                    })
+                        })
+                    } else {
+                        is_candidate.iter().enumerate().for_each(|(i, c)| {
+                            if *c {
+                                next_entry[i].push(gadget)
+                            }
+                        })
+                    }
                 }
-                if next_entry.iter().all(|b|b.len() > 0){
-                    let new:  Vec<&Gadget> = next_entry.iter_mut().map(|b|b.pop().unwrap()).collect();
+                if next_entry.iter().all(|b| b.len() > 0) {
+                    let new: Vec<&Gadget> =
+                        next_entry.iter_mut().map(|b| b.pop().unwrap()).collect();
                     return Some(new);
-                }else{
-                    continue
+                } else {
+                    continue;
                 }
-
             } else {
                 continue;
             }
