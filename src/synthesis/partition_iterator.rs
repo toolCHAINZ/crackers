@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_three() {
-        let a: Vec<usize> = vec![1, 2, 3, 4];
+        let a: Vec<usize> = vec![1, 2, 3];
         let partitions: Vec<Vec<&[usize]>> = a.partitions().collect();
         let expected: Vec<Vec<&[usize]>> = vec![
             vec![&[1, 2, 3]],
