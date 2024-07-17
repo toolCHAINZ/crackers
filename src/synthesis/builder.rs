@@ -11,6 +11,7 @@ use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::AssignmentSynthesis;
+use crate::synthesis::partition_iterator::Partition;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum SynthesisSelectionStrategy {
@@ -38,7 +39,8 @@ pub enum Library {
 pub struct SynthesisParams {
     pub seed: i64,
     pub selection_strategy: SynthesisSelectionStrategy,
-    pub gadget_library: GadgetLibrary,
+    #[builder(setter(custom))]
+    pub gadget_library: Arc<GadgetLibrary>,
     pub candidates_per_slot: usize,
     pub parallel: usize,
     pub instructions: Vec<Instruction>,
@@ -47,9 +49,31 @@ pub struct SynthesisParams {
     pub pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
+impl SynthesisParamsBuilder{
+    pub fn gadget_library(&mut self, gadget_library: GadgetLibrary) -> &mut Self{
+        self.gadget_library = Some(gadget_library.into());
+        self
+    }
+}
+
 impl SynthesisParams {
     pub fn build<'a>(&self, z3: &'a Context) -> Result<AssignmentSynthesis<'a>, CrackersError> {
         let s = AssignmentSynthesis::new(z3, self)?;
         Ok(s)
+    }
+
+    pub fn build_iter<'a>(
+        &'a self,
+        z3: &'a Context,
+    ) -> impl Iterator<Item = Result<AssignmentSynthesis<'a>, CrackersError>> + 'a {
+        self.instructions.partitions().map(move |part| {
+            let mut base = self.clone();
+            let instrs: Vec<Instruction> = part
+                .into_iter()
+                .map(|instrs| Instruction::try_from(instrs).unwrap())
+                .collect();
+            base.instructions = instrs;
+            AssignmentSynthesis::new(z3, &base)
+        })
     }
 }

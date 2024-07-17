@@ -52,7 +52,7 @@ pub enum DecisionResult<'ctx, T: ModelingContext<'ctx>> {
 pub struct AssignmentSynthesis<'ctx> {
     z3: &'ctx Context,
     outer_problem: OuterProblem<'ctx>,
-    library: GadgetLibrary,
+    library: Arc<GadgetLibrary>,
     candidates: Candidates,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -71,7 +71,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         }
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
             .iter()
-            .map(|i| ModeledInstruction::new(i.clone(), &builder.gadget_library, z3).unwrap())
+            .map(|i| ModeledInstruction::new(i.clone(), builder.gadget_library.as_ref(), z3).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()

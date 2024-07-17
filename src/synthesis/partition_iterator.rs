@@ -36,10 +36,10 @@ impl<'a, T> Iterator for PartitionIterator<'a, T> {
     type Item = Vec<&'a [T]>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // base case
         if self.pivot == 0 {
             return None;
         }
-        // base case
         if let Some(child) = &mut self.child {
             if let Some(next) = child.next() {
                 // get the next child value for the current pivot
