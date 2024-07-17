@@ -30,6 +30,7 @@ pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
 mod partition_iterator;
+mod combined;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Decision {

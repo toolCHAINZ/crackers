@@ -62,12 +62,13 @@ impl SynthesisParams {
         Ok(s)
     }
 
-    pub fn build_iter<'a>(
-        &'a self,
-        z3: &'a Context,
-    ) -> impl Iterator<Item = Result<AssignmentSynthesis<'a>, CrackersError>> + 'a {
+    pub fn build_iter<'a: 'b, 'b>(
+        &'b self,
+        z3: &'a  Context,
+    ) -> impl Iterator<Item = Result<AssignmentSynthesis<'a>, CrackersError>> + 'b{
+        let mut base = self.clone();
         self.instructions.partitions().map(move |part| {
-            let mut base = self.clone();
+            let mut base = base.clone();
             let instrs: Vec<Instruction> = part
                 .into_iter()
                 .map(|instrs| Instruction::try_from(instrs).unwrap())
