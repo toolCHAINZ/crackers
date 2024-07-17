@@ -6,7 +6,6 @@ use jingle::sleigh::Instruction;
 use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
-
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
@@ -19,17 +18,18 @@ use crate::synthesis::builder::{
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 
 pub mod assignment_model;
 pub mod builder;
 pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
+mod partition_iterator;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Decision {

@@ -447,7 +447,7 @@ dependencies = [
 [[package]]
 name = "jingle"
 version = "0.1.1"
-source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#697be4ed468c771460c51c9296ef85b5f8cf97d6"
+source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#2aaf7e0629642443f65386315e61b8e724d53379"
 dependencies = [
  "jingle_sleigh",
  "serde",
@@ -459,7 +459,7 @@ dependencies = [
 [[package]]
 name = "jingle_sleigh"
 version = "0.1.1"
-source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#697be4ed468c771460c51c9296ef85b5f8cf97d6"
+source = "git+https://github.com/toolCHAINZ/jingle?branch=dev#2aaf7e0629642443f65386315e61b8e724d53379"
 dependencies = [
  "cxx",
  "cxx-build",
