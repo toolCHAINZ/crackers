@@ -1,11 +1,11 @@
 [sleigh]
 ghidra_path = "/Applications/ghidra"
+log_level = "INFO"
 
 [synthesis]
 strategy = "sat"
-max_candidates_per_slot = 400
+max_candidates_per_slot = 200
 parallel = 4
-log_level = "TRACE"
 
 [specification]
 path = "bin/execve.o"
@@ -47,6 +47,6 @@ min = 0x7ffffffde000
 max = 0x7ffffffff000
 
 [constraint.pointer.write]
-min = 0x400000
-max = 0x4a8000
+min = 0x7ffffffde000
+max = 0x7ffffffff000
 
