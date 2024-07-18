@@ -11,7 +11,7 @@ use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::AssignmentSynthesis;
-use crate::synthesis::partition_iterator::Partition;
+use crate::synthesis::combined::CombinedAssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum SynthesisSelectionStrategy {
@@ -49,32 +49,29 @@ pub struct SynthesisParams {
     pub pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
-impl SynthesisParamsBuilder{
-    pub fn gadget_library(&mut self, gadget_library: GadgetLibrary) -> &mut Self{
+impl SynthesisParamsBuilder {
+    pub fn gadget_library(&mut self, gadget_library: GadgetLibrary) -> &mut Self {
         self.gadget_library = Some(gadget_library.into());
         self
     }
 }
 
 impl SynthesisParams {
-    pub fn build<'a>(&self, z3: &'a Context) -> Result<AssignmentSynthesis<'a>, CrackersError> {
+    pub fn build_single<'a>(
+        &self,
+        z3: &'a Context,
+    ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
         let s = AssignmentSynthesis::new(z3, self)?;
         Ok(s)
     }
 
-    pub fn build_iter<'a: 'b, 'b>(
-        &'b self,
-        z3: &'a  Context,
-    ) -> impl Iterator<Item = Result<AssignmentSynthesis<'a>, CrackersError>> + 'b{
-        let mut base = self.clone();
-        self.instructions.partitions().map(move |part| {
-            let mut base = base.clone();
-            let instrs: Vec<Instruction> = part
-                .into_iter()
-                .map(|instrs| Instruction::try_from(instrs).unwrap())
-                .collect();
-            base.instructions = instrs;
-            AssignmentSynthesis::new(z3, &base)
+    pub fn build_combined<'a: 'b, 'b>(
+        &'a self,
+        z3: &'a Context,
+    ) -> Result<CombinedAssignmentSynthesis<'a>, CrackersError>  {
+        Ok(CombinedAssignmentSynthesis {
+            base_config: self.clone(),
+            z3,
         })
     }
 }
