@@ -27,16 +27,16 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
                     .collect::<Vec<Instruction>>()
             })
             .collect();
-        let mut blacklist = HashSet::new();
+        // let mut blacklist = HashSet::new();
         // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
         ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
         let mut iter = ordering.into_iter();
         let mut last: Option<DecisionResult<'a, ModeledBlock<'a>>> = None;
         while let Some(instructions) = iter.next() {
             // todo: filter for instruction combinations that have already been ruled out?
-            if instructions.iter().any(|i| blacklist.contains(i)) {
-                continue;
-            }
+            // if instructions.iter().any(|i| blacklist.contains(i)) {
+            //     continue;
+            // }
             let mut new_config = self.base_config.clone();
             new_config.instructions = instructions;
             let synth = AssignmentSynthesis::new(self.z3, &new_config);
