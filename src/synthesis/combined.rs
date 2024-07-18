@@ -15,11 +15,14 @@ pub struct CombinedAssignmentSynthesis<'a> {
 
 impl<'a> CombinedAssignmentSynthesis<'a> {
     pub fn decide(&mut self) -> Result<DecisionResult<'a, ModeledBlock<'a>>, CrackersError> {
-        let mut iter = self.base_config.instructions.partitions().map(|part| {
+        let mut ordering: Vec<Vec<Instruction>> = self.base_config.instructions.partitions().map(|part| {
             part.into_iter()
                 .map(|instrs| Instruction::try_from(instrs).unwrap())
                 .collect::<Vec<Instruction>>()
-        });
+        }).collect();
+        // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
+        ordering.sort_by(|a,b|a.len().partial_cmp(&b.len()).unwrap());
+        let mut iter = ordering.into_iter();
         let mut last: Option<DecisionResult<'a, ModeledBlock<'a>>> = None;
         while let Some(instructions) = iter.next() {
             // todo: filter for instruction combinations that have already been ruled out?

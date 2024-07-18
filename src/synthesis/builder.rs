@@ -65,8 +65,8 @@ impl SynthesisParams {
         Ok(s)
     }
 
-    pub fn build_combined<'a: 'b, 'b>(
-        &'a self,
+    pub fn build_combined<'a>(
+        &self,
         z3: &'a Context,
     ) -> Result<CombinedAssignmentSynthesis<'a>, CrackersError>  {
         Ok(CombinedAssignmentSynthesis {
