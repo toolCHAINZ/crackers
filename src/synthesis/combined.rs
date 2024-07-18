@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::Instruction;
 use tracing::{event, Level};
