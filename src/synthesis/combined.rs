@@ -39,6 +39,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
             new_config.instructions = instructions;
             let synth = AssignmentSynthesis::new(self.z3, &new_config);
             if let Ok(mut synth) = synth {
+                // this one constructed, let's try it
                 match synth.decide() {
                     Ok(result) => {
                         match result {
@@ -55,7 +56,8 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
                     }
                     Err(e) => {event!(Level::ERROR, "{:?}", e)}
                 }
-                // this one constructed, let's try it
+            }else{
+                event!(Level::WARN, "Failed to find gadgets for partition")
             }
         }
         // Only an empty specification can possibly result in this being `None`
