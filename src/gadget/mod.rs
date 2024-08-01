@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, OpCode, SpaceInfo, SpaceManager};
+use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SpaceInfo, SpaceManager};
 use serde::{Deserialize, Serialize};
 use z3::Context;
 
@@ -27,6 +27,10 @@ pub struct Gadget {
 impl Gadget {
     pub fn address(&self) -> Option<u64> {
         self.instructions.first().map(|f| f.address)
+    }
+
+    pub fn ops(&self) -> impl Iterator<Item = &PcodeOperation> {
+        self.instructions.iter().flat_map(|i| i.ops.iter())
     }
 
     pub fn ops_equal(&self, other: &Self) -> bool {

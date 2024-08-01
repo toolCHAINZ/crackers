@@ -18,19 +18,19 @@ use crate::synthesis::builder::{
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 
 pub mod assignment_model;
 pub mod builder;
+mod combined;
+mod partition_iterator;
 pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
-mod partition_iterator;
-mod combined;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Decision {
@@ -72,7 +72,9 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         }
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
             .iter()
-            .map(|i| ModeledInstruction::new(i.clone(), builder.gadget_library.as_ref(), z3).unwrap())
+            .map(|i| {
+                ModeledInstruction::new(i.clone(), builder.gadget_library.as_ref(), z3).unwrap()
+            })
             .collect();
 
         let candidates = CandidateBuilder::default()
@@ -142,7 +144,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                             event!(Level::TRACE, "Sending {:?} to worker {}", &assignment, i);
                             x.send(assignment).unwrap();
                         }
-                        Failure(a) => {return Ok(DecisionResult::Unsat(a))}
+                        Failure(a) => return Ok(DecisionResult::Unsat(a)),
                     }
                 }
             }

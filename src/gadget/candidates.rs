@@ -29,7 +29,7 @@ impl CandidateBuilder {
                 }
                 acc
             })
-            .ok_or(UnsimulatedOperation {index: 0})?;
+            .ok_or(UnsimulatedOperation { index: 0 })?;
         let candidates: Vec<Vec<Gadget>> = candidates
             .into_iter()
             .map(|g| g.into_iter().cloned().collect())

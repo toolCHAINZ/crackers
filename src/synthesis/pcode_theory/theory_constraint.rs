@@ -3,7 +3,7 @@ use z3::ast::Bool;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
 
-const AGGRESSIVE: bool = true;
+const AGGRESSIVE: bool = false;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
@@ -60,6 +60,7 @@ pub(crate) fn gen_conflict_clauses(
         }
     }
 
+    return Some(ConflictClause::combine(result.as_slice()));
     if !semantics.is_empty() {
         if AGGRESSIVE {
             return Some(ConflictClause::combine(semantics.as_slice()));

@@ -1,8 +1,10 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
-use z3::{Context, SatResult, Solver};
+use jingle::sleigh::{Instruction, OpCode};
+use z3::{Context, Solver};
+use z3::ast::Ast;
 
-use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
+use crate::gadget::signature::OutputSignature;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -12,7 +14,6 @@ where
     _solver: Solver<'ctx>,
     gadgets: T,
     trace: Vec<ModeledInstruction<'ctx>>,
-    check_model: bool,
 }
 
 impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
@@ -31,7 +32,6 @@ where
             _solver,
             gadgets,
             trace,
-            check_model,
         }
     }
 }
@@ -51,29 +51,23 @@ where
                 .iter()
                 .map(|i| {
                     gadget_signature.covers(&OutputSignature::from(&i.instr))
-                        && !i.instr.has_syscall()
-                        || gadget.instructions.iter().any(|gi| gi.ops_equal(&i.instr))
+                        && has_compatible_control_flow(&i.instr, gadget)
                 })
                 .collect();
             if is_candidate.iter().any(|b| *b) {
                 let model = gadget.model(self.z3);
                 if let Ok(model) = &model {
-                    if self.check_model {
-                        is_candidate.iter().enumerate().for_each(|(i, c)| {
-                            if *c {
-                                let expr = model.reaches(&self.trace[i]).unwrap();
-                                if self._solver.check_assumptions(&[expr]) == SatResult::Sat {
-                                    next_entry[i].push(gadget)
-                                }
-                            }
-                        })
-                    } else {
-                        is_candidate.iter().enumerate().for_each(|(i, c)| {
-                            if *c {
+                    is_candidate.iter().enumerate().for_each(|(i, c)| {
+                        if *c {
+                            let expr = model
+                                .upholds_postcondition(&self.trace[i])
+                                .unwrap()
+                                .simplify();
+                            if !expr.is_const() || expr.as_bool().unwrap() {
                                 next_entry[i].push(gadget)
                             }
-                        })
-                    }
+                        }
+                    })
                 }
                 if next_entry.iter().all(|b| !b.is_empty()) {
                     let new: Vec<&Gadget> =
@@ -87,4 +81,19 @@ where
             }
         }
     }
+}
+
+fn has_compatible_control_flow(i: &Instruction, gadget: &Gadget) -> bool {
+    if i.has_syscall() {
+        gadget.instructions.iter().any(|gi| gi.ops_equal(&i))
+    } else {
+        gadget.ops().any(|o| is_controllable_jump(o.opcode()))
+    }
+}
+
+fn is_controllable_jump(op: OpCode) -> bool {
+    matches!(
+        op,
+        OpCode::CPUI_BRANCHIND | OpCode::CPUI_CALLIND | OpCode::CPUI_RETURN
+    )
 }

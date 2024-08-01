@@ -4,9 +4,9 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 use crate::synthesis::builder::SynthesisParams;
 use crate::synthesis::partition_iterator::Partition;
+use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
 pub struct CombinedAssignmentSynthesis<'a> {
     pub(crate) base_config: SynthesisParams,
@@ -54,9 +54,11 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
                             }
                         }
                     }
-                    Err(e) => {event!(Level::ERROR, "{:?}", e)}
+                    Err(e) => {
+                        event!(Level::ERROR, "{:?}", e)
+                    }
                 }
-            }else{
+            } else {
                 event!(Level::WARN, "Failed to find gadgets for partition")
             }
         }

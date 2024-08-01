@@ -22,8 +22,7 @@ pub struct GadgetLibraryParams {
 impl GadgetLibraryParams {
     pub fn build(&self, sleigh: &SleighConfig) -> Result<GadgetLibrary, CrackersConfigError> {
         let library_sleigh = load_sleigh(&self.path, sleigh)?;
-        GadgetLibrary::build_from_image(library_sleigh, self)
-            .map_err(CrackersConfigError::Sleigh)
+        GadgetLibrary::build_from_image(library_sleigh, self).map_err(CrackersConfigError::Sleigh)
     }
 }
 
