@@ -1,0 +1,18 @@
+[verbal specification]
+```
+{}
+```
+[previous program]
+```
+{}
+```
+
+[test failures]
+```
+{}
+```
+
+[hint]
+```
+{}
+```

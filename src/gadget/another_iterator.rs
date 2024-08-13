@@ -24,7 +24,6 @@ where
         z3: &'ctx Context,
         gadgets: T,
         trace: Vec<ModeledInstruction<'ctx>>,
-        check_model: bool,
     ) -> Self {
         let _solver = Solver::new(z3);
         Self {

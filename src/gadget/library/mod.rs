@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::JingleError;
+use jingle::modeling::ModeledInstruction;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::sleigh::context::SleighContext;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::Gadget;
+use crate::gadget::library::builder::GadgetLibraryParams;
 
 pub mod builder;
 
@@ -38,7 +38,7 @@ impl GadgetLibrary {
     ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
-        TraceCandidateIterator::new(z3, r, trace.to_vec(), true)
+        TraceCandidateIterator::new(z3, r, trace.to_vec())
     }
     pub(super) fn build_from_image(
         sleigh: SleighContext,
@@ -119,8 +119,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
+    use elf::endian::AnyEndian;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::builder::GadgetLibraryParams;
