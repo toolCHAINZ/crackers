@@ -3,7 +3,7 @@ use std::sync::Arc;
 use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::Instruction;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use z3::ast::Bool;
 use z3::Context;
 
@@ -13,7 +13,7 @@ use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::combined::CombinedAssignmentSynthesis;
 use crate::synthesis::AssignmentSynthesis;
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum SynthesisSelectionStrategy {
     #[serde(rename = "sat")]
     SatStrategy,

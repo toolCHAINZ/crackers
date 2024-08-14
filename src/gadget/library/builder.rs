@@ -2,14 +2,14 @@ use std::collections::HashSet;
 
 use derive_builder::Builder;
 use jingle::sleigh::OpCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
 use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
 use crate::gadget::library::GadgetLibrary;
 
-#[derive(Clone, Debug, Default, Builder, Deserialize)]
+#[derive(Clone, Debug, Default, Builder, Deserialize, Serialize)]
 #[builder(default)]
 pub struct GadgetLibraryParams {
     pub max_gadget_length: usize,

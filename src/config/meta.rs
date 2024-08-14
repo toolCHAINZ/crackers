@@ -1,8 +1,8 @@
 use rand::random;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::Level;
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum CrackersLogLevel {
     #[serde(rename = "TRACE")]
@@ -25,7 +25,7 @@ impl From<CrackersLogLevel> for Level {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MetaConfig {
     #[serde(default = "random")]
     pub seed: i64,

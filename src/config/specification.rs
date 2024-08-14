@@ -5,10 +5,10 @@ use crate::config::sleigh::SleighConfig;
 use jingle::sleigh::context::SleighContext;
 use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSymbol};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,

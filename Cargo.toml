@@ -7,18 +7,18 @@ edition = "2021"
 
 [[bin]]
 name = "crackers"
-required-features = ["tracing-subscriber", "toml", "clap"]
+required-features = ["bin"]
 
 [[example]]
 name = "crackers_gpt"
 required-features = ["gpt"]
 
 [features]
-default = ["tracing-subscriber", "toml", "clap"]
+default = ["toml"]
+bin = ["tracing-subscriber", "toml", "dep:clap", "dep:anyhow"]
 gpt = ["dep:cc", "dep:anyhow", "dep:tempfile", "dep:tokio", "dep:async-openai"]
 tracing-subscriber = ["dep:tracing-subscriber"]
 toml = ["dep:toml_edit"]
-clap = ["dep:clap"]
 bundled = ["z3/bundled"]
 
 [profile.dev]

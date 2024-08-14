@@ -1,10 +1,17 @@
+use std::collections::HashMap;
 use std::fs;
+use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
+use thiserror::__private::AsDisplay;
+use crackers::config::constraint::{Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints, StateEqualityConstraint};
+use toml_edit::ser::{to_document, to_string_pretty};
 use tracing::{event, Level};
 use tracing_subscriber::FmtSubscriber;
 use z3::{Config, Context};
 
+use crackers::config::sleigh::SleighConfig;
+use crackers::config::specification::SpecificationConfig;
 use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
@@ -13,17 +20,82 @@ struct Arguments {
     pub cfg_path: String,
 }
 
+#[derive(Debug, Clone, Subcommand)]
+pub enum CrackersCommands {
+    New { config: Option<PathBuf> },
+    Synth { config: PathBuf },
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct CrackersParams {
+    #[command(subcommand)]
+    command: CrackersCommands,
+}
+
 fn main() {
+    let config = CrackersParams::parse();
+    match config.command {
+        CrackersCommands::New { config } => {
+            new(config.unwrap_or(PathBuf::from("./crackers.toml"))).unwrap()
+        }
+        CrackersCommands::Synth { config } => synthesize(config).unwrap(),
+    }
+}
+
+fn new(path: PathBuf) -> anyhow::Result<()> {
+    let config = CrackersConfig {
+        meta: Default::default(),
+        specification: SpecificationConfig {
+            path: "spec.o".to_string(),
+            max_instructions: 1,
+        },
+        library: Default::default(),
+        sleigh: SleighConfig {
+            ghidra_path: "/Applications/ghidra".to_string(),
+        },
+        constraint: Some(Constraint {
+            precondition: Some(StateEqualityConstraint {
+                register: Some(HashMap::from([])),
+                memory: Some(MemoryEqualityConstraint {
+                    size: 4,
+                    space: "ram".to_string(),
+                    address: 0x80_0000,
+                    value: 0,
+                }),
+                pointer: Some(HashMap::from([])),
+            }),
+            postcondition: Some(StateEqualityConstraint {
+                register: Some(HashMap::from([])),
+                memory: Some(MemoryEqualityConstraint {
+                    size: 4,
+                    space: "ram".to_string(),
+                    address: 0x80_0000,
+                    value: 0,
+                }),                pointer: Some(HashMap::from([])),
+            }),
+            pointer: Some(PointerRangeConstraints {
+                read: Some(PointerRange{max: 0xf000_0000, min: 0xc000_0000}),
+                write: Some(PointerRange{max: 0xf000_0000, min: 0xc000_0000}),
+            }),
+        }),
+        synthesis: Default::default(),
+    };
+
+    fs::write(path, to_string_pretty(&config)?)?;
+    Ok(())
+}
+
+fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
-    let args = Arguments::parse();
-    let cfg_bytes = fs::read(args.cfg_path).unwrap();
-    let s = String::from_utf8(cfg_bytes).unwrap();
-    let p: CrackersConfig = toml_edit::de::from_str(&s).unwrap();
+    let cfg_bytes = fs::read(config)?;
+    let s = String::from_utf8(cfg_bytes)?;
+    let p: CrackersConfig = toml_edit::de::from_str(&s)?;
     let level = Level::from(p.meta.log_level);
     let sub = FmtSubscriber::builder().with_max_level(level).finish();
-    tracing::subscriber::set_global_default(sub).unwrap();
-    let params = p.resolve().unwrap();
+    tracing::subscriber::set_global_default(sub)?;
+    let params = p.resolve()?;
     match params.build_combined(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {
@@ -43,4 +115,5 @@ fn main() {
             event!(Level::ERROR, "Error setting up synthesis: {}", e)
         }
     };
+    Ok(())
 }

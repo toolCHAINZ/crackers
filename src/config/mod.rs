@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::config::constraint::Constraint;
 use crate::config::meta::MetaConfig;
@@ -17,7 +17,7 @@ pub mod sleigh;
 pub mod specification;
 pub mod synthesis;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CrackersConfig {
     #[serde(default)]
     pub meta: MetaConfig,

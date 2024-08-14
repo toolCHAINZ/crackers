@@ -1,9 +1,9 @@
 use jingle::sleigh::context::SleighContextBuilder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SleighConfig {
     pub ghidra_path: String,
 }

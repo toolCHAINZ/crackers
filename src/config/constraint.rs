@@ -5,7 +5,7 @@ use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleError::UnmodeledSpace;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
 use z3::Context;
@@ -13,7 +13,7 @@ use z3::Context;
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Constraint {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
@@ -46,7 +46,7 @@ impl Constraint {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,
@@ -94,7 +94,7 @@ impl StateEqualityConstraint {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MemoryEqualityConstraint {
     pub space: String,
     pub address: u64,
@@ -102,7 +102,7 @@ pub struct MemoryEqualityConstraint {
     pub value: u8,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub struct PointerRangeConstraints {
     pub read: Option<PointerRange>,
     pub write: Option<PointerRange>,
@@ -113,7 +113,7 @@ impl PointerRangeConstraints {
         Arc::new(gen_pointer_range_transition_invariant(*self))
     }
 }
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub struct PointerRange {
     pub min: u64,
     pub max: u64,

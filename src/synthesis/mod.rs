@@ -92,7 +92,9 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
             }
         };
-
+        for x in &builder.instructions {
+            println!("{}", x.disassembly)
+        }
         Ok(AssignmentSynthesis {
             z3,
             outer_problem,
