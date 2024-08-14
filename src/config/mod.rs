@@ -24,8 +24,8 @@ pub struct CrackersConfig {
     pub specification: SpecificationConfig,
     pub library: GadgetLibraryParams,
     pub sleigh: SleighConfig,
-    pub constraint: Option<Constraint>,
     pub synthesis: SynthesisConfig,
+    pub constraint: Option<Constraint>,
 }
 
 impl CrackersConfig {

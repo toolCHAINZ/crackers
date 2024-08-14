@@ -3,8 +3,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use crackers::config::constraint::{
+    Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
+    StateEqualityConstraint,
+};
 use thiserror::__private::AsDisplay;
-use crackers::config::constraint::{Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints, StateEqualityConstraint};
 use toml_edit::ser::{to_document, to_string_pretty};
 use tracing::{event, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -56,27 +59,34 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
         },
         constraint: Some(Constraint {
             precondition: Some(StateEqualityConstraint {
-                register: Some(HashMap::from([])),
+                register: Some(HashMap::from([("ABC".to_string(), 123)])),
                 memory: Some(MemoryEqualityConstraint {
                     size: 4,
                     space: "ram".to_string(),
                     address: 0x80_0000,
                     value: 0,
                 }),
-                pointer: Some(HashMap::from([])),
+                pointer: Some(HashMap::from([("DEF".to_string(), "hello".to_string())])),
             }),
             postcondition: Some(StateEqualityConstraint {
-                register: Some(HashMap::from([])),
+                register: Some(HashMap::from([("ABC".to_string(), 456)])),
                 memory: Some(MemoryEqualityConstraint {
                     size: 4,
                     space: "ram".to_string(),
                     address: 0x80_0000,
                     value: 0,
-                }),                pointer: Some(HashMap::from([])),
+                }),
+                pointer: Some(HashMap::from([("DEF".to_string(), "goodbye".to_string())])),
             }),
             pointer: Some(PointerRangeConstraints {
-                read: Some(PointerRange{max: 0xf000_0000, min: 0xc000_0000}),
-                write: Some(PointerRange{max: 0xf000_0000, min: 0xc000_0000}),
+                read: Some(PointerRange {
+                    max: 0xf000_0000,
+                    min: 0xc000_0000,
+                }),
+                write: Some(PointerRange {
+                    max: 0xf000_0000,
+                    min: 0xc000_0000,
+                }),
             }),
         }),
         synthesis: Default::default(),
