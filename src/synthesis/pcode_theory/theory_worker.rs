@@ -39,7 +39,6 @@ impl<'ctx> TheoryWorker<'ctx> {
         })
     }
 
-    #[instrument(skip(self), fields(id = %self.id))]
     pub fn run(&self) {
         event!(
             Level::TRACE,
@@ -47,25 +46,30 @@ impl<'ctx> TheoryWorker<'ctx> {
             self.id
         );
         for assignment in self.receiver.iter() {
-            event!(
-                Level::TRACE,
-                "Worker {} received assignment: {:?}",
-                self.id,
-                assignment
-            );
-            let r = self.theory.check_assignment(&assignment);
-            match self.sender.send(TheoryWorkerResponse {
-                idx: self.id,
-                assignment,
-                theory_result: r,
-            }) {
-                Ok(_) => {}
-                Err(_) => {
-                    event!(Level::TRACE, "Exiting worker {}", self.id);
-                    return;
-                }
-            }
+            self.evaluate(assignment)
         }
         event!(Level::TRACE, "Worker {} exiting", self.id);
+    }
+
+    #[instrument(skip(self), fields(self.id, assignment = %assignment))]
+    fn evaluate(&self, assignment: SlotAssignments) {
+        event!(
+            Level::TRACE,
+            "Worker {} received assignment: {:?}",
+            self.id,
+            assignment
+        );
+        let r = self.theory.check_assignment(&assignment);
+        match self.sender.send(TheoryWorkerResponse {
+            idx: self.id,
+            assignment,
+            theory_result: r,
+        }) {
+            Ok(_) => {}
+            Err(_) => {
+                event!(Level::TRACE, "Exiting worker {}", self.id);
+                return;
+            }
+        }
     }
 }

@@ -3,19 +3,25 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use thiserror::__private::AsDisplay;
+use toml_edit::ser::{to_document, to_string_pretty};
+use tracing::{event, Level, Metadata};
+use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::fmt::writer::MakeWriterExt;
+use tracing_subscriber::layer::{Filter, SubscriberExt};
+use tracing_subscriber::layer::Layer;
+use tracing_subscriber::util::SubscriberInitExt;
+use z3::{Config, Context};
+
 use crackers::config::constraint::{
     Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
-use thiserror::__private::AsDisplay;
-use toml_edit::ser::{to_document, to_string_pretty};
-use tracing::{event, Level};
-use tracing_subscriber::FmtSubscriber;
-use z3::{Config, Context};
-
+use crackers::config::CrackersConfig;
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
-use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
 #[derive(Parser, Debug)]
@@ -103,8 +109,16 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     let s = String::from_utf8(cfg_bytes)?;
     let p: CrackersConfig = toml_edit::de::from_str(&s)?;
     let level = Level::from(p.meta.log_level);
-    let sub = FmtSubscriber::builder().with_max_level(level).finish();
-    tracing::subscriber::set_global_default(sub)?;
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::ERROR.into())
+        .from_env()?
+        .add_directive(format!("crackers={}", level).parse()?);
+    let indicatif_layer = IndicatifLayer::new();
+    let writer = indicatif_layer.get_stderr_writer();
+    tracing_subscriber::registry().with(env_filter)
+        .with(indicatif_layer)
+        .with(tracing_subscriber::fmt::layer().with_writer(writer))
+        .init();
     let params = p.resolve()?;
     match params.build_combined(&z3) {
         Ok(mut p) => match p.decide() {
