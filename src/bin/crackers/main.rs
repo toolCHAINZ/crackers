@@ -85,14 +85,14 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
                 pointer: Some(HashMap::from([("DEF".to_string(), "goodbye".to_string())])),
             }),
             pointer: Some(PointerRangeConstraints {
-                read: Some(PointerRange {
+                read: Some(vec![PointerRange {
                     max: 0xf000_0000,
                     min: 0xc000_0000,
-                }),
-                write: Some(PointerRange {
+                }]),
+                write: Some(vec![PointerRange {
                     max: 0xf000_0000,
                     min: 0xc000_0000,
-                }),
+                }]),
             }),
         }),
         synthesis: Default::default(),

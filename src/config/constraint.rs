@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
-use jingle::JingleError::UnmodeledSpace;
 use serde::{Deserialize, Serialize};
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
@@ -27,7 +27,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.precondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer))
+            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
     }
 
     pub fn get_postconditions<'a, T: SpaceManager + RegisterManager>(
@@ -36,7 +36,7 @@ impl Constraint {
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
         self.postcondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer))
+            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
     }
 
     pub fn get_pointer_constraints(
@@ -59,7 +59,6 @@ impl StateEqualityConstraint {
         sleigh: &'a T,
         c: Option<PointerRangeConstraints>,
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
-        let c1 = c;
         let register_iterator = self.register.iter().flat_map(|map| {
             map.iter().filter_map(|(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
@@ -76,10 +75,11 @@ impl StateEqualityConstraint {
             .iter()
             .map(|c| Arc::new(gen_memory_constraint(c.clone())) as Arc<StateConstraintGenerator>);
         let pointer_iterator = self.pointer.iter().flat_map(move |map| {
+            let c1 = c.clone();
             map.iter().filter_map(move |(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
                     Some(
-                        Arc::new(gen_register_pointer_constraint(vn, value.clone(), c1))
+                        Arc::new(gen_register_pointer_constraint(vn, value.clone(), c1.clone()))
                             as Arc<StateConstraintGenerator>,
                     )
                 } else {
@@ -102,15 +102,15 @@ pub struct MemoryEqualityConstraint {
     pub value: u8,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PointerRangeConstraints {
-    pub read: Option<PointerRange>,
-    pub write: Option<PointerRange>,
+    pub read: Option<Vec<PointerRange>>,
+    pub write: Option<Vec<PointerRange>>,
 }
 
 impl PointerRangeConstraints {
     pub fn constraints(&self) -> Arc<TransitionConstraintGenerator> {
-        Arc::new(gen_pointer_range_transition_invariant(*self))
+        Arc::new(gen_pointer_range_transition_invariant(self.clone()))
     }
 }
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
@@ -160,6 +160,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
 ) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
 {
     return move |z3, state| {
+        let m = m.clone();
         let val = value
             .as_bytes()
             .iter()
@@ -192,7 +193,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
 /// Generates an invariant enforcing that the given varnode, read from a given state, is within
 /// the given range.
 pub fn gen_pointer_range_state_invariant<'ctx>(
-    m: PointerRange,
+    m: Vec<PointerRange>,
 ) -> impl for<'a, 'b> Fn(
     &'a Context,
     &'b ResolvedVarnode<'a>,
@@ -204,24 +205,28 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
         match vn {
             ResolvedVarnode::Direct(d) => {
                 // todo: this is gross
-                let should_constrain = state
-                    .get_space_info(d.space_index)
-                    .ok_or(UnmodeledSpace)?
-                    .name
-                    .eq("ram");
+                let should_constrain = state.get_code_space_idx() == d.space_index;
                 match should_constrain {
                     false => Ok(None),
                     true => {
-                        let bool = d.offset >= m.min && (d.offset + d.size as u64) <= m.max;
+                        let bool = m
+                            .iter()
+                            .any(|mm| d.offset >= mm.min && (d.offset + d.size as u64) <= mm.max);
                         Ok(Some(Bool::from_bool(z3, bool)))
                     }
                 }
             }
             ResolvedVarnode::Indirect(vn) => {
-                let min = BV::from_u64(z3, m.min, vn.pointer.get_size());
-                let max = BV::from_u64(z3, m.max, vn.pointer.get_size());
-                let constraint = Bool::and(z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
-                Ok(Some(constraint))
+                let mut terms = vec![];
+                for mm in &m {
+                    let min = BV::from_u64(z3, mm.min, vn.pointer.get_size());
+                    let max = BV::from_u64(z3, mm.max, vn.pointer.get_size());
+                    let constraint =
+                        Bool::and(z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
+                    terms.push(constraint);
+                }
+
+                Ok(Some(Bool::and(z3, terms.as_slice())))
             }
         }
     };
@@ -236,16 +241,16 @@ pub fn gen_pointer_range_transition_invariant(
        + 'static {
     return move |z3, block| {
         let mut bools = vec![];
-        if let Some(r) = m.read {
-            let inv = gen_pointer_range_state_invariant(r);
+        if let Some(r) = &m.read {
+            let inv = gen_pointer_range_state_invariant(r.clone());
             for x in block.get_inputs() {
                 if let Some(c) = inv(z3, &x, block.get_final_state())? {
                     bools.push(c);
                 }
             }
         }
-        if let Some(r) = m.write {
-            let inv = gen_pointer_range_state_invariant(r);
+        if let Some(r) = &m.write {
+            let inv = gen_pointer_range_state_invariant(r.clone());
             for x in block.get_outputs() {
                 if let Some(c) = inv(z3, &x, block.get_final_state())? {
                     bools.push(c);
