@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use jingle::JingleError::UnmodeledSpace;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::JingleError::UnmodeledSpace;
 use serde::{Deserialize, Serialize};
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
@@ -78,10 +78,11 @@ impl StateEqualityConstraint {
             let c1 = c.clone();
             map.iter().filter_map(move |(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
-                    Some(
-                        Arc::new(gen_register_pointer_constraint(vn, value.clone(), c1.clone()))
-                            as Arc<StateConstraintGenerator>,
-                    )
+                    Some(Arc::new(gen_register_pointer_constraint(
+                        vn,
+                        value.clone(),
+                        c1.clone(),
+                    )) as Arc<StateConstraintGenerator>)
                 } else {
                     event!(Level::WARN, "Unrecognized register name: {}", name);
                     None

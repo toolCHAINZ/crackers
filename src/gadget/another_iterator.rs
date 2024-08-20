@@ -1,10 +1,10 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use z3::{Context, Solver};
 use z3::ast::Ast;
+use z3::{Context, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -20,11 +20,7 @@ impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(
-        z3: &'ctx Context,
-        gadgets: T,
-        trace: Vec<ModeledInstruction<'ctx>>,
-    ) -> Self {
+    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
         let _solver = Solver::new(z3);
         Self {
             z3,

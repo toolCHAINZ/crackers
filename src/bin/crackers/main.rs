@@ -7,21 +7,22 @@ use thiserror::__private::AsDisplay;
 use toml_edit::ser::{to_document, to_string_pretty};
 use tracing::{event, Level, Metadata};
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
-use tracing_subscriber::layer::{Filter, SubscriberExt};
 use tracing_subscriber::layer::Layer;
+use tracing_subscriber::layer::{Filter, SubscriberExt};
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use z3::{Config, Context};
 
+use crackers::bench::{bench, BenchCommand};
 use crackers::config::constraint::{
     Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
-use crackers::config::CrackersConfig;
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
+use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
 #[derive(Parser, Debug)]
@@ -31,8 +32,14 @@ struct Arguments {
 
 #[derive(Debug, Clone, Subcommand)]
 pub enum CrackersCommands {
-    New { config: Option<PathBuf> },
-    Synth { config: PathBuf },
+    New {
+        config: Option<PathBuf>,
+    },
+    Synth {
+        config: PathBuf,
+    },
+    #[command(subcommand)]
+    Bench(BenchCommand),
 }
 
 #[derive(Parser, Debug)]
@@ -49,6 +56,7 @@ fn main() {
             new(config.unwrap_or(PathBuf::from("./crackers.toml"))).unwrap()
         }
         CrackersCommands::Synth { config } => synthesize(config).unwrap(),
+        CrackersCommands::Bench(cmd) => bench(cmd).unwrap(),
     }
 }
 
@@ -115,11 +123,13 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .add_directive(format!("crackers={}", level).parse()?);
     let indicatif_layer = IndicatifLayer::new();
     let writer = indicatif_layer.get_stderr_writer();
-    tracing_subscriber::registry().with(env_filter)
+    tracing_subscriber::registry()
+        .with(env_filter)
         .with(indicatif_layer)
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
+
     match params.build_combined(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {

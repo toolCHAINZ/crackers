@@ -1,10 +1,10 @@
 use std::io::Write;
 
-use async_openai::Client;
 use async_openai::config::OpenAIConfig;
+use async_openai::Client;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::Instruction;
-use tempfile::{NamedTempFile, tempdir};
+use tempfile::{tempdir, NamedTempFile};
 use tracing::{event, Level};
 
 use crackers::config::specification::SpecificationConfig;
@@ -14,7 +14,7 @@ use crate::agents::assembly::AssemblyAgent;
 use crate::agents::model::Model;
 use crate::agents::reflection::ReflectionAgent;
 use crate::config::CrackersGptConfig;
-use crate::evaluator::{ExecveEvaluation, ExecveEvaluator, summarize_implementation_error};
+use crate::evaluator::{summarize_implementation_error, ExecveEvaluation, ExecveEvaluator};
 use crate::procedure::AssemblyResult::{Failure, Success};
 use crate::specification::AssemblyParametersBuilder;
 

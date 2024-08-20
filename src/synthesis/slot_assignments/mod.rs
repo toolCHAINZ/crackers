@@ -6,9 +6,9 @@ use z3::Model;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
+use crate::synthesis::Decision;
 
 mod display;
 
@@ -71,7 +71,7 @@ impl SlotAssignments {
     }
 }
 
-impl Display for SlotAssignments{
+impl Display for SlotAssignments {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for (i, assignment) in self.choices.iter().enumerate() {

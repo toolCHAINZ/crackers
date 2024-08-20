@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::sleigh::context::SleighContext;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::JingleError;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::Gadget;
 use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -119,8 +119,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::{Image, SleighContextBuilder};
 
     use crate::gadget::library::builder::GadgetLibraryParams;

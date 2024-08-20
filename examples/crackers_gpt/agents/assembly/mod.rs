@@ -1,8 +1,8 @@
 use anyhow::anyhow;
-use async_openai::Client;
 use async_openai::config::Config;
 use async_openai::error::OpenAIError;
 use async_openai::types::{ChatCompletionRequestUserMessageContent, CreateChatCompletionResponse};
+use async_openai::Client;
 
 use crate::agents::generic::{Agent, GenericAgent};
 use crate::agents::model::Model;
