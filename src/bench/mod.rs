@@ -2,12 +2,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use tracing::{event, Level};
 use tracing::level_filters::LevelFilter;
+use tracing::{event, Level};
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
