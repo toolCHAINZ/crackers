@@ -1,63 +1,59 @@
 use std::fs;
 use std::path::PathBuf;
 
-use clap::Subcommand;
-use serde::{Deserialize, Serialize};
-use toml_edit::ser::to_string_pretty;
+use clap::Parser;
+use jingle::modeling::ModeledBlock;
+use tracing::{event, Level};
+use tracing::level_filters::LevelFilter;
+use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use z3::{Config, Context};
 
-#[derive(Deserialize, Serialize)]
-pub struct BenchCommandConfig {
-    meta: BenchMeta,
-    bench: BenchConfig,
-    output: OutputConfig,
-}
-#[derive(Deserialize, Serialize)]
-pub struct BenchMeta {
-    #[serde(rename = "crackers_config")]
-    crackers_config_path: PathBuf,
-}
+use crate::config::CrackersConfig;
+use crate::error::CrackersError;
+use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
-#[derive(Deserialize, Serialize)]
-pub struct BenchConfig {
-    min_gadgets_per_step: usize,
-    max_gadgets_per_step: usize,
-    gadget_step: usize,
+#[derive(Clone, Debug, Parser)]
+pub struct BenchCommand {
+    crackers_config: PathBuf,
+    gadgets_per_slot: usize,
 }
+pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
+    let z3_cfg = Config::new();
+    let z3 = Context::new(&z3_cfg);
+    let cfg_bytes = fs::read(config.crackers_config)?;
+    let s = String::from_utf8(cfg_bytes)?;
+    let mut p: CrackersConfig = toml_edit::de::from_str(&s)?;
+    p.synthesis.max_candidates_per_slot = config.gadgets_per_slot;
 
-#[derive(Deserialize, Serialize)]
-pub enum OutputFormat {
-    Latex,
-}
-#[derive(Deserialize, Serialize)]
-pub struct OutputConfig {
-    path: PathBuf,
-    format: OutputFormat,
-}
-#[derive(Clone, Debug, Subcommand)]
-pub enum BenchCommand {
-    New { path: Option<PathBuf> },
-}
-pub fn bench(cfg: BenchCommand) -> anyhow::Result<()> {
-    match cfg {
-        BenchCommand::New { path } => new(path.unwrap_or(PathBuf::from("bench.toml"))),
+    let level = Level::from(p.meta.log_level);
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::ERROR.into())
+        .from_env()?
+        .add_directive(format!("crackers={}", level).parse()?);
+    let indicatif_layer = IndicatifLayer::new();
+    let writer = indicatif_layer.get_stderr_writer();
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(indicatif_layer)
+        .with(tracing_subscriber::fmt::layer().with_writer(writer))
+        .init();
+    let params = p.resolve()?;
+    match params.build_single(&z3){
+        Ok(mut a) => {
+            match a.decide(){
+                Ok(a) => {
+                    match a{
+                        DecisionResult::AssignmentFound(_) => {event!(Level::INFO, "Synthesis succeeded!")}
+                        DecisionResult::Unsat(_) => {event!(Level::INFO, "Synthesis failed!")}
+                    }
+                }
+                Err(e) => {event!(Level::ERROR, "Synthesis encountered an error: {}", e)}
+            }
+        }
+        Err(_) => {event!(Level::ERROR, "Unable to find gadgets for a step")}
     }
-}
-
-fn new(path: PathBuf) -> anyhow::Result<()> {
-    let bench = BenchCommandConfig {
-        meta: BenchMeta {
-            crackers_config_path: PathBuf::from("crackers.toml"),
-        },
-        bench: BenchConfig {
-            min_gadgets_per_step: 50,
-            max_gadgets_per_step: 1000,
-            gadget_step: 50,
-        },
-        output: OutputConfig {
-            path: PathBuf::from("out.tex"),
-            format: OutputFormat::Latex,
-        },
-    };
-    fs::write(path, to_string_pretty(&bench)?)?;
     Ok(())
 }

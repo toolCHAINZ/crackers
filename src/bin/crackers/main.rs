@@ -7,12 +7,12 @@ use thiserror::__private::AsDisplay;
 use toml_edit::ser::{to_document, to_string_pretty};
 use tracing::{event, Level, Metadata};
 use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
-use tracing_subscriber::layer::Layer;
 use tracing_subscriber::layer::{Filter, SubscriberExt};
+use tracing_subscriber::layer::Layer;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use z3::{Config, Context};
 
 use crackers::bench::{bench, BenchCommand};
@@ -20,9 +20,9 @@ use crackers::config::constraint::{
     Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
+use crackers::config::CrackersConfig;
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
-use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
 #[derive(Parser, Debug)]
@@ -32,13 +32,8 @@ struct Arguments {
 
 #[derive(Debug, Clone, Subcommand)]
 pub enum CrackersCommands {
-    New {
-        config: Option<PathBuf>,
-    },
-    Synth {
-        config: PathBuf,
-    },
-    #[command(subcommand)]
+    New { config: Option<PathBuf> },
+    Synth { config: PathBuf },
     Bench(BenchCommand),
 }
 
