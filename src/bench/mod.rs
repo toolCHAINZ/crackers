@@ -2,12 +2,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use tracing::level_filters::LevelFilter;
 use tracing::{event, Level};
+use tracing::level_filters::LevelFilter;
 use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
@@ -43,18 +43,18 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
         Ok(mut a) => match a.decide() {
             Ok(a) => match a {
                 DecisionResult::AssignmentFound(_) => {
-                    event!(Level::INFO, "Synthesis succeeded!")
+                    event!(Level::INFO, "synth_success")
                 }
                 DecisionResult::Unsat(_) => {
-                    event!(Level::INFO, "Synthesis failed!")
+                    event!(Level::INFO, "synth_fail")
                 }
             },
             Err(e) => {
-                event!(Level::ERROR, "Synthesis encountered an error: {}", e)
+                event!(Level::ERROR, "synth_error: {}", e)
             }
         },
         Err(_) => {
-            event!(Level::ERROR, "Unable to find gadgets for a step")
+            event!(Level::ERROR, "synth_fail")
         }
     }
     Ok(())
