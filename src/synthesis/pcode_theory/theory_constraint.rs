@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::Decision;
 
 const AGGRESSIVE: bool = false;
 

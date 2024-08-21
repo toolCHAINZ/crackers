@@ -2,12 +2,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use tracing::{event, Level};
 use tracing::level_filters::LevelFilter;
+use tracing::{event, Level};
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
@@ -39,19 +39,23 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
-    match params.build_single(&z3){
-        Ok(mut a) => {
-            match a.decide(){
-                Ok(a) => {
-                    match a{
-                        DecisionResult::AssignmentFound(_) => {event!(Level::INFO, "Synthesis succeeded!")}
-                        DecisionResult::Unsat(_) => {event!(Level::INFO, "Synthesis failed!")}
-                    }
+    match params.build_single(&z3) {
+        Ok(mut a) => match a.decide() {
+            Ok(a) => match a {
+                DecisionResult::AssignmentFound(_) => {
+                    event!(Level::INFO, "Synthesis succeeded!")
                 }
-                Err(e) => {event!(Level::ERROR, "Synthesis encountered an error: {}", e)}
+                DecisionResult::Unsat(_) => {
+                    event!(Level::INFO, "Synthesis failed!")
+                }
+            },
+            Err(e) => {
+                event!(Level::ERROR, "Synthesis encountered an error: {}", e)
             }
+        },
+        Err(_) => {
+            event!(Level::ERROR, "Unable to find gadgets for a step")
         }
-        Err(_) => {event!(Level::ERROR, "Unable to find gadgets for a step")}
     }
     Ok(())
 }

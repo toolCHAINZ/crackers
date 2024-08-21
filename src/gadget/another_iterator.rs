@@ -1,10 +1,10 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use z3::{Context, Solver};
 use z3::ast::Ast;
+use z3::{Context, Solver};
 
-use crate::gadget::Gadget;
 use crate::gadget::signature::OutputSignature;
+use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where

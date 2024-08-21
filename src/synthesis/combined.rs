@@ -4,9 +4,9 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 use crate::synthesis::builder::SynthesisParams;
 use crate::synthesis::partition_iterator::Partition;
+use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
 pub struct CombinedAssignmentSynthesis<'a> {
     pub(crate) base_config: SynthesisParams,
