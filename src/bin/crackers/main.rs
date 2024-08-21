@@ -3,15 +3,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use thiserror::__private::AsDisplay;
-use toml_edit::ser::{to_document, to_string_pretty};
-use tracing::{event, Level, Metadata};
+use toml_edit::ser::to_string_pretty;
+use tracing::{event, Level};
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::fmt::writer::MakeWriterExt;
-use tracing_subscriber::layer::{Filter, SubscriberExt};
-use tracing_subscriber::layer::Layer;
+use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use z3::{Config, Context};
 

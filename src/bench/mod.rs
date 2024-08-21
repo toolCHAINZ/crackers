@@ -2,7 +2,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use jingle::modeling::ModeledBlock;
 use tracing::{event, Level};
 use tracing::level_filters::LevelFilter;
 use tracing_indicatif::IndicatifLayer;
@@ -12,8 +11,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
-use crate::error::CrackersError;
-use crate::synthesis::{AssignmentSynthesis, DecisionResult};
+use crate::synthesis::DecisionResult;
 
 #[derive(Clone, Debug, Parser)]
 pub struct BenchCommand {

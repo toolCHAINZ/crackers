@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 
 const AGGRESSIVE: bool = false;
 
@@ -40,6 +40,7 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 }
 
+#[allow(unreachable_code)]
 pub(crate) fn gen_conflict_clauses(
     constraints: &[&ConjunctiveConstraint],
 ) -> Option<ConflictClause> {

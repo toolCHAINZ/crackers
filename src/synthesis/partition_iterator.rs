@@ -59,7 +59,7 @@ impl<'a, T> Iterator for PartitionIterator<'a, T> {
             let pivot = max(self.pivot.saturating_sub(1), 0);
             self.pivot = pivot;
             self.child = Some(Box::new(PartitionIterator::new(&self.source[0..pivot])));
-            return Some(vec![self.source]);
+            Some(vec![self.source])
         }
     }
 }

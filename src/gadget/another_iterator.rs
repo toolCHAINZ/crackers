@@ -1,10 +1,10 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use z3::ast::Ast;
 use z3::{Context, Solver};
+use z3::ast::Ast;
 
-use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
+use crate::gadget::signature::OutputSignature;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -80,7 +80,7 @@ where
 
 fn has_compatible_control_flow(i: &Instruction, gadget: &Gadget) -> bool {
     if i.has_syscall() {
-        gadget.instructions.iter().any(|gi| gi.ops_equal(&i))
+        gadget.instructions.iter().any(|gi| gi.ops_equal(i))
     } else {
         gadget.ops().any(|o| is_controllable_jump(o.opcode()))
     }

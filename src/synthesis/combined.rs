@@ -4,9 +4,9 @@ use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 use crate::synthesis::builder::SynthesisParams;
 use crate::synthesis::partition_iterator::Partition;
-use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
 pub struct CombinedAssignmentSynthesis<'a> {
     pub(crate) base_config: SynthesisParams,
@@ -28,9 +28,9 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
         // let mut blacklist = HashSet::new();
         // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
         ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
-        let mut iter = ordering.into_iter();
+        let iter = ordering.into_iter();
         let mut last: Option<DecisionResult<'a, ModeledBlock<'a>>> = None;
-        while let Some(instructions) = iter.next() {
+        for instructions in iter {
             // todo: filter for instruction combinations that have already been ruled out?
             // if instructions.iter().any(|i| blacklist.contains(i)) {
             //     continue;
@@ -44,7 +44,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
                     Ok(result) => {
                         match result {
                             DecisionResult::AssignmentFound(a) => {
-                                return Ok(DecisionResult::AssignmentFound(a).into());
+                                return Ok(DecisionResult::AssignmentFound(a));
                             }
                             DecisionResult::Unsat(e) => {
                                 // todo: add in bad combos here
@@ -67,7 +67,6 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
     }
 
     pub fn new(z3: &'a Context, base_config: SynthesisParams) -> Self {
-        let res = Self { z3, base_config };
-        res
+        Self { z3, base_config }
     }
 }
