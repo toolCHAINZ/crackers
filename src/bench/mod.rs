@@ -2,12 +2,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use tracing::level_filters::LevelFilter;
 use tracing::{event, Level};
+use tracing::level_filters::LevelFilter;
 use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
@@ -17,6 +17,7 @@ use crate::synthesis::DecisionResult;
 pub struct BenchCommand {
     crackers_config: PathBuf,
     gadgets_per_slot: usize,
+    spec_instructions: usize
 }
 pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
     let z3_cfg = Config::new();
@@ -25,6 +26,7 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
     let s = String::from_utf8(cfg_bytes)?;
     let mut p: CrackersConfig = toml_edit::de::from_str(&s)?;
     p.synthesis.max_candidates_per_slot = config.gadgets_per_slot;
+    p.specification.max_instructions = config.spec_instructions;
 
     let level = Level::from(p.meta.log_level);
     let env_filter = EnvFilter::builder()
