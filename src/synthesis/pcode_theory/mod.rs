@@ -1,24 +1,24 @@
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::JingleContext;
+use jingle::modeling::{ModeledBlock, ModelingContext};
 use tracing::{event, Level};
-use z3::ast::Bool;
 use z3::{SatResult, Solver};
+use z3::ast::Bool;
 
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, gen_conflict_clauses, TheoryStage,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 pub mod builder;
 pub mod conflict_clause;
@@ -135,7 +135,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         }
 
         let pre = self.assert_preconditions(slot_assignments)?;
-        let post = self.assert_postconditions(&final_state)?;
+        let post = self.assert_postconditions(slot_assignments)?;
         let pre_bool = Bool::fresh_const(self.j.z3, "pre");
         let post_bool = Bool::fresh_const(self.j.z3, "post");
         self.solver.assert_and_track(&pre, &pre_bool);
@@ -171,13 +171,23 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         assert_state_constraints(
             self.j.z3,
             &self.preconditions,
-            first_gadget.get_original_state(),
+            first_gadget.get_original_state(), first_gadget.get_first_address()
         )
     }
 
-    fn assert_postconditions(&self, state: &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> {
-        assert_state_constraints(self.j.z3, &self.postconditions, state)
-    }
+    fn assert_postconditions(&self,         slot_assignments: &SlotAssignments,
+    ) -> Result<Bool<'ctx>, CrackersError> {
+        let choices = slot_assignments.choices();
+        let last = &self
+            .gadget_candidates
+            .last()
+            .map(|f| &f[*choices.last().unwrap()])
+            .ok_or(EmptyAssignment)?;
+        assert_state_constraints(
+            self.j.z3,
+            &self.postconditions,
+            last.get_final_state(), last.get_last_address()
+        )    }
 
     fn collect_conflicts(
         &self,

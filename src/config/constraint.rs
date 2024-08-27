@@ -122,12 +122,12 @@ pub struct PointerRange {
 /// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
        + Send
        + Sync
        + Clone
        + 'static {
-    return move |z3, state| {
+    return move |z3, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(z3, m.value as u64, data.get_size()));
         Ok(constraint)
@@ -139,12 +139,12 @@ pub fn gen_memory_constraint(
 pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
        + 'static
        + Send
        + Sync
        + Clone {
-    return move |z3, state| {
+    return move |z3, state, _addr| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));
         Ok(constraint)
@@ -157,9 +157,9 @@ pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraints>,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
+) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
 {
-    return move |z3, state| {
+    return move |z3, state, _addr| {
         let m = m.clone();
         let val = value
             .as_bytes()
