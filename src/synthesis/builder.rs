@@ -10,8 +10,8 @@ use z3::Context;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::library::GadgetLibrary;
-use crate::synthesis::AssignmentSynthesis;
 use crate::synthesis::combined::CombinedAssignmentSynthesis;
+use crate::synthesis::AssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum SynthesisSelectionStrategy {
