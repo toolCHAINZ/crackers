@@ -9,7 +9,7 @@ use z3::{SatResult, Solver};
 use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
-use crate::error::CrackersError::{EmptyAssignment, TheoryTimeout};
+use crate::error::CrackersError::TheoryTimeout;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints,
@@ -133,9 +133,10 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
                 TheoryStage::CombinedSemantics,
             ))
         }
-
-        let pre = self.assert_preconditions(slot_assignments)?;
-        let post = self.assert_postconditions(&final_state)?;
+        let first_addr = gadgets[0].get_address();
+        let last_addr = gadgets[gadgets.len() - 1].get_address();
+        let pre = self.assert_preconditions(gadgets[0].get_original_state(), first_addr)?;
+        let post = self.assert_postconditions(&final_state, last_addr)?;
         let pre_bool = Bool::fresh_const(self.j.z3, "pre");
         let post_bool = Bool::fresh_const(self.j.z3, "post");
         self.solver.assert_and_track(&pre, &pre_bool);
@@ -161,22 +162,18 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
 
     fn assert_preconditions(
         &self,
-        slot_assignments: &SlotAssignments,
+        state: &State<'ctx>,
+        addr: u64,
     ) -> Result<Bool<'ctx>, CrackersError> {
-        let first_gadget = &self
-            .gadget_candidates
-            .first()
-            .map(|f| &f[slot_assignments.choice(0)])
-            .ok_or(EmptyAssignment)?;
-        assert_state_constraints(
-            self.j.z3,
-            &self.preconditions,
-            first_gadget.get_original_state(),
-        )
+        assert_state_constraints(self.j.z3, &self.preconditions, state, addr)
     }
 
-    fn assert_postconditions(&self, state: &State<'ctx>) -> Result<Bool<'ctx>, CrackersError> {
-        assert_state_constraints(self.j.z3, &self.postconditions, state)
+    fn assert_postconditions(
+        &self,
+        state: &State<'ctx>,
+        addr: u64,
+    ) -> Result<Bool<'ctx>, CrackersError> {
+        assert_state_constraints(self.j.z3, &self.postconditions, state, addr)
     }
 
     fn collect_conflicts(

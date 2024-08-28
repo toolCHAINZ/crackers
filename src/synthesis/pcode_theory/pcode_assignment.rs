@@ -55,11 +55,13 @@ impl<'ctx> PcodeAssignment<'ctx> {
             z3,
             &self.preconditions,
             self.eval_trace.as_slice().get_original_state(),
+            self.eval_trace[0].get_first_address(),
         )?);
         solver.assert(&assert_state_constraints(
             z3,
             &self.postconditions,
             self.eval_trace.as_slice().get_final_state(),
+            self.eval_trace.last().unwrap().get_last_address(),
         )?);
         match solver.check() {
             SatResult::Unsat | SatResult::Unknown => Err(CrackersError::ModelGenerationError),
@@ -112,10 +114,11 @@ pub fn assert_state_constraints<'ctx>(
     z3: &'ctx Context,
     constraints: &[Arc<StateConstraintGenerator>],
     state: &State<'ctx>,
+    addr: u64,
 ) -> Result<Bool<'ctx>, CrackersError> {
     let mut bools = vec![];
     for x in constraints.iter() {
-        let assertion = x(z3, state)?;
+        let assertion = x(z3, state, addr)?;
         bools.push(assertion);
     }
     Ok(Bool::and(z3, &bools))

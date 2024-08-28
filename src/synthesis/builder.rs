@@ -21,7 +21,7 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
+pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
     + Send
     + Sync
     + 'static;
