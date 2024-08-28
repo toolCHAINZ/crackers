@@ -174,6 +174,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
             pointer_location: vn.clone(),
         })?;
         let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
+            pointer_location: vn.clone(),
             pointer_space_idx: state.get_code_space_idx(),
             access_size_bytes: value.len(),
             pointer,
@@ -226,7 +227,7 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
                     terms.push(constraint);
                 }
 
-                Ok(Some(Bool::and(z3, terms.as_slice())))
+                Ok(Some(Bool::or(z3, terms.as_slice())))
             }
         }
     };

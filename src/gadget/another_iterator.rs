@@ -3,7 +3,7 @@ use jingle::sleigh::{Instruction, OpCode};
 use z3::ast::Ast;
 use z3::{Context, Solver};
 
-use crate::gadget::signature::OutputSignature;
+use crate::gadget::signature::GadgetSignature;
 use crate::gadget::Gadget;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
@@ -40,12 +40,12 @@ where
         let mut next_entry = vec![vec![]; self.trace.len()];
         loop {
             let gadget = self.gadgets.next()?;
-            let gadget_signature = OutputSignature::from(gadget);
+            let gadget_signature = GadgetSignature::from(gadget);
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
                 .map(|i| {
-                    gadget_signature.covers(&OutputSignature::from(&i.instr))
+                    gadget_signature.covers(&GadgetSignature::from(&i.instr))
                         && has_compatible_control_flow(&i.instr, gadget)
                 })
                 .collect();
