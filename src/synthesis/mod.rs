@@ -18,11 +18,11 @@ use crate::synthesis::builder::{
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 
 pub mod assignment_model;
 pub mod builder;
@@ -111,6 +111,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
     #[instrument(skip_all)]
     pub fn decide(&mut self) -> Result<DecisionResult<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         let mut req_channels = vec![];
+        let mut kill_senders = vec![];
         let theory_builder = PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
             .with_pointer_invariants(&self.pointer_invariants)
             .with_preconditions(&self.preconditions)
@@ -123,14 +124,24 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 let t = theory_builder.clone();
                 let r = resp_sender.clone();
                 let (req_sender, req_receiver) = std::sync::mpsc::channel();
+                    let (kill_sender, kill_receiver) = std::sync::mpsc::channel();
+                kill_senders.push(kill_sender);
                 req_channels.push(req_sender);
-                s.spawn(move || -> Result<(), CrackersError> {
-                    let z3 = Context::new(&Config::new());
-                    let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
-                    event!(Level::TRACE, "Created worker {}", idx);
-                    worker.run();
-                    std::mem::drop(worker);
-                    Ok(())
+                s.spawn(move || {
+                        let z3 = Context::new(&Config::new());
+                    std::thread::scope(|inner| {
+                        let handle = z3.handle();
+                        inner.spawn(move|| {
+                            for _ in kill_receiver {
+                                handle.interrupt();
+                            }
+                        });
+                        let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
+                        event!(Level::TRACE, "Created worker {}", idx);
+                        worker.run();
+                        std::mem::drop(worker);
+                    });
+
                 });
             }
             std::mem::drop(resp_sender);
@@ -147,6 +158,10 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                         }
                         Failure(a) => {
                             req_channels.clear();
+                            for x in &kill_senders {
+                                x.send(()).unwrap();
+                            }
+                            kill_senders.clear();
                             return Ok(DecisionResult::Unsat(a));
                         }
                     }
@@ -172,6 +187,10 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 );
                                 dbg!("huh");
                                 req_channels.clear();
+                                for x in &kill_senders {
+                                    x.send(()).unwrap();
+                                }
+                                kill_senders.clear();
                                 let t = theory_builder.clone();
                                 let a: PcodeAssignment<'ctx> =
                                     t.build_assignment(self.z3, response.assignment)?;
@@ -194,6 +213,10 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     Failure(a) => {
                                         // drop the senders
                                         req_channels.clear();
+                                        for x in &kill_senders {
+                                            x.send(()).unwrap();
+                                        }
+                                        kill_senders.clear();
                                         return Ok(DecisionResult::Unsat(a));
                                     }
                                     Success(a) => {
