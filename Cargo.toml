@@ -16,7 +16,7 @@ required-features = ["gpt"]
 [features]
 default = ["toml"]
 bin = ["dep:tracing-subscriber", "toml", "dep:clap", "dep:anyhow", "dep:tracing-indicatif"]
-gpt = ["dep:cc", "dep:anyhow", "dep:tempfile", "dep:tokio", "dep:async-openai"]
+gpt = ["dep:tracing-subscriber", "dep:cc", "dep:anyhow", "dep:tempfile", "dep:tokio", "dep:async-openai", "dep:clap"]
 
 toml = ["dep:toml_edit"]
 bundled = ["z3/bundled"]
