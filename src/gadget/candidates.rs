@@ -16,27 +16,37 @@ impl CandidateBuilder {
         self
     }
 
-    pub fn build<'a, T: Iterator<Item = Vec<&'a Gadget>>>(
+    pub fn build<'a, T: Iterator<Item = Vec<Option<&'a Gadget>>>>(
         &self,
         iter: T,
     ) -> Result<Candidates, CrackersError> {
-        let candidates: Vec<Vec<&Gadget>> = iter
-            .map(|v| v.iter().map(|vv| vec![*vv]).collect())
-            .take(self.random_sample_size)
-            .reduce(|mut acc: Vec<Vec<&Gadget>>, value| {
-                for (i, vector) in acc.iter_mut().enumerate() {
-                    vector.push(value[i][0]);
-                }
-                acc
-            })
-            .ok_or(UnsimulatedOperation { index: 0 })?;
-        let candidates: Vec<Vec<Gadget>> = candidates
-            .into_iter()
-            .map(|g| g.into_iter().cloned().collect())
-            .collect();
-        if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
+        let mut candidates: Vec<Vec<Gadget>> = vec![];
+        for gc in iter {
+            // todo: this feels ugly but I just need something that works for now
+            if gc.len() != candidates.len() {
+                candidates = gc.iter().map(|_| vec![]).collect();
+            }
+            gc.iter()
+                .enumerate()
+                .filter_map(|(i, g)| g.map(|g| (i, g.clone())))
+                .for_each(|(i, g)| {
+                    if candidates[i].len() < self.random_sample_size {
+                        candidates[i].push(g)
+                    }
+                });
+            if !candidates.iter().any(|g| g.len() < self.random_sample_size) {
+                break;
+            }
+        }
+        // We never found ANY candidates for ANYTHING
+        if candidates.len() == 0 {
+            Err(UnsimulatedOperation { index: 0 })
+        }
+        // We never found candidates for something
+        else if let Some((index, _)) = candidates.iter().enumerate().find(|(_, f)| f.is_empty()) {
             Err(UnsimulatedOperation { index })
         } else {
+            // candidates!
             Ok(Candidates { candidates })
         }
     }

@@ -34,10 +34,10 @@ impl<'ctx, 'a, T> Iterator for TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    type Item = Vec<&'a Gadget>;
+    type Item = Vec<Option<&'a Gadget>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut next_entry = vec![vec![]; self.trace.len()];
+        let mut next_entry = vec![None; self.trace.len()];
         loop {
             let gadget = self.gadgets.next()?;
             let gadget_signature = GadgetSignature::from(gadget);
@@ -59,18 +59,12 @@ where
                                 .unwrap()
                                 .simplify();
                             if !expr.is_const() || expr.as_bool().unwrap() {
-                                next_entry[i].push(gadget)
+                                next_entry[i] = Some(gadget)
                             }
                         }
                     })
                 }
-                if next_entry.iter().all(|b| !b.is_empty()) {
-                    let new: Vec<&Gadget> =
-                        next_entry.iter_mut().map(|b| b.pop().unwrap()).collect();
-                    return Some(new);
-                } else {
-                    continue;
-                }
+                return Some(next_entry);
             } else {
                 continue;
             }

@@ -18,11 +18,11 @@ use crate::synthesis::builder::{
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 
 pub mod assignment_model;
 pub mod builder;
@@ -124,14 +124,14 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 let t = theory_builder.clone();
                 let r = resp_sender.clone();
                 let (req_sender, req_receiver) = std::sync::mpsc::channel();
-                    let (kill_sender, kill_receiver) = std::sync::mpsc::channel();
+                let (kill_sender, kill_receiver) = std::sync::mpsc::channel();
                 kill_senders.push(kill_sender);
                 req_channels.push(req_sender);
                 s.spawn(move || {
-                        let z3 = Context::new(&Config::new());
+                    let z3 = Context::new(&Config::new());
                     std::thread::scope(|inner| {
                         let handle = z3.handle();
-                        inner.spawn(move|| {
+                        inner.spawn(move || {
                             for _ in kill_receiver {
                                 handle.interrupt();
                             }
@@ -141,7 +141,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                         worker.run();
                         std::mem::drop(worker);
                     });
-
                 });
             }
             std::mem::drop(resp_sender);

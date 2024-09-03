@@ -35,7 +35,7 @@ impl GadgetLibrary {
         z3: &'ctx Context,
         trace: &[ModeledInstruction<'ctx>],
         seed: i64,
-    ) -> impl Iterator<Item = Vec<&'a Gadget>> + 'ctx {
+    ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> + 'ctx {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
         TraceCandidateIterator::new(z3, r, trace.to_vec())
