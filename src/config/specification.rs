@@ -1,12 +1,14 @@
+use std::fs;
+
+use jingle::sleigh::context::loaded::LoadedSleighContext;
+use jingle::sleigh::Instruction;
+use object::{File, Object, ObjectSymbol};
+use serde::{Deserialize, Serialize};
+
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::{SpecMissingStartSymbol, SpecMissingTextSection};
 use crate::config::object::load_sleigh;
 use crate::config::sleigh::SleighConfig;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::Instruction;
-use object::{File, Object, ObjectSymbol};
-use serde::{Deserialize, Serialize};
-use std::fs;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpecificationConfig {
@@ -15,10 +17,10 @@ pub struct SpecificationConfig {
 }
 
 impl SpecificationConfig {
-    pub fn load_sleigh(
+    pub fn load_sleigh<'a>(
         &self,
-        sleigh_config: &SleighConfig,
-    ) -> Result<SleighContext, CrackersConfigError> {
+        sleigh_config: &'a SleighConfig,
+    ) -> Result<LoadedSleighContext<'a>, CrackersConfigError> {
         load_sleigh(&self.path, sleigh_config)
     }
 
@@ -36,7 +38,7 @@ impl SpecificationConfig {
             .ok_or(SpecMissingTextSection)?;
         let sleigh = self.load_sleigh(sleigh_config)?;
         let instrs: Vec<Instruction> = sleigh
-            .read_block(sym.address(), self.max_instructions)
+            .read_until_branch(sym.address(), self.max_instructions)
             .collect();
         Ok(instrs)
     }

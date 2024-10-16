@@ -26,7 +26,7 @@ opt-level = 3
 
 [dependencies]
 elf = "0.7.4"
-jingle = { git = "https://github.com/toolCHAINZ/jingle", branch = "dev", features = ["elf", "gimli"] }
+jingle = { git = "https://github.com/toolCHAINZ/jingle", branch = "image_trait", features = ["gimli"] }
 z3 = { git = "https://github.com/prove-rs/z3.rs.git", rev = "c126e07" }
 serde = { version = "1.0.203", features = ["derive"] }
 thiserror = "1.0.58"

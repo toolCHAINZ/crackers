@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 
-use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::context::SleighContext;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::JingleError;
+use jingle::modeling::ModeledInstruction;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::sleigh::context::loaded::LoadedSleighContext;
+use jingle::sleigh::context::SleighContext;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use tracing::{event, Level};
 use z3::Context;
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::Gadget;
+use crate::gadget::library::builder::GadgetLibraryParams;
 
 pub mod builder;
 
@@ -41,7 +42,7 @@ impl GadgetLibrary {
         TraceCandidateIterator::new(z3, r, trace.to_vec())
     }
     pub(super) fn build_from_image(
-        sleigh: SleighContext,
+        sleigh: LoadedSleighContext,
         builder: &GadgetLibraryParams,
     ) -> Result<Self, JingleError> {
         let spaces = sleigh.get_all_space_info().to_vec();
@@ -60,7 +61,7 @@ impl GadgetLibrary {
             varnode_to_register,
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
-        for section in sleigh.image.sections.iter().filter(|s| s.perms.exec) {
+        for section in sleigh.get_sections().filter(|s| s.perms.exec) {
             let start = section.base_address as u64;
             let end = start + section.data.len() as u64;
             let mut curr = start;
@@ -105,7 +106,7 @@ impl RegisterManager for GadgetLibrary {
         self.register_to_varnode.get(name).cloned()
     }
 
-    fn get_register_name(&self, location: VarNode) -> Option<&str> {
+    fn get_register_name(&self, location: &VarNode) -> Option<&str> {
         self.varnode_to_register.get(&location).map(|c| c.as_str())
     }
 
@@ -119,9 +120,9 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
     use elf::ElfBytes;
-    use jingle::sleigh::context::{Image, SleighContextBuilder};
+    use elf::endian::AnyEndian;
+    use jingle::sleigh::context::SleighContextBuilder;
 
     use crate::gadget::library::builder::GadgetLibraryParams;
     use crate::gadget::library::GadgetLibrary;
@@ -143,3 +144,4 @@ mod tests {
             GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryParams::default()).unwrap();
     }
 }
+
