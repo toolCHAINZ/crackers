@@ -8,6 +8,7 @@ use crate::gadget::Gadget;
 #[derive(Clone, Debug)]
 pub struct GadgetSignature {
     outputs: Vec<GeneralizedVarNode>,
+    #[allow(unused)]
     inputs: Vec<GeneralizedVarNode>,
 }
 

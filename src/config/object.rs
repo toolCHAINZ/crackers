@@ -5,7 +5,7 @@ use std::path::Path;
 
 use jingle::sleigh::context::image::gimli::{map_gimli_architecture, OwnedFile};
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use object::{File, Object, ReadRef};
+use object::{File, Object};
 
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::UnrecognizedArchitecture;

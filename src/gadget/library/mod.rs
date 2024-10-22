@@ -4,7 +4,6 @@ use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::context::SleighContext;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rand::seq::SliceRandom;
