@@ -25,8 +25,8 @@ pub struct Gadget {
 }
 
 impl Gadget {
-    pub fn address(&self) -> Option<u64> {
-        self.instructions.first().map(|f| f.address)
+    pub fn address(&self) -> u64 {
+        self.instructions.first().map(|f| f.address).unwrap()
     }
 
     pub fn ops(&self) -> impl Iterator<Item = &PcodeOperation> {

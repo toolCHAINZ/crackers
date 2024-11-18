@@ -1,5 +1,6 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
+use tracing::{instrument, trace};
 use z3::ast::Ast;
 use z3::{Context, Solver};
 
@@ -41,11 +42,14 @@ where
         loop {
             let gadget = self.gadgets.next()?;
             let gadget_signature = GadgetSignature::from(gadget);
+            trace!("Evaluating gadget at {:x}", gadget.address());
             let is_candidate: Vec<bool> = self
                 .trace
                 .iter()
                 .map(|i| {
-                    gadget_signature.covers(&GadgetSignature::from(&i.instr))
+                    trace!("Checking {} signature vs gadget {}", i.instr.disassembly, gadget);
+
+                    gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i))
                         && has_compatible_control_flow(&i.instr, gadget)
                 })
                 .collect();
@@ -63,6 +67,8 @@ where
                             }
                         }
                     })
+                }else{
+                    trace!("Could not model gadget: \n{}", gadget)
                 }
                 return Some(next_entry);
             } else {

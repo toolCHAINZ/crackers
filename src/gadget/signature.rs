@@ -1,21 +1,20 @@
 use std::cmp::Ordering;
 
-use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, VarNode};
-
 use crate::gadget::Gadget;
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, SpaceManager, SpaceType, VarNode};
+use tracing::trace;
 
 #[derive(Clone, Debug)]
 pub struct GadgetSignature {
     outputs: Vec<GeneralizedVarNode>,
-    #[allow(unused)]
-    inputs: Vec<GeneralizedVarNode>,
 }
 
 impl GadgetSignature {
     /// For now this is very naive; just want a very rough filter to make sure we aren't
     /// throwing completely pointless work at z3
     pub fn covers(&self, other: &GadgetSignature) -> bool {
+        trace!("{:?} vs {:?}", self.outputs, other.outputs);
         varnode_set_covers(&self.outputs, &other.outputs)
     }
 
@@ -45,18 +44,24 @@ impl PartialOrd<GadgetSignature> for GadgetSignature {
         }
     }
 }
-impl From<&Instruction> for GadgetSignature {
-    fn from(value: &Instruction) -> Self {
+impl GadgetSignature {
+    pub(crate) fn from_instr<T: SpaceManager>(value: &Instruction, t: &T) -> Self {
         let mut outputs = Vec::new();
-        let mut inputs = Vec::new();
 
         for op in &value.ops {
             if let Some(op) = op.output() {
-                outputs.push(op);
+                if let GeneralizedVarNode::Direct(v) = &op {
+                    if let Some(h) = t.get_space_info(v.space_index){
+                        if h._type == SpaceType::IPTR_PROCESSOR{
+                            outputs.push(op);
+                        }
+                    }
+                } else {
+                    outputs.push(op);
+                }
             }
-            inputs.extend(op.inputs())
         }
-        Self { outputs, inputs }
+        Self { outputs }
     }
 }
 
@@ -72,21 +77,27 @@ impl<'ctx> From<&ModeledBlock<'ctx>> for GadgetSignature {
                 inputs.extend(op.inputs())
             }
         }
-        Self { outputs, inputs }
+        Self { outputs }
     }
 }
 
 impl From<&Gadget> for GadgetSignature {
     fn from(value: &Gadget) -> Self {
         let mut outputs = Vec::new();
-        let mut inputs = Vec::new();
         for op in value.instructions.iter().flat_map(|i| &i.ops) {
             if let Some(op) = op.output() {
-                outputs.push(op);
+                if let GeneralizedVarNode::Direct(v) = &op {
+                    if let Some(h) = value.get_space_info(v.space_index){
+                        if h._type == SpaceType::IPTR_PROCESSOR{
+                            outputs.push(op);
+                        }
+                    }
+                } else {
+                    outputs.push(op);
+                }
             }
-            inputs.extend(op.inputs())
         }
-        Self { outputs, inputs }
+        Self { outputs }
     }
 }
 
@@ -139,19 +150,9 @@ mod tests {
                 space_index: 0,
                 offset: 0,
             })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
-            })],
         };
         let o2 = GadgetSignature {
             outputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
-            })],
-            inputs: vec![Direct(VarNode {
                 size: 4,
                 space_index: 0,
                 offset: 0,
@@ -172,22 +173,12 @@ mod tests {
                 space_index: 0,
                 offset: 0,
             })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
-            })],
         };
         let o2 = GadgetSignature {
             outputs: vec![Direct(VarNode {
                 size: 4,
                 space_index: 0,
                 offset: 3,
-            })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
             })],
         };
         assert_ne!(o1, o2);
@@ -203,22 +194,12 @@ mod tests {
                 space_index: 0,
                 offset: 0,
             })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
-            })],
         };
         let o2 = GadgetSignature {
             outputs: vec![Direct(VarNode {
                 size: 4,
                 space_index: 0,
                 offset: 4,
-            })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
             })],
         };
         assert!(!o1.covers(&o2));
@@ -232,11 +213,6 @@ mod tests {
                 size: 2,
                 space_index: 0,
                 offset: 7,
-            })],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
             })],
         };
         let o2 = GadgetSignature {
@@ -262,11 +238,6 @@ mod tests {
                     offset: 16,
                 }),
             ],
-            inputs: vec![Direct(VarNode {
-                size: 4,
-                space_index: 0,
-                offset: 0,
-            })],
         };
         assert!(o2.covers(&o1));
         assert!(!o1.covers(&o2));
