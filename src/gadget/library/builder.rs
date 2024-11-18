@@ -17,11 +17,15 @@ pub struct GadgetLibraryParams {
     pub operation_blacklist: HashSet<OpCode>,
     pub path: String,
     pub sample_size: Option<usize>,
+    pub base_address: Option<u64>
 }
 
 impl GadgetLibraryParams {
     pub fn build(&self, sleigh: &SleighConfig) -> Result<GadgetLibrary, CrackersConfigError> {
-        let library_sleigh = load_sleigh(&self.path, sleigh)?;
+        let mut library_sleigh = load_sleigh(&self.path, sleigh)?;
+        if let Some(addr) = self.base_address {
+            library_sleigh.set_base_address(addr)
+        }
         GadgetLibrary::build_from_image(library_sleigh, self).map_err(CrackersConfigError::Sleigh)
     }
 }
