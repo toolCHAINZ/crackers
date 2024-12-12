@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
-use std::sync::Arc;
-
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
+use jingle::JingleContext;
+use std::cmp::Ordering;
+use std::sync::Arc;
 use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
@@ -69,17 +69,18 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
+        let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
             .iter()
             .map(|i| {
-                ModeledInstruction::new(i.clone(), builder.gadget_library.as_ref(), z3).unwrap()
+                ModeledInstruction::new(i.clone(), &jingle).unwrap()
             })
             .collect();
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
             .build(builder.gadget_library.get_random_candidates_for_trace(
-                z3,
+                &jingle,
                 modeled_instrs.as_slice(),
                 builder.seed,
             ))?;
@@ -191,8 +192,9 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 }
                                 kill_senders.clear();
                                 let t = theory_builder.clone();
+                                let jingle = JingleContext::new(self.z3, self.library.as_ref());
                                 let a: PcodeAssignment<'ctx> =
-                                    t.build_assignment(self.z3, response.assignment)?;
+                                    t.build_assignment(&jingle, response.assignment)?;
                                 dbg!("huh2");
                                 let solver = Solver::new(self.z3);
                                 let model = a.check(self.z3, &solver)?;

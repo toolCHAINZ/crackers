@@ -26,7 +26,7 @@ pub struct PcodeTheoryBuilder<'lib> {
 
 impl<'lib> PcodeTheoryBuilder<'lib> {
     // todo: this is gross
-    pub fn new(candidates: Candidates, library: &'lib GadgetLibrary) -> PcodeTheoryBuilder {
+    pub fn new(candidates: Candidates, library: &'lib GadgetLibrary) -> PcodeTheoryBuilder<'lib> {
         Self {
             templates: Default::default(),
             library,
@@ -38,11 +38,11 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         }
     }
     pub fn build(self, z3: &Context) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
-        let modeled_templates = self.model_instructions(z3)?;
-        let gadget_candidates = self.candidates.model(z3)?;
-        let j = JingleContext::new(z3, self.library);
+        let jingle = JingleContext::new(z3, self.library);
+        let modeled_templates = self.model_instructions(&jingle)?;
+        let gadget_candidates = self.candidates.model(&jingle)?;
         let t = PcodeTheory::new(
-            j,
+            jingle,
             modeled_templates,
             gadget_candidates,
             self.preconditions,
@@ -54,11 +54,11 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
 
     pub fn build_assignment<'ctx>(
         &self,
-        z3: &'ctx Context,
+        jingle: &JingleContext<'ctx>,
         slot_assignments: SlotAssignments,
     ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
-        let modeled_templates: Vec<ModeledInstruction<'ctx>> = self.model_instructions(z3)?;
-        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.candidates.model(z3)?;
+        let modeled_templates: Vec<ModeledInstruction<'ctx>> = self.model_instructions(jingle)?;
+        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.candidates.model(jingle)?;
         let selected_candidates: Vec<ModeledBlock<'ctx>> = slot_assignments
             .choices()
             .iter()
@@ -104,11 +104,11 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
 
     fn model_instructions<'ctx>(
         &self,
-        z3: &'ctx Context,
+        jingle: &JingleContext<'ctx>,
     ) -> Result<Vec<ModeledInstruction<'ctx>>, CrackersError> {
         let mut modeled_templates = vec![];
         for template in &self.templates {
-            modeled_templates.push(ModeledInstruction::new(template.clone(), self.library, z3)?);
+            modeled_templates.push(ModeledInstruction::new(template.clone(), jingle)?);
         }
         Ok(modeled_templates)
     }

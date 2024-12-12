@@ -1,8 +1,9 @@
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use tracing::{instrument, trace};
+use jingle::JingleContext;
+use tracing::trace;
 use z3::ast::Ast;
-use z3::{Context, Solver};
+use z3::Solver;
 
 use crate::gadget::signature::GadgetSignature;
 use crate::gadget::Gadget;
@@ -11,7 +12,7 @@ pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    z3: &'ctx Context,
+    jingle: JingleContext<'ctx>,
     _solver: Solver<'ctx>,
     gadgets: T,
     trace: Vec<ModeledInstruction<'ctx>>,
@@ -21,10 +22,10 @@ impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(z3: &'ctx Context, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
-        let _solver = Solver::new(z3);
+    pub(crate) fn new(jingle: &JingleContext<'ctx>, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
+        let _solver = Solver::new(jingle.z3);
         Self {
-            z3,
+            jingle: jingle.clone(),
             _solver,
             gadgets,
             trace,
@@ -54,7 +55,7 @@ where
                 })
                 .collect();
             if is_candidate.iter().any(|b| *b) {
-                let model = gadget.model(self.z3);
+                let model = gadget.model(&self.jingle);
                 if let Ok(model) = &model {
                     is_candidate.iter().enumerate().for_each(|(i, c)| {
                         if *c {

@@ -1,18 +1,17 @@
 use std::collections::HashMap;
 
-use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
 use jingle::sleigh::context::loaded::LoadedSleighContext;
+use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::{JingleContext, JingleError};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use tracing::{event, Level};
-use z3::Context;
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::Gadget;
 use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::Gadget;
 
 pub mod builder;
 
@@ -32,13 +31,13 @@ impl GadgetLibrary {
 
     pub fn get_random_candidates_for_trace<'ctx, 'a: 'ctx>(
         &'a self,
-        z3: &'ctx Context,
+        jingle: &JingleContext<'ctx>,
         trace: &[ModeledInstruction<'ctx>],
         seed: i64,
     ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> + 'ctx {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
-        TraceCandidateIterator::new(z3, r, trace.to_vec())
+        TraceCandidateIterator::new(jingle, r, trace.to_vec())
     }
     pub(super) fn build_from_image(
         sleigh: LoadedSleighContext,
@@ -119,8 +118,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::ElfBytes;
     use elf::endian::AnyEndian;
+    use elf::ElfBytes;
     use jingle::sleigh::context::SleighContextBuilder;
 
     use crate::gadget::library::builder::GadgetLibraryParams;
