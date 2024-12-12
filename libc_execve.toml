@@ -5,7 +5,7 @@ log_level = "INFO"
 [synthesis]
 strategy = "sat"
 max_candidates_per_slot = 200
-parallel = 4
+parallel = 7
 
 [specification]
 path = "bin/execve.o"
@@ -13,8 +13,7 @@ max_instructions = 5
 
 [library]
 path = "bin/libc_wrapper"
-max_gadget_length = 6
-
+max_gadget_length = 8
 
 [constraint.precondition.register]
 RAX = 0

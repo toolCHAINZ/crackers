@@ -122,7 +122,7 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .init();
     let params = p.resolve()?;
 
-    match params.build_combined(&z3) {
+    match params.build_single(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {
                 DecisionResult::AssignmentFound(a) => {
