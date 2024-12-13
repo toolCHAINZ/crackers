@@ -105,7 +105,7 @@ impl RegisterManager for GadgetLibrary {
     }
 
     fn get_register_name(&self, location: &VarNode) -> Option<&str> {
-        self.varnode_to_register.get(&location).map(|c| c.as_str())
+        self.varnode_to_register.get(location).map(|c| c.as_str())
     }
 
     fn get_registers(&self) -> Vec<(VarNode, String)> {
@@ -118,12 +118,10 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use elf::endian::AnyEndian;
-    use elf::ElfBytes;
-    use jingle::sleigh::context::SleighContextBuilder;
-
     use crate::gadget::library::builder::GadgetLibraryParams;
     use crate::gadget::library::GadgetLibrary;
+    use jingle::sleigh::context::SleighContextBuilder;
+    use object::File;
 
     #[test]
     fn test_load_library() {
@@ -132,12 +130,9 @@ mod tests {
                 .unwrap();
         let path = Path::new("../bin/vuln");
         let data = fs::read(path).unwrap();
-        let elf = ElfBytes::<AnyEndian>::minimal_parse(data.as_slice()).unwrap();
-
-        let bin_sleigh = builder
-            .set_image(Image::try_from(elf).unwrap())
-            .build("x86:LE:64:default")
-            .unwrap();
+        let file = File::parse(&*data).unwrap();
+        let sleigh = builder.build("x86:LE:64:default").unwrap();
+        let bin_sleigh = sleigh.initialize_with_image(file).unwrap();
         let _lib =
             GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryParams::default()).unwrap();
     }

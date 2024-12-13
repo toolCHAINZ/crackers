@@ -39,7 +39,7 @@ impl CandidateBuilder {
             }
         }
         // We never found ANY candidates for ANYTHING
-        if candidates.len() == 0 {
+        if candidates.is_empty() {
             Err(UnsimulatedOperation { index: 0 })
         }
         // We never found candidates for something

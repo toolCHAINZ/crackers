@@ -16,7 +16,7 @@ pub trait InstrLen {
     fn instr_len(&self) -> usize;
 }
 
-impl<'ctx> InstrLen for ModeledBlock<'ctx> {
+impl InstrLen for ModeledBlock<'_> {
     fn instr_len(&self) -> usize {
         self.instructions.len()
     }
@@ -33,7 +33,7 @@ impl<T: InstrLen> InstrLen for &T {
         (*self).instr_len()
     }
 }
-impl<'ctx> InstrLen for ModeledInstruction<'ctx> {
+impl InstrLen for ModeledInstruction<'_> {
     fn instr_len(&self) -> usize {
         1
     }
@@ -70,7 +70,7 @@ pub enum OuterProblem<'ctx> {
     OptimizeProb(OptimizationProblem<'ctx>),
 }
 
-impl<'ctx> OuterProblem<'ctx> {
+impl OuterProblem<'_> {
     pub(crate) fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError> {
         match self {
             OuterProblem::SatProb(s) => s.get_assignments(),

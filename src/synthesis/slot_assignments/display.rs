@@ -10,7 +10,7 @@ pub(crate) struct SlotAssignmentConflictDisplay<'a> {
     pub(crate) conflict: &'a ConflictClause,
 }
 
-impl<'a> Display for SlotAssignmentConflictDisplay<'a> {
+impl Display for SlotAssignmentConflictDisplay<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.conflict.precondition {
             true => write!(f, "!")?,

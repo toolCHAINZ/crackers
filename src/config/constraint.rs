@@ -125,11 +125,11 @@ pub fn gen_memory_constraint(
        + Sync
        + Clone
        + 'static {
-    return move |jingle, state, _addr| {
+    move |jingle, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(jingle.z3, m.value as u64, data.get_size()));
         Ok(constraint)
-    };
+    }
 }
 
 /// Generates a state constraint that a given varnode must be equal to a given value
@@ -142,11 +142,11 @@ pub fn gen_register_constraint(
        + Send
        + Sync
        + Clone {
-    return move |jingle, state, _addr| {
+    move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(jingle.z3, value, data.get_size()));
         Ok(constraint)
-    };
+    }
 }
 
 /// Generates a constraint enforcing that the given varnode contains a pointer into the default
@@ -157,7 +157,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
     m: Option<PointerRangeConstraints>,
 ) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
 {
-    return move |jingle, state, _addr| {
+    move |jingle, state, _addr| {
         let m = m.clone();
         let val = value
             .as_bytes()
@@ -186,7 +186,7 @@ pub fn gen_register_pointer_constraint<'ctx>(
             }
         }
         Ok(constraint)
-    };
+    }
 }
 
 /// Generates an invariant enforcing that the given varnode, read from a given state, is within
@@ -200,7 +200,7 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
 ) -> Result<Option<Bool<'a>>, CrackersError>
        + 'ctx
        + Clone {
-    return move |jingle, vn, state| {
+    move |jingle, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
                 // todo: this is gross
@@ -228,7 +228,7 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
                 Ok(Some(Bool::or(jingle.z3, terms.as_slice())))
             }
         }
-    };
+    }
 }
 
 pub fn gen_pointer_range_transition_invariant(
@@ -238,7 +238,7 @@ pub fn gen_pointer_range_transition_invariant(
        + Sync
        + Clone
        + 'static {
-    return move |jingle, block| {
+    move |jingle, block| {
         let mut bools = vec![];
         if let Some(r) = &m.read {
             let inv = gen_pointer_range_state_invariant(r.clone());
@@ -257,5 +257,5 @@ pub fn gen_pointer_range_transition_invariant(
             }
         }
         Ok(Some(Bool::and(jingle.z3, &bools)))
-    };
+    }
 }

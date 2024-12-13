@@ -65,7 +65,7 @@ impl GadgetSignature {
     }
 }
 
-impl<'ctx> From<&ModeledBlock<'ctx>> for GadgetSignature {
+impl From<&ModeledBlock<'_>> for GadgetSignature {
     fn from(value: &ModeledBlock) -> Self {
         let mut outputs = Vec::new();
         let mut inputs = Vec::new();

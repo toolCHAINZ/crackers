@@ -25,7 +25,6 @@ bundled = ["z3/bundled"]
 opt-level = 3
 
 [dependencies]
-elf = "0.7.4"
 jingle = { git = "https://github.com/toolCHAINZ/jingle", branch = "dev", features = ["gimli"] }
 z3 = { git = "https://github.com/prove-rs/z3.rs.git", branch = "master" }
 serde = { version = "1.0.203", features = ["derive"] }

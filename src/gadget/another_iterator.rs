@@ -32,7 +32,7 @@ where
         }
     }
 }
-impl<'ctx, 'a, T> Iterator for TraceCandidateIterator<'ctx, 'a, T>
+impl<'a, T> Iterator for TraceCandidateIterator<'_, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
