@@ -1,16 +1,14 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
+use crate::error::CrackersError;
+use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
+use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
-use z3::Context;
-
-use crate::error::CrackersError;
-use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Constraint {
@@ -122,14 +120,14 @@ pub struct PointerRange {
 /// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
+) -> impl for<'a,> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
        + Send
        + Sync
        + Clone
        + 'static {
-    return move |z3, state, _addr| {
+    return move |jingle, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
-        let constraint = data._eq(&BV::from_u64(z3, m.value as u64, data.get_size()));
+        let constraint = data._eq(&BV::from_u64(jingle.z3, m.value as u64, data.get_size()));
         Ok(constraint)
     };
 }
@@ -139,14 +137,14 @@ pub fn gen_memory_constraint(
 pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
+) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
        + 'static
        + Send
        + Sync
        + Clone {
-    return move |z3, state, _addr| {
+    return move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
-        let constraint = data._eq(&BV::from_u64(z3, value, data.get_size()));
+        let constraint = data._eq(&BV::from_u64(jingle.z3, value, data.get_size()));
         Ok(constraint)
     };
 }
@@ -157,14 +155,14 @@ pub fn gen_register_pointer_constraint<'ctx>(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraints>,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
+) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
 {
-    return move |z3, state, _addr| {
+    return move |jingle, state, _addr| {
         let m = m.clone();
         let val = value
             .as_bytes()
             .iter()
-            .map(|b| BV::from_u64(z3, *b as u64, 8))
+            .map(|b| BV::from_u64(jingle.z3, *b as u64, 8))
             .reduce(|a, b| a.concat(&b))
             .unwrap();
         let pointer = state.read_varnode(&vn)?;
@@ -182,9 +180,9 @@ pub fn gen_register_pointer_constraint<'ctx>(
         let mut constraint = data._eq(&val);
         if let Some(c) = m.and_then(|m| m.read) {
             let callback = gen_pointer_range_state_invariant(c);
-            let cc = callback(z3, &resolved, state)?;
+            let cc = callback(jingle, &resolved, state)?;
             if let Some(b) = cc {
-                constraint = Bool::and(z3, &[constraint, b])
+                constraint = Bool::and(jingle.z3, &[constraint, b])
             }
         }
         Ok(constraint)
@@ -195,14 +193,14 @@ pub fn gen_register_pointer_constraint<'ctx>(
 /// the given range.
 pub fn gen_pointer_range_state_invariant<'ctx>(
     m: Vec<PointerRange>,
-) -> impl for<'a, 'b> Fn(
-    &'a Context,
-    &'b ResolvedVarnode<'a>,
-    &'b State<'a>,
+) -> impl for<'a> Fn(
+    &JingleContext<'a>,
+    &ResolvedVarnode<'a>,
+    &State<'a>,
 ) -> Result<Option<Bool<'a>>, CrackersError>
        + 'ctx
        + Clone {
-    return move |z3, vn, state| {
+    return move |jingle, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
                 // todo: this is gross
@@ -213,21 +211,21 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
                         let bool = m
                             .iter()
                             .any(|mm| d.offset >= mm.min && (d.offset + d.size as u64) <= mm.max);
-                        Ok(Some(Bool::from_bool(z3, bool)))
+                        Ok(Some(Bool::from_bool(jingle.z3, bool)))
                     }
                 }
             }
             ResolvedVarnode::Indirect(vn) => {
                 let mut terms = vec![];
                 for mm in &m {
-                    let min = BV::from_u64(z3, mm.min, vn.pointer.get_size());
-                    let max = BV::from_u64(z3, mm.max, vn.pointer.get_size());
+                    let min = BV::from_u64(jingle.z3, mm.min, vn.pointer.get_size());
+                    let max = BV::from_u64(jingle.z3, mm.max, vn.pointer.get_size());
                     let constraint =
-                        Bool::and(z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
+                        Bool::and(jingle.z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
                     terms.push(constraint);
                 }
 
-                Ok(Some(Bool::or(z3, terms.as_slice())))
+                Ok(Some(Bool::or(jingle.z3, terms.as_slice())))
             }
         }
     };
@@ -235,17 +233,17 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
 
 pub fn gen_pointer_range_transition_invariant(
     m: PointerRangeConstraints,
-) -> impl for<'a, 'b> Fn(&'a Context, &'b ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+) -> impl for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
        + Send
        + Sync
        + Clone
        + 'static {
-    return move |z3, block| {
+    return move |jingle, block| {
         let mut bools = vec![];
         if let Some(r) = &m.read {
             let inv = gen_pointer_range_state_invariant(r.clone());
             for x in block.get_inputs() {
-                if let Some(c) = inv(z3, &x, block.get_final_state())? {
+                if let Some(c) = inv(jingle, &x, block.get_final_state())? {
                     bools.push(c);
                 }
             }
@@ -253,11 +251,11 @@ pub fn gen_pointer_range_transition_invariant(
         if let Some(r) = &m.write {
             let inv = gen_pointer_range_state_invariant(r.clone());
             for x in block.get_outputs() {
-                if let Some(c) = inv(z3, &x, block.get_final_state())? {
+                if let Some(c) = inv(jingle, &x, block.get_final_state())? {
                     bools.push(c);
                 }
             }
         }
-        Ok(Some(Bool::and(z3, &bools)))
+        Ok(Some(Bool::and(jingle.z3, &bools)))
     };
 }

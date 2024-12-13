@@ -3,6 +3,7 @@ use std::sync::Arc;
 use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::Instruction;
+use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
 use z3::ast::Bool;
 use z3::Context;
@@ -21,11 +22,11 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>, u64) -> Result<Bool<'a>, CrackersError>
+pub type StateConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
     + Send
     + Sync
     + 'static;
-pub type TransitionConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+pub type TransitionConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
     + Send
     + Sync
     + 'static;

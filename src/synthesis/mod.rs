@@ -140,11 +140,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                         let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
                         event!(Level::TRACE, "Created worker {}", idx);
                         worker.run();
-                        std::mem::drop(worker);
+                        drop(worker);
                     });
                 });
             }
-            std::mem::drop(resp_sender);
+            drop(resp_sender);
             for (i, x) in req_channels.iter().enumerate() {
                 event!(
                     Level::TRACE,
@@ -185,7 +185,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     "Theory returned SAT for {:?}!",
                                     response.assignment
                                 );
-                                dbg!("huh");
+                                dbg!("Terminating remaining workers");
                                 req_channels.clear();
                                 for x in &kill_senders {
                                     x.send(()).unwrap();
@@ -195,10 +195,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 let jingle = JingleContext::new(self.z3, self.library.as_ref());
                                 let a: PcodeAssignment<'ctx> =
                                     t.build_assignment(&jingle, response.assignment)?;
-                                dbg!("huh2");
+                                dbg!("Workers Terminated; building and checking model");
                                 let solver = Solver::new(self.z3);
-                                let model = a.check(self.z3, &solver)?;
-                                dbg!("here");
+                                let jingle = JingleContext::new(self.z3, self.library.as_ref());
+                                let model = a.check(&jingle, &solver)?;
+                                dbg!("Model built");
                                 return Ok(DecisionResult::AssignmentFound(model));
                             }
                             Some(c) => {

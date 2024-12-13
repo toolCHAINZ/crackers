@@ -121,7 +121,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
             let sem = Bool::fresh_const(self.j.z3, "c");
             self.solver.assert_and_track(
-                &assert_compatible_semantics(self.j.z3, spec, g, &self.pointer_invariants)?,
+                &assert_compatible_semantics(&self.j, spec, g, &self.pointer_invariants)?,
                 &sem,
             );
             assertions.push(ConjunctiveConstraint::new(
@@ -165,7 +165,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         state: &State<'ctx>,
         addr: u64,
     ) -> Result<Bool<'ctx>, CrackersError> {
-        assert_state_constraints(self.j.z3, &self.preconditions, state, addr)
+        assert_state_constraints(&self.j, &self.preconditions, state, addr)
     }
 
     fn assert_postconditions(
@@ -173,7 +173,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         state: &State<'ctx>,
         addr: u64,
     ) -> Result<Bool<'ctx>, CrackersError> {
-        assert_state_constraints(self.j.z3, &self.postconditions, state, addr)
+        assert_state_constraints(&self.j, &self.postconditions, state, addr)
     }
 
     fn collect_conflicts(

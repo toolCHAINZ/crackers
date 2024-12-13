@@ -1,6 +1,6 @@
-use std::sync::Arc;
-
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
+use jingle::JingleContext;
+use std::sync::Arc;
 use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
 
@@ -35,30 +35,30 @@ impl<'ctx> PcodeAssignment<'ctx> {
 
     pub fn check(
         &self,
-        z3: &'ctx Context,
+        jingle: &JingleContext<'ctx>,
         solver: &Solver<'ctx>,
     ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
-        solver.assert(&assert_concat(z3, &self.spec_trace)?);
+        solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
         for x in self.eval_trace.windows(2) {
             solver.assert(&x[0].assert_concat(&x[1])?);
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
         }
         for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {
             solver.assert(&assert_compatible_semantics(
-                z3,
+                jingle,
                 spec_inst,
                 trace_inst,
                 &self.pointer_invariants,
             )?);
         }
         solver.assert(&assert_state_constraints(
-            z3,
+            jingle,
             &self.preconditions,
             self.eval_trace.as_slice().get_original_state(),
             self.eval_trace[0].get_first_address(),
         )?);
         solver.assert(&assert_state_constraints(
-            z3,
+            jingle,
             &self.postconditions,
             self.eval_trace.as_slice().get_final_state(),
             self.eval_trace.last().unwrap().get_last_address(),
@@ -86,7 +86,7 @@ pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
 }
 
 pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
-    z3: &'ctx Context,
+    jingle: &JingleContext<'ctx>,
     spec: &S,
     item: &ModeledBlock<'ctx>,
     invariants: &[Arc<TransitionConstraintGenerator>],
@@ -102,24 +102,24 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
     }
     // Thirdly, every input and output address must pass our pointer constraints
     for invariant in invariants.iter() {
-        let inv = invariant(z3, item)?;
+        let inv = invariant(jingle, item)?;
         if let Some(b) = inv {
             bools.push(b)
         }
     }
-    Ok(Bool::and(z3, &bools))
+    Ok(Bool::and(jingle.z3, &bools))
 }
 
 pub fn assert_state_constraints<'ctx>(
-    z3: &'ctx Context,
+    jingle: &JingleContext<'ctx>,
     constraints: &[Arc<StateConstraintGenerator>],
     state: &State<'ctx>,
     addr: u64,
 ) -> Result<Bool<'ctx>, CrackersError> {
     let mut bools = vec![];
     for x in constraints.iter() {
-        let assertion = x(z3, state, addr)?;
+        let assertion = x(jingle, state, addr)?;
         bools.push(assertion);
     }
-    Ok(Bool::and(z3, &bools))
+    Ok(Bool::and(jingle.z3, &bools))
 }
