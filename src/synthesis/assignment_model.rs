@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{GeneralizedVarNode, RegisterManager, VarNode};
+use jingle::sleigh::{GeneralizedVarNode, RegisterManager};
 use jingle::varnode::ResolvedVarnode;
 use z3::ast::BV;
 use z3::Model;
