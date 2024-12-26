@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::{SpecMissingStartSymbol, SpecMissingTextSection};
-use crate::config::object::load_sleigh;
+use crate::config::object::load_sleigh_spec;
 use crate::config::sleigh::SleighConfig;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -21,7 +21,7 @@ impl SpecificationConfig {
         &self,
         sleigh_config: &'a SleighConfig,
     ) -> Result<LoadedSleighContext<'a>, CrackersConfigError> {
-        load_sleigh(&self.path, sleigh_config)
+        load_sleigh_spec(&self.path, sleigh_config)
     }
 
     pub fn get_spec(

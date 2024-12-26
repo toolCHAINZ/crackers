@@ -14,6 +14,7 @@ use crate::gadget::library::builder::GadgetLibraryParams;
 use crate::gadget::Gadget;
 
 pub mod builder;
+pub mod image;
 
 #[derive(Clone, Debug)]
 pub struct GadgetLibrary {

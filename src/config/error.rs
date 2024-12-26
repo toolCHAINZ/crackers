@@ -10,6 +10,8 @@ pub enum CrackersConfigError {
     Gimli(#[from] object::Error),
     #[error("Spec objects must have a '_start' symbol")]
     SpecMissingStartSymbol,
+    #[error("Unable to parse a segment from the target binary")]
+    LibraryParse,
     #[error("Spec objects must have a '.text' symbol")]
     SpecMissingTextSection,
     #[error("Unable to determine the architecture of the provided object file. This is a config file limitation and not a sleigh limitation.")]

@@ -34,7 +34,7 @@ tracing = "0.1.40"
 colored = "2.1.0"
 tracing-subscriber = { version = "0.3.18", optional = true, features = ["env-filter"] }
 toml_edit = { version = "0.22.12", optional = true, features = ["serde"] }
-object = { version = "0.36.0" }
+object = "0.36.7"
 clap = { version = "4.0.32", optional = true , features = ["derive"]}
 rand = "0.8.5"
 derive_builder = "0.20.0"
