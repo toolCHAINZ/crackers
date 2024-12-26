@@ -39,8 +39,8 @@ impl<'ctx> PcodeAssignment<'ctx> {
         solver: &Solver<'ctx>,
     ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
+        solver.assert(&assert_concat(jingle.z3, &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
-            solver.assert(&x[0].assert_concat(&x[1])?);
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
         }
         for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {

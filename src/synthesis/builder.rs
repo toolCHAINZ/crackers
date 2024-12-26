@@ -45,8 +45,11 @@ pub struct SynthesisParams {
     pub candidates_per_slot: usize,
     pub parallel: usize,
     pub instructions: Vec<Instruction>,
+    #[builder(default)]
     pub preconditions: Vec<Arc<StateConstraintGenerator>>,
+    #[builder(default)]
     pub postconditions: Vec<Arc<StateConstraintGenerator>>,
+    #[builder(default)]
     pub pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
