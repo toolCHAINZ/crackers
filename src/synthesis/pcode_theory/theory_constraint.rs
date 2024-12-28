@@ -46,65 +46,16 @@ pub(crate) fn gen_conflict_clauses(
 ) -> Option<ConflictClause> {
     let mut result = Vec::new();
     let mut semantics = Vec::new();
-    let mut concat = Vec::new();
-    let mut pre = Vec::new();
-    let mut post = Vec::new();
     for x in constraints {
         result.push(x.gen_conflict_clause());
         match x.constraint_type {
             TheoryStage::CombinedSemantics | TheoryStage::Branch => {
                 semantics.push(x.gen_conflict_clause());
             }
-            TheoryStage::Consistency => concat.push(x.gen_conflict_clause()),
-            TheoryStage::Precondition => pre.push(x.gen_conflict_clause()),
-            TheoryStage::Postcondition => post.push(x.gen_conflict_clause()),
+            _ => {}
         }
     }
-
-    // return Some(ConflictClause::combine(result.as_slice()));
-    if !semantics.is_empty() {
-        if AGGRESSIVE {
-            return Some(ConflictClause::combine(semantics.as_slice()));
-        }
-        match (pre.is_empty(), post.is_empty()) {
-            (true, true) => {
-                let clause = ConflictClause::combine(semantics.as_slice());
-                result.push(clause)
-            }
-            (true, false) => {
-                // only post-condition
-                let max_index = semantics
-                    .into_iter()
-                    .map(|c| c.decisions().iter().map(|d| d.index).max().unwrap())
-                    .max()
-                    .unwrap();
-                let clauses: Vec<ConflictClause> = concat
-                    .into_iter()
-                    .filter(|f| f.decisions().iter().all(|d| d.index > max_index))
-                    .collect();
-                result.push(ConflictClause::combine(&clauses))
-            }
-            (false, true) => {
-                // only pre-condition
-                let min_index = semantics
-                    .into_iter()
-                    .map(|c| c.decisions().iter().map(|d| d.index).min().unwrap())
-                    .min()
-                    .unwrap();
-                let clauses: Vec<ConflictClause> = concat
-                    .into_iter()
-                    .filter(|f| f.decisions().iter().all(|d| d.index <= min_index))
-                    .collect();
-                result.push(ConflictClause::combine(&clauses))
-            }
-            (false, false) => {
-                // both :(
-                semantics.extend_from_slice(&concat);
-                result.push(ConflictClause::combine(semantics.as_slice()));
-            }
-        }
-        Some(ConflictClause::combine(result.as_slice()))
-    } else if result.is_empty() {
+    if result.is_empty() {
         None
     } else {
         Some(ConflictClause::combine(result.as_slice()))
