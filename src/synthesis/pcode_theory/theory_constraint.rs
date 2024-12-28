@@ -38,7 +38,6 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 }
 
-#[allow(unreachable_code)]
 pub(crate) fn gen_conflict_clauses(
     constraints: &[&ConjunctiveConstraint],
 ) -> Option<ConflictClause> {
