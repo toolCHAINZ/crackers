@@ -55,6 +55,10 @@ pub(crate) fn gen_conflict_clauses(
     if result.is_empty() {
         None
     } else {
-        Some(ConflictClause::combine(result.as_slice()))
+        if !semantics.is_empty() {
+            Some(ConflictClause::combine(semantics.as_slice()))
+        } else {
+            Some(ConflictClause::combine(result.as_slice()))
+        }
     }
 }
