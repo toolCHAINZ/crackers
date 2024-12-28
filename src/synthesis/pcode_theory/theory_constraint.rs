@@ -3,8 +3,6 @@ use z3::ast::Bool;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
 
-const AGGRESSIVE: bool = true;
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
     CombinedSemantics,
