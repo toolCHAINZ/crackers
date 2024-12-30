@@ -59,29 +59,20 @@ pub struct AssignmentSynthesis<'ctx> {
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     candidates_per_slot: usize,
-    instructions: Vec<Instruction>,
+    slots: usize,
     parallel: usize,
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn new(z3: &'ctx Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
-        let instrs = &builder.instructions;
-        if instrs.is_empty() {
-            return Err(EmptySpecification);
-        }
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
-        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
-            .iter()
-            .map(|i| {
-                ModeledInstruction::new(i.clone(), &jingle).unwrap()
-            })
-            .collect();
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
             .build(builder.gadget_library.get_random_candidates_for_trace(
                 &jingle,
-                modeled_instrs.as_slice(),
+                builder.slots,
+                builder.postconditions.as_slice(),
                 builder.seed,
             ))?;
         let outer_problem = match builder.selection_strategy {
@@ -92,9 +83,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
             }
         };
-        for x in &builder.instructions {
-            println!("{}", x.disassembly)
-        }
         Ok(AssignmentSynthesis {
             z3,
             outer_problem,
@@ -104,7 +92,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             preconditions: builder.preconditions.clone(),
             postconditions: builder.postconditions.clone(),
             candidates_per_slot: builder.candidates_per_slot,
-            instructions: builder.instructions.clone(),
+            slots: builder.slots,
             parallel: builder.parallel,
         })
     }
@@ -117,8 +105,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_pointer_invariants(&self.pointer_invariants)
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
-            .with_max_candidates(self.candidates_per_slot)
-            .with_templates(self.instructions.clone().into_iter());
+            .with_max_candidates(self.candidates_per_slot);
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
             for idx in 0..self.parallel {

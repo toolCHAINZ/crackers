@@ -26,20 +26,18 @@ pub mod pcode_assignment;
 mod theory_constraint;
 pub mod theory_worker;
 
-pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
+pub struct PcodeTheory<'ctx> {
     j: JingleContext<'ctx>,
     solver: Solver<'ctx>,
-    templates: Vec<S>,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
-impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
+impl<'ctx> PcodeTheory<'ctx> {
     pub fn new(
         j: JingleContext<'ctx>,
-        templates: Vec<S>,
         gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -49,7 +47,6 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         Ok(Self {
             j,
             solver,
-            templates,
             gadget_candidates,
             preconditions,
             postconditions,
@@ -71,9 +68,6 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
         let final_state = self.j.fresh_state();
-        self.solver
-            .assert(&assert_concat(self.j.z3, &self.templates)?);
-
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         for (index, x) in gadgets.windows(2).enumerate() {
             let branch = Bool::fresh_const(self.j.z3, "b");
@@ -116,21 +110,6 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
                 }],
                 concat,
                 TheoryStage::Consistency,
-            ))
-        }
-        for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
-            let sem = Bool::fresh_const(self.j.z3, "c");
-            self.solver.assert_and_track(
-                &assert_compatible_semantics(&self.j, spec, g, &self.pointer_invariants)?,
-                &sem,
-            );
-            assertions.push(ConjunctiveConstraint::new(
-                &[Decision {
-                    index,
-                    choice: slot_assignments.choice(index),
-                }],
-                sem,
-                TheoryStage::CombinedSemantics,
             ))
         }
         let first_addr = gadgets[0].get_address();

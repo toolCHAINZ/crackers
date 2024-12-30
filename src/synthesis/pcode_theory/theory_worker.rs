@@ -20,7 +20,7 @@ pub struct TheoryWorker<'ctx> {
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
     receiver: Receiver<SlotAssignments>,
-    theory: PcodeTheory<'ctx, ModeledInstruction<'ctx>>,
+    theory: PcodeTheory<'ctx>,
 }
 
 impl<'ctx> TheoryWorker<'ctx> {

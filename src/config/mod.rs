@@ -38,8 +38,7 @@ impl CrackersConfig {
             b.pointer_invariants(c.get_pointer_constraints().collect());
         }
         b.gadget_library(library)
-            .seed(self.meta.seed)
-            .instructions(self.specification.get_spec(&self.sleigh)?);
+            .seed(self.meta.seed).slots(self.specification.max_instructions);
         b.selection_strategy(self.synthesis.strategy);
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
         b.parallel(self.synthesis.parallel).seed(self.meta.seed);

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
-use jingle::sleigh::Instruction;
 use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
 use z3::ast::Bool;
@@ -44,7 +43,7 @@ pub struct SynthesisParams {
     pub gadget_library: Arc<GadgetLibrary>,
     pub candidates_per_slot: usize,
     pub parallel: usize,
-    pub instructions: Vec<Instruction>,
+    pub slots: usize,
     #[builder(default)]
     pub preconditions: Vec<Arc<StateConstraintGenerator>>,
     #[builder(default)]

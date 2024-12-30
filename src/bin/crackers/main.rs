@@ -56,7 +56,6 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
     let config = CrackersConfig {
         meta: Default::default(),
         specification: SpecificationConfig {
-            path: "spec.o".to_string(),
             max_instructions: 1,
         },
         library: Default::default(),
@@ -122,7 +121,7 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .init();
     let params = p.resolve()?;
 
-    match params.build_single(&z3) {
+    match params.build_combined(&z3) {
         Ok(mut p) => match p.decide() {
             Ok(res) => match res {
                 DecisionResult::AssignmentFound(a) => {

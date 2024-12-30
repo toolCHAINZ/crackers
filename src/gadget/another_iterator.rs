@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
 use jingle::JingleContext;
 use tracing::trace;
-use z3::ast::Ast;
+use z3::ast::{Ast, Bool};
 use z3::Solver;
 
 use crate::gadget::signature::GadgetSignature;
 use crate::gadget::Gadget;
+use crate::synthesis::builder::StateConstraintGenerator;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -15,20 +18,27 @@ where
     jingle: JingleContext<'ctx>,
     _solver: Solver<'ctx>,
     gadgets: T,
-    trace: Vec<ModeledInstruction<'ctx>>,
+    step_length: usize,
+    postconditions: Vec<Arc<StateConstraintGenerator>>,
 }
 
 impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(jingle: &JingleContext<'ctx>, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
+    pub(crate) fn new(
+        jingle: &JingleContext<'ctx>,
+        gadgets: T,
+        step_length: usize,
+        postconditions: Vec<Arc<StateConstraintGenerator>>,
+    ) -> Self {
         let _solver = Solver::new(jingle.z3);
         Self {
             jingle: jingle.clone(),
             _solver,
             gadgets,
-            trace,
+            step_length,
+            postconditions,
         }
     }
 }
@@ -39,41 +49,27 @@ where
     type Item = Vec<Option<&'a Gadget>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut next_entry = vec![None; self.trace.len()];
         loop {
             let gadget = self.gadgets.next()?;
-            let gadget_signature = GadgetSignature::from(gadget);
             trace!("Evaluating gadget at {:x}", gadget.address());
-            let is_candidate: Vec<bool> = self
-                .trace
-                .iter()
-                .map(|i| {
-                    trace!("Checking {} signature vs gadget {}", i.instr.disassembly, gadget);
-
-                    gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i))
-                        && has_compatible_control_flow(&i.instr, gadget)
-                })
-                .collect();
-            if is_candidate.iter().any(|b| *b) {
-                let model = gadget.model(&self.jingle);
-                if let Ok(model) = &model {
-                    is_candidate.iter().enumerate().for_each(|(i, c)| {
-                        if *c {
-                            let expr = model
-                                .upholds_postcondition(&self.trace[i])
-                                .unwrap()
-                                .simplify();
-                            if !expr.is_const() || expr.as_bool().unwrap() {
-                                next_entry[i] = Some(gadget)
+            let model = gadget.model(&self.jingle);
+            if let Ok(model) = &model {
+                for predicate in &self.postconditions {
+                    let f = predicate(&self.jingle, model.get_final_state(), 0);
+                    let i = predicate(&self.jingle, model.get_original_state(), 0);
+                    if let Ok(f) = f{
+                        if let Ok(i) = i {
+                            let f = f.simplify();
+                            //
+                            if f.is_const() && f.as_bool().unwrap() || !f.is_const(){
+                                let i = i.simplify();
+                                if !f._eq(&i).simplify().is_const(){
+                                    return Some(vec![Some(gadget); self.step_length]);
+                                }
                             }
                         }
-                    })
-                }else{
-                    trace!("Could not model gadget: \n{}", gadget)
+                    }
                 }
-                return Some(next_entry);
-            } else {
-                continue;
             }
         }
     }

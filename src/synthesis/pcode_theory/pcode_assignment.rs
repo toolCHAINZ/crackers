@@ -9,7 +9,6 @@ use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
 pub struct PcodeAssignment<'ctx> {
-    spec_trace: Vec<ModeledInstruction<'ctx>>,
     eval_trace: Vec<ModeledBlock<'ctx>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -18,14 +17,12 @@ pub struct PcodeAssignment<'ctx> {
 
 impl<'ctx> PcodeAssignment<'ctx> {
     pub fn new(
-        spec_trace: Vec<ModeledInstruction<'ctx>>,
         eval_trace: Vec<ModeledBlock<'ctx>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Self {
         Self {
-            spec_trace,
             eval_trace,
             preconditions,
             postconditions,
@@ -38,18 +35,9 @@ impl<'ctx> PcodeAssignment<'ctx> {
         jingle: &JingleContext<'ctx>,
         solver: &Solver<'ctx>,
     ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
-        solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
         solver.assert(&assert_concat(jingle.z3, &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
-        }
-        for (spec_inst, trace_inst) in self.spec_trace.iter().zip(&self.eval_trace) {
-            solver.assert(&assert_compatible_semantics(
-                jingle,
-                spec_inst,
-                trace_inst,
-                &self.pointer_invariants,
-            )?);
         }
         solver.assert(&assert_state_constraints(
             jingle,

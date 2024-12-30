@@ -15,28 +15,14 @@ pub struct CombinedAssignmentSynthesis<'a> {
 
 impl<'a> CombinedAssignmentSynthesis<'a> {
     pub fn decide(&mut self) -> Result<DecisionResult<'a, ModeledBlock<'a>>, CrackersError> {
-        let mut ordering: Vec<Vec<Instruction>> = self
-            .base_config
-            .instructions
-            .partitions()
-            .map(|part| {
-                part.into_iter()
-                    .map(|instrs| Instruction::try_from(instrs).unwrap())
-                    .collect::<Vec<Instruction>>()
-            })
-            .collect();
-        // let mut blacklist = HashSet::new();
-        // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
-        ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
-        let iter = ordering.into_iter();
         let mut last: Option<DecisionResult<'a, ModeledBlock<'a>>> = None;
-        for instructions in iter {
+        for i in 1..=self.base_config.slots{
             // todo: filter for instruction combinations that have already been ruled out?
             // if instructions.iter().any(|i| blacklist.contains(i)) {
             //     continue;
             // }
             let mut new_config = self.base_config.clone();
-            new_config.instructions = instructions;
+            new_config.slots = i;
             let synth = AssignmentSynthesis::new(self.z3, &new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
