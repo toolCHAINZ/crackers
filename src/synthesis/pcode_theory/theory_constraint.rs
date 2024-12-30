@@ -3,7 +3,6 @@ use z3::ast::Bool;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::Decision;
 
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
     CombinedSemantics,
@@ -39,7 +38,6 @@ impl<'ctx> ConjunctiveConstraint<'ctx> {
     }
 }
 
-#[allow(unreachable_code)]
 pub(crate) fn gen_conflict_clauses(
     constraints: &[&ConjunctiveConstraint],
 ) -> Option<ConflictClause> {
