@@ -120,25 +120,23 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
-
-    match params.build_combined(&z3) {
-        Ok(mut p) => match p.decide() {
-            Ok(res) => match res {
-                DecisionResult::AssignmentFound(a) => {
-                    event!(Level::INFO, "Synthesis successful :)");
-                    println!("{}", a)
-                }
-                DecisionResult::Unsat(a) => {
-                    event!(Level::ERROR, "Synthesis unsuccessful: {:?}", a);
-                }
-            },
-            Err(e) => {
-                event!(Level::ERROR, "Synthesis error: {}", e)
+    let result = match params.combine_instructions{
+        true => params.build_combined(&z3).and_then(|mut c|c.decide()),
+        false => params.build_single(&z3).and_then(|mut c| c.decide())
+    };
+    match result {
+        Ok(res) => match res {
+            DecisionResult::AssignmentFound(a) => {
+                event!(Level::INFO, "Synthesis successful :)");
+                println!("{}", a)
+            }
+            DecisionResult::Unsat(a) => {
+                event!(Level::ERROR, "Synthesis unsuccessful: {:?}", a);
             }
         },
         Err(e) => {
-            event!(Level::ERROR, "Error setting up synthesis: {}", e)
+            event!(Level::ERROR, "Synthesis error: {}", e)
         }
-    };
+    }
     Ok(())
 }
