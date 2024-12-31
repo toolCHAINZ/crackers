@@ -39,6 +39,8 @@ pub enum Library {
 #[derive(Clone, Builder)]
 pub struct SynthesisParams {
     pub seed: i64,
+    #[builder(default)]
+    pub combine_instructions: bool,
     pub selection_strategy: SynthesisSelectionStrategy,
     #[builder(setter(custom))]
     pub gadget_library: Arc<GadgetLibrary>,

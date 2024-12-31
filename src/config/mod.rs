@@ -41,6 +41,7 @@ impl CrackersConfig {
             .seed(self.meta.seed)
             .instructions(self.specification.get_spec(&self.sleigh)?);
         b.selection_strategy(self.synthesis.strategy);
+        b.combine_instructions(self.synthesis.combine_instructions);
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
         b.parallel(self.synthesis.parallel).seed(self.meta.seed);
 
