@@ -42,23 +42,12 @@ pub(crate) fn gen_conflict_clauses(
     constraints: &[&ConjunctiveConstraint],
 ) -> Option<ConflictClause> {
     let mut result = Vec::new();
-    let mut semantics = Vec::new();
     for x in constraints {
         result.push(x.gen_conflict_clause());
-        match x.constraint_type {
-            TheoryStage::CombinedSemantics | TheoryStage::Branch => {
-                semantics.push(x.gen_conflict_clause());
-            }
-            _ => {}
-        }
     }
     if result.is_empty() {
         None
     } else {
-        if !semantics.is_empty() {
-            Some(ConflictClause::combine(semantics.as_slice()))
-        } else {
-            Some(ConflictClause::combine(result.as_slice()))
-        }
+        Some(ConflictClause::combine(result.as_slice()))
     }
 }
