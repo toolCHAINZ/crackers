@@ -47,6 +47,11 @@ pub(crate) fn gen_conflict_clauses(
     if result.is_empty() {
         None
     } else {
-        Some(ConflictClause::combine(result.as_slice()))
+        let c = ConflictClause::combine(result.as_slice());
+        if c.decisions().is_empty() {
+            None
+        } else {
+            Some(c)
+        }
     }
 }
