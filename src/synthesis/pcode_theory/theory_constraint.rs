@@ -5,7 +5,6 @@ use crate::synthesis::Decision;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
-    CombinedSemantics,
     Consistency,
     Branch,
     Precondition,

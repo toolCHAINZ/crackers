@@ -1,4 +1,4 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
+use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::JingleContext;
 use std::sync::Arc;
 use z3::ast::Bool;
@@ -73,21 +73,12 @@ pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
     Ok(Bool::and(z3, &bools))
 }
 
-pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
+pub fn assert_pointer_invariant<'ctx>(
     jingle: &JingleContext<'ctx>,
-    spec: &S,
     item: &ModeledBlock<'ctx>,
     invariants: &[Arc<TransitionConstraintGenerator>],
 ) -> Result<Bool<'ctx>, CrackersError> {
     let mut bools = vec![];
-    // First, all outputs of the item under test must be assignable to the same values
-    // as in our specification computation
-    bools.push(item.upholds_postcondition(spec)?);
-    // Secondly, if the specification has some control flow behavior, the item must be able
-    // to have the same control flow behavior
-    if let Some(b) = spec.branch_comparison(item)? {
-        bools.push(b)
-    }
     // Thirdly, every input and output address must pass our pointer constraints
     for invariant in invariants.iter() {
         let inv = invariant(jingle, item)?;

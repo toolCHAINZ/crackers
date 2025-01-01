@@ -12,7 +12,7 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{
-    assert_compatible_semantics, assert_concat, assert_state_constraints,
+    assert_concat, assert_pointer_invariant, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
     gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
@@ -130,6 +130,10 @@ impl<'ctx> PcodeTheory<'ctx> {
             post_bool,
             TheoryStage::Postcondition,
         ));
+        for g in &gadgets{
+        let b = assert_pointer_invariant(&self.j, g, &self.pointer_invariants)?;
+            self.solver.assert(&b);
+        }
         event!(Level::TRACE, "Evaluating chain:");
         for x in &gadgets {
             for i in &x.instructions {
