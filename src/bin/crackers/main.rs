@@ -129,7 +129,7 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
                 event!(Level::INFO, "Synthesis successful :)");
-                println!("{}", a)
+                event!(Level::INFO, "{}", a)
             }
             DecisionResult::Unsat(a) => {
                 event!(Level::ERROR, "Synthesis unsuccessful: {:?}", a);
