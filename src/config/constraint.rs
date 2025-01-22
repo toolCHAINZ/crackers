@@ -6,6 +6,7 @@ use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::ops::Add;
 use std::sync::Arc;
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
@@ -159,25 +160,28 @@ pub fn gen_register_pointer_constraint<'ctx>(
 {
     move |jingle, state, _addr| {
         let m = m.clone();
-        let val = value
-            .as_bytes()
-            .iter()
-            .map(|b| BV::from_u64(jingle.z3, *b as u64, 8))
-            .reduce(|a, b| a.concat(&b))
-            .unwrap();
+        let mut bools = vec![];
         let pointer = state.read_varnode(&vn)?;
-        let data = state.read_varnode_indirect(&IndirectVarNode {
-            pointer_space_index: state.get_code_space_idx(),
-            access_size_bytes: value.len(),
-            pointer_location: vn.clone(),
-        })?;
+        for (i,byte) in value.as_bytes().iter().enumerate() {
+            let expected = BV::from_u64(jingle.z3, *byte as u64, 8);
+            let char_ptr = ResolvedVarnode::Indirect(ResolvedIndirectVarNode{
+                // dumb but whatever
+                pointer_location: vn.clone(),
+                pointer: pointer.clone().add(i as u64),
+                access_size_bytes: 1,
+                pointer_space_idx: state.get_code_space_idx()
+            });
+            let actual = state.read_resolved(&char_ptr)?;
+            bools.push(actual._eq(&expected))
+        }
+        let pointer = state.read_varnode(&vn)?;
         let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
             pointer_location: vn.clone(),
             pointer_space_idx: state.get_code_space_idx(),
             access_size_bytes: value.len(),
             pointer,
         });
-        let mut constraint = data._eq(&val);
+        let mut constraint = Bool::and(jingle.z3, &bools);
         if let Some(c) = m.and_then(|m| m.read) {
             let callback = gen_pointer_range_state_invariant(c);
             let cc = callback(jingle, &resolved, state)?;
