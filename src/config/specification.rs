@@ -38,8 +38,10 @@ impl SpecificationConfig {
             .section_by_name(".text")
             .ok_or(SpecMissingTextSection)?;
         let mut sleigh = self.load_sleigh(sleigh_config)?;
+        let mut addr = sym.address();
         if let Some(o) = self.base_address {
-            sleigh.set_base_address(o)
+            sleigh.set_base_address(o);
+            addr = addr.wrapping_add(o);
         }
         let instrs: Vec<Instruction> = sleigh
             .read_until_branch(sym.address(), self.max_instructions)
