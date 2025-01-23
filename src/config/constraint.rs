@@ -1,7 +1,7 @@
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::{IndirectVarNode, RegisterManager, SpaceManager, VarNode};
+use jingle::sleigh::{RegisterManager, SpaceManager, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleContext;
 use serde::{Deserialize, Serialize};

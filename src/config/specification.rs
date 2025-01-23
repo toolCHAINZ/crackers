@@ -14,10 +14,11 @@ use crate::config::sleigh::SleighConfig;
 pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,
+    pub base_address: Option<u64>,
 }
 
 impl SpecificationConfig {
-    pub fn load_sleigh<'a>(
+    fn load_sleigh<'a>(
         &self,
         sleigh_config: &'a SleighConfig,
     ) -> Result<LoadedSleighContext<'a>, CrackersConfigError> {
@@ -36,7 +37,10 @@ impl SpecificationConfig {
         let _section = gimli_file
             .section_by_name(".text")
             .ok_or(SpecMissingTextSection)?;
-        let sleigh = self.load_sleigh(sleigh_config)?;
+        let mut sleigh = self.load_sleigh(sleigh_config)?;
+        if let Some(o) = self.base_address {
+            sleigh.set_base_address(o)
+        }
         let instrs: Vec<Instruction> = sleigh
             .read_until_branch(sym.address(), self.max_instructions)
             .collect();
