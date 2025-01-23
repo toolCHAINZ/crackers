@@ -44,7 +44,7 @@ impl SpecificationConfig {
             addr = addr.wrapping_add(o);
         }
         let instrs: Vec<Instruction> = sleigh
-            .read_until_branch(sym.address(), self.max_instructions)
+            .read_until_branch(addr, self.max_instructions)
             .collect();
         Ok(instrs)
     }
