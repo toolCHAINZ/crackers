@@ -5,7 +5,7 @@ log_level = "INFO"
 [synthesis]
 strategy = "sat"
 max_candidates_per_slot = 200
-parallel = 7
+parallel = 1
 
 [specification]
 path = "bin/execve.o"
@@ -33,22 +33,5 @@ R13 = 0x0
 R14 = 0x4ae018
 R15 = 0x400538
 
-[constraint.postcondition.register]
-RAX = 0x3b
-RSI = 0
-RDX = 0
-
 [constraint.postcondition.pointer]
 RDI = "/bin/sh"
-
-[[constraint.pointer.read]]
-min = 0x7ffffffde000
-max = 0x7ffffffff000
-
-[[constraint.pointer.write]]
-min = 0x7ffffffde000
-max = 0x7ffffffff000
-
-[[constraint.pointer.write]]
-min = 0x9d000
-max = 0x9d060

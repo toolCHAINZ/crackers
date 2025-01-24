@@ -97,10 +97,19 @@ min = 0x7fffffffde00
 max = 0x7ffffffff000
 ```
 
+A successful synthesis will print out a listing of the gadgets were selected.
+
 ## Library Usage
 
-`crackers` can also be used as a library. All of the above settings from the config correspond
+`crackers` intended mode of use is as a library. All of the above settings from the config correspond
 to settings that can be set programmatically by API consumers.
+
+When using the API, rather than getting a listing of gadgets as an output, you get a model of the synthesized chain.
+This model of the chain includes information about what gadgets were selected as well as a Z3 `Model` representing the
+memory at all states of execution in the gadget chain. This model can be queried to derive the memory conditions
+necessary to execute the chain.
+
+### Constraints
 
 Constraints work a little differently with the API. Instead of specifying registers and register equality,
 `crackers` allows consumers to provide a closure of the following types:
@@ -128,110 +137,3 @@ The second type is used for asserting read/write invariants. These functions tak
 the bitvector corresponding to the read/write address, as well as the state the read/write is being performed on. 
 Any time a chain reads or writes from memory, the procedure will automatically call these functions and assert the returned
 booleans. This can allow for setting safe/unsafe ranges of memory or even the register space.
-
-## How it Works (Roughly)
-
-### Library generation
-
-A library is taken in and parsed. The executable sections are identified. For every executable section,
-we attempt disassembly at every byte offset. If disassembly succeeds and returns a terminating basic block
-within N instructions (where N is set in the config), then we call that a gadget and save it.
-
-### Candidate selection
-
-`crackers` works by taking in an "example" computation and synthesizing a chain that is compatible with the example.
-So for instance, if you want to call execve on linux, your example computation might look like this:
-
-```
-00000000  4889c7             mov     rdi, rax
-00000003  48c7c03b000000     mov     rax, 0x3b
-0000000a  48c7c600000000     mov     rsi, 0x0
-00000011  48c7c200000000     mov     rdx, 0x0
-00000018  0f05               syscall 
-```
-
-This computation sets `rax`, `rsi`, and `rdx` to set values, and `rdi` to some indeterminate value, which we will
-constrain later.
-
-For each instruction in this computation, we identify a set of "gadget candidates". These candidates are selected out of
-the library we assembled. To be a candidate for an instruction a gadget must pass the following checks:
-* If the specification instruction contains a jump, the gadget must have terminating control flow that is capable of branching
-  to the same destination.
-* The gadget must write to every direct address that the specification instruction writes to.
-* For every indirect access, the gadget must also make an indirect access using the same pointer storage, of at least
-  as many bytes.
-* Taken in isolation, the gadget must be able to have the same effect as the specification instruction:
-  (e.g. `mov eax, ebx` can stand in for `mov eax, 0`, but `mov eax, 2` cannot).
-
-
-### Decision Loop
-
-The overall flow of the procedure is as follows:
-
-* Ask the assignment problem for an assignment
-    * If it returns UNSAT, then no possible assignment exists (under the given parameters) and we return
-    * If it returns SAT, then we send that assignment to the theory solver
-      * If the PCODE theory solver returns SAT, we have a valid chain
-      * If the PCODE theory solver returns UNSAT, it also provides a set of conflict clauses identifying
-        which `decisions` participated in the UNSAT proof. These clauses are communicated back to the assignment
-        problem to allow it to outlaw that combination of `decisions`.
-
-We introduce parallelism to this workflow by running the PCODE theory solvers in threads and generating multiple
-unique assignments for each worker to solve in parallel.
-
-A description of the assignment problem and the theory problem follow: 
-### Assignment Problem Setup
-
-Once all the candidates have been found for all instructions, we check and make sure that we have found
-at least one candidate for each. If any instruction has no candidates, then we immediately return UNSAT. This
-usually indicates that we just did not sample a gadget that touches the needed memory.
-
-For each spec instruction, each candidate is assigned an index. The same gadget can exist as a candidate for multiple indices and
-each copy is treated as logically separate from each other.
-
-Using these indices, we construct a simple boolean SAT problem:
-* We define a `decision` as a tuple `(i: usize, c: usize)`, indicating that index `i` is using choice `c`. A `decision`
-  uniquely identifies a given gadget being used in a given slot.
-* Each decision is mapped to a Z3 Bool.
-* We then construct a boolean SAT problem using these variables with the following constraints:
-  * For all indices `i`:
-    * We make exactly 1 choice `c` (e.g. for every `i`, one AND ONLY ONE `decision` with matching `i` must be true)
-* In the case of the `optimize` solver, we additionally impose a penalty on every `decision`, proportional to the 
-  number of instructions in the gadget. This pressures the solver into selecting the shortest gadgets that it can. 
-
-### PCODE Theory Problem Setup
-
-This procedure runs operates on a single assignment of gadgets. This assignment is evaluated against
-the specification computation, as well as any provided constraints.
-
-First, we form the specification computation into a trace, by asserting state equality between the end state
-of every instruction and the beginning state of its successor.
-
-Then, we do the same for our assignment of gadgets. We tag these assertions as being `memory` assertions.
-
-We assert all preconditions on the initial state of the gadget chain, and all postconditions on the final state of the gadget chain.
-We tag these as `constraint` assertions.
-
-For every instruction `i` and its corresponding gadget `g`:
-* Assert that for all `v` in `output(i)`: `g[v]` = `i[v]`.
-* If `i` has control flow, assert that the control flow of `g` branches to the same destination as `i`
-* These are tagged as `semantic` assertions.
-
-For every gadget `g1` and its successor `g2`:
-* Assert that the address of `g2` is the jump target of `g1`. These are tagged as `branch` assertions. The conflict
-  associated with a `branch` assertions only references `g1` instead of the conjunction of `g1` and `g2` because,
-  as a heuristic, when `g1` is unable to branch to `g2` it is almost always because of some conflict in `g1`, and not
-  something about the address of `g2`
-
-We give all these assertions to `z3` using the `assert_and_track` API, which makes Z3 express the unsat core
-in terms of booleans representing our varying assertions.
-
-If z3 comes back with SAT, then the chain assignment is valid.
-
-If it comes back UNSAT, then we analyze the UNSAT CORE:
-
-* If the UNSAT core is composed only of `memory` and `constraint` assertions, then, as the formulae are currently tracked,
-  we have no way to make strong conflicts ouf of this core. As a fallback, we simply return a clause outlawing the complete
-  assignment.
-* Otherwise, we form a conjunction of all participating `decisions` for all `branch` and `semantic` conflicts
-  and return that to the assignment problem.

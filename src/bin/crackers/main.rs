@@ -57,6 +57,7 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
         meta: Default::default(),
         specification: SpecificationConfig {
             max_instructions: 1,
+            base_address: None,
         },
         library: Default::default(),
         sleigh: SleighConfig {
