@@ -58,6 +58,7 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
         specification: SpecificationConfig {
             path: "spec.o".to_string(),
             max_instructions: 1,
+            base_address: None,
         },
         library: Default::default(),
         sleigh: SleighConfig {
