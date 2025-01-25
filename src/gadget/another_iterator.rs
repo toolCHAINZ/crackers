@@ -22,7 +22,11 @@ impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(jingle: &JingleContext<'ctx>, gadgets: T, trace: Vec<ModeledInstruction<'ctx>>) -> Self {
+    pub(crate) fn new(
+        jingle: &JingleContext<'ctx>,
+        gadgets: T,
+        trace: Vec<ModeledInstruction<'ctx>>,
+    ) -> Self {
         let _solver = Solver::new(jingle.z3);
         Self {
             jingle: jingle.clone(),
@@ -48,7 +52,11 @@ where
                 .trace
                 .iter()
                 .map(|i| {
-                    trace!("Checking {} signature vs gadget {}", i.instr.disassembly, gadget);
+                    trace!(
+                        "Checking {} signature vs gadget {}",
+                        i.instr.disassembly,
+                        gadget
+                    );
 
                     gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i))
                         && has_compatible_control_flow(&i.instr, gadget)
@@ -68,7 +76,7 @@ where
                             }
                         }
                     })
-                }else{
+                } else {
                     trace!("Could not model gadget: \n{}", gadget)
                 }
                 return Some(next_entry);

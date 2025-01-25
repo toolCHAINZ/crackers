@@ -122,9 +122,9 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
-    let result = match params.combine_instructions{
-        true => params.build_combined(&z3).and_then(|mut c|c.decide()),
-        false => params.build_single(&z3).and_then(|mut c| c.decide())
+    let result = match params.combine_instructions {
+        true => params.build_combined(&z3).and_then(|mut c| c.decide()),
+        false => params.build_single(&z3).and_then(|mut c| c.decide()),
     };
     match result {
         Ok(res) => match res {

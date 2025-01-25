@@ -72,9 +72,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
             .iter()
-            .map(|i| {
-                ModeledInstruction::new(i.clone(), &jingle).unwrap()
-            })
+            .map(|i| ModeledInstruction::new(i.clone(), &jingle).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()

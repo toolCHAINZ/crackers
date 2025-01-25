@@ -17,7 +17,7 @@ pub struct GadgetLibraryParams {
     pub operation_blacklist: HashSet<OpCode>,
     pub path: String,
     pub sample_size: Option<usize>,
-    pub base_address: Option<u64>
+    pub base_address: Option<u64>,
 }
 
 impl GadgetLibraryParams {
