@@ -2,7 +2,9 @@ use std::cmp::Ordering;
 
 use crate::gadget::Gadget;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, SpaceManager, SpaceType, VarNode};
+use jingle::sleigh::{
+    GeneralizedVarNode, IndirectVarNode, Instruction, SpaceManager, SpaceType, VarNode,
+};
 use tracing::trace;
 
 #[derive(Clone, Debug)]
@@ -51,8 +53,8 @@ impl GadgetSignature {
         for op in &value.ops {
             if let Some(op) = op.output() {
                 if let GeneralizedVarNode::Direct(v) = &op {
-                    if let Some(h) = t.get_space_info(v.space_index){
-                        if h._type == SpaceType::IPTR_PROCESSOR{
+                    if let Some(h) = t.get_space_info(v.space_index) {
+                        if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);
                         }
                     }
@@ -87,8 +89,8 @@ impl From<&Gadget> for GadgetSignature {
         for op in value.instructions.iter().flat_map(|i| &i.ops) {
             if let Some(op) = op.output() {
                 if let GeneralizedVarNode::Direct(v) = &op {
-                    if let Some(h) = value.get_space_info(v.space_index){
-                        if h._type == SpaceType::IPTR_PROCESSOR{
+                    if let Some(h) = value.get_space_info(v.space_index) {
+                        if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);
                         }
                     }

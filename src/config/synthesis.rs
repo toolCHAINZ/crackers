@@ -7,7 +7,7 @@ pub struct SynthesisConfig {
     pub strategy: SynthesisSelectionStrategy,
     pub max_candidates_per_slot: usize,
     pub parallel: usize,
-    pub combine_instructions: bool
+    pub combine_instructions: bool,
 }
 
 impl Default for SynthesisConfig {
@@ -16,7 +16,7 @@ impl Default for SynthesisConfig {
             strategy: SynthesisSelectionStrategy::OptimizeStrategy,
             max_candidates_per_slot: 50,
             parallel: 4,
-            combine_instructions: true
+            combine_instructions: true,
         }
     }
 }

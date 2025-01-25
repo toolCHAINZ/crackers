@@ -138,4 +138,3 @@ mod tests {
             GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryParams::default()).unwrap();
     }
 }
-

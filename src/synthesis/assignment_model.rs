@@ -45,16 +45,19 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         for gadget in &self.gadgets {
             let val = gadget.get_original_state().read_varnode(&r).unwrap();
-            println!("{} Before: {:?}",reg, self.model.eval(&val, false));
+            println!("{} Before: {:?}", reg, self.model.eval(&val, false));
             let val = gadget.get_final_state().read_varnode(&r).unwrap();
-            println!("{} After: {:?}",reg,  self.model.eval(&val, false));
+            println!("{} After: {:?}", reg, self.model.eval(&val, false));
         }
     }
 
     pub fn initial_reg(&'ctx self, reg: &str) -> Option<BV<'ctx>> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
-            let val = self.gadgets[0].get_original_state().read_varnode(&r).unwrap();
-            self.model.eval(&val, false)
+        let val = self.gadgets[0]
+            .get_original_state()
+            .read_varnode(&r)
+            .unwrap();
+        self.model.eval(&val, false)
     }
 }
 

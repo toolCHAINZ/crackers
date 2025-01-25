@@ -24,7 +24,9 @@ fn load_image<T: AsRef<Path>>(path: T) -> Result<(SegmentFile, &'static str), Cr
 }
 
 /// gross hack
-fn load_image_spec<T: AsRef<Path>>(path: T) -> Result<(OwnedFile, &'static str), CrackersConfigError> {
+fn load_image_spec<T: AsRef<Path>>(
+    path: T,
+) -> Result<(OwnedFile, &'static str), CrackersConfigError> {
     let data = fs::read(path.as_ref())?;
     let file = File::parse(&*data)?;
     let arch = map_gimli_architecture(&file).ok_or(UnrecognizedArchitecture(format!(

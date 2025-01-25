@@ -121,7 +121,7 @@ pub struct PointerRange {
 /// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
-) -> impl for<'a,> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
+) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
        + Send
        + Sync
        + Clone
@@ -162,14 +162,14 @@ pub fn gen_register_pointer_constraint<'ctx>(
         let m = m.clone();
         let mut bools = vec![];
         let pointer = state.read_varnode(&vn)?;
-        for (i,byte) in value.as_bytes().iter().enumerate() {
+        for (i, byte) in value.as_bytes().iter().enumerate() {
             let expected = BV::from_u64(jingle.z3, *byte as u64, 8);
-            let char_ptr = ResolvedVarnode::Indirect(ResolvedIndirectVarNode{
+            let char_ptr = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
                 // dumb but whatever
                 pointer_location: vn.clone(),
                 pointer: pointer.clone().add(i as u64),
                 access_size_bytes: 1,
-                pointer_space_idx: state.get_code_space_idx()
+                pointer_space_idx: state.get_code_space_idx(),
             });
             let actual = state.read_resolved(&char_ptr)?;
             bools.push(actual._eq(&expected))
