@@ -1,4 +1,4 @@
-name: jingle
+name: Build
 
 on:
   push:
