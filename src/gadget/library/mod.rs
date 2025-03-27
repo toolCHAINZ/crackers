@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{Instruction, RegisterManager, SpaceInfo, SpaceManager, VarNode};
+use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
 use jingle::{JingleContext, JingleError};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
@@ -21,8 +19,7 @@ pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
     spaces: Vec<SpaceInfo>,
     default_code_space_index: usize,
-    register_to_varnode: HashMap<String, VarNode>,
-    varnode_to_register: HashMap<VarNode, String>,
+    registers: Vec<(VarNode, String)>,
 }
 
 impl GadgetLibrary {
@@ -44,20 +41,20 @@ impl GadgetLibrary {
         sleigh: LoadedSleighContext,
         builder: &GadgetLibraryParams,
     ) -> Result<Self, JingleError> {
-        let spaces = sleigh.get_all_space_info().to_vec();
+        let spaces: Vec<_> = sleigh.get_all_space_info().cloned().collect();
+        let mut registers = vec![];
         let default_code_space_index = sleigh.get_code_space_idx();
-        let mut register_to_varnode = HashMap::new();
-        let mut varnode_to_register = HashMap::new();
         for (varnode, register) in sleigh.get_registers() {
-            register_to_varnode.insert(register.clone(), varnode.clone());
-            varnode_to_register.insert(varnode, register);
+            registers.push((varnode.clone(), register));
         }
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
             spaces,
             default_code_space_index,
-            register_to_varnode,
-            varnode_to_register,
+            registers: registers
+                .iter()
+                .map(|(varnode, register)| (varnode.clone(), register.to_string()))
+                .collect(),
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.get_sections().filter(|s| s.perms.exec) {
@@ -71,7 +68,7 @@ impl GadgetLibrary {
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     let gadget = Gadget {
                         code_space_idx: sleigh.get_code_space_idx(),
-                        spaces: sleigh.get_all_space_info().to_vec(),
+                        spaces: sleigh.get_all_space_info().cloned().collect(),
                         instructions: instrs[0..=i].to_vec(),
                     };
                     if !gadget.has_blacklisted_op(&builder.operation_blacklist) {
@@ -86,31 +83,34 @@ impl GadgetLibrary {
     }
 }
 
-impl SpaceManager for GadgetLibrary {
+impl ArchInfoProvider for GadgetLibrary {
     fn get_space_info(&self, idx: usize) -> Option<&SpaceInfo> {
         self.spaces.get(idx)
     }
-
-    fn get_all_space_info(&self) -> &[SpaceInfo] {
-        self.spaces.as_slice()
+    fn get_all_space_info(&self) -> impl Iterator<Item = &SpaceInfo> {
+        self.spaces.iter()
     }
 
     fn get_code_space_idx(&self) -> usize {
         self.default_code_space_index
     }
-}
 
-impl RegisterManager for GadgetLibrary {
-    fn get_register(&self, name: &str) -> Option<VarNode> {
-        self.register_to_varnode.get(name).cloned()
+    fn get_register(&self, name: &str) -> Option<&VarNode> {
+        self.registers
+            .iter()
+            .find(|(_, reg_name)| reg_name.as_str() == name)
+            .map(|(vn, _)| vn)
     }
 
     fn get_register_name(&self, location: &VarNode) -> Option<&str> {
-        self.varnode_to_register.get(location).map(|c| c.as_str())
+        self.registers
+            .iter()
+            .find(|(vn, _)| vn == location)
+            .map(|(_, name)| name.as_str())
     }
 
-    fn get_registers(&self) -> Vec<(VarNode, String)> {
-        self.varnode_to_register.clone().into_iter().collect()
+    fn get_registers(&self) -> impl Iterator<Item = (&VarNode, &str)> {
+        self.registers.iter().map(|(vn, name)| (vn, name.as_str()))
     }
 }
 

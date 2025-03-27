@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::gadget::Gadget;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{
-    GeneralizedVarNode, IndirectVarNode, Instruction, SpaceManager, SpaceType, VarNode,
+    ArchInfoProvider, GeneralizedVarNode, IndirectVarNode, Instruction, SpaceType, VarNode,
 };
 use tracing::trace;
 
@@ -47,7 +47,7 @@ impl PartialOrd<GadgetSignature> for GadgetSignature {
     }
 }
 impl GadgetSignature {
-    pub(crate) fn from_instr<T: SpaceManager>(value: &Instruction, t: &T) -> Self {
+    pub(crate) fn from_instr<T: ArchInfoProvider>(value: &Instruction, t: &T) -> Self {
         let mut outputs = Vec::new();
 
         for op in &value.ops {
@@ -89,7 +89,7 @@ impl From<&Gadget> for GadgetSignature {
         for op in value.instructions.iter().flat_map(|i| &i.ops) {
             if let Some(op) = op.output() {
                 if let GeneralizedVarNode::Direct(v) = &op {
-                    if let Some(h) = value.get_space_info(v.space_index) {
+                    if let Some(h) = value.spaces.get(v.space_index) {
                         if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);
                         }

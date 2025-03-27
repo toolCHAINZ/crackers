@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{GeneralizedVarNode, RegisterManager};
+use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode};
 use jingle::varnode::ResolvedVarnode;
 use z3::ast::BV;
 use z3::Model;
@@ -44,9 +44,9 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
     pub fn print_trace_of_reg(&'ctx self, reg: &str) {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         for gadget in &self.gadgets {
-            let val = gadget.get_original_state().read_varnode(&r).unwrap();
+            let val = gadget.get_original_state().read_varnode(r).unwrap();
             println!("{} Before: {:?}", reg, self.model.eval(&val, false));
-            let val = gadget.get_final_state().read_varnode(&r).unwrap();
+            let val = gadget.get_final_state().read_varnode(r).unwrap();
             println!("{} After: {:?}", reg, self.model.eval(&val, false));
         }
     }
@@ -55,7 +55,7 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         let val = self.gadgets[0]
             .get_original_state()
-            .read_varnode(&r)
+            .read_varnode(r)
             .unwrap();
         self.model.eval(&val, false)
     }

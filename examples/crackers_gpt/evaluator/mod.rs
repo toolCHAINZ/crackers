@@ -4,7 +4,8 @@ use crackers::synthesis::builder::SynthesisParams;
 use crackers::synthesis::selection_strategy::SelectionFailure;
 use crackers::synthesis::DecisionResult;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
-use jingle::sleigh::{Instruction, RegisterManager};
+use jingle::sleigh::{ArchInfoProvider, Instruction};
+use jingle::JingleContext;
 use z3::ast::{Ast, BV};
 use z3::{Config, Context, SatResult, Solver};
 
@@ -66,13 +67,10 @@ impl ExecveEvaluator {
 
     pub fn eval_spec_model(&self, spec: &[Instruction]) -> anyhow::Result<Option<Vec<String>>> {
         let solver = Solver::new(&self.z3);
+        let jingle = JingleContext::new(&self.z3, self.config.gadget_library.as_ref());
         let mut model = vec![];
         for x in spec {
-            model.push(ModeledInstruction::new(
-                x.clone(),
-                self.config.gadget_library.as_ref(),
-                &self.z3,
-            )?);
+            model.push(ModeledInstruction::new(x.clone(), &jingle)?);
         }
         solver.assert(&assert_concat(&self.z3, &model)?.simplify());
         // verify basic requirements of execve

@@ -1,5 +1,5 @@
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SpaceInfo, SpaceManager};
+use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SpaceInfo};
 use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -55,20 +55,6 @@ impl Gadget {
     ) -> Result<ModeledBlock<'ctx>, CrackersError> {
         let blk = ModeledBlock::read(jingle, self.instructions.clone().into_iter())?;
         Ok(blk)
-    }
-}
-
-impl SpaceManager for Gadget {
-    fn get_space_info(&self, idx: usize) -> Option<&SpaceInfo> {
-        self.spaces.get(idx)
-    }
-
-    fn get_all_space_info(&self) -> &[SpaceInfo] {
-        self.spaces.as_slice()
-    }
-
-    fn get_code_space_idx(&self) -> usize {
-        self.code_space_idx
     }
 }
 

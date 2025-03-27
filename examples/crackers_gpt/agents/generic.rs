@@ -45,7 +45,6 @@ impl<C: Config> GenericAgent<C> {
     }
 
     #[allow(unused)]
-
     pub fn model(&self) -> Model {
         self.model
     }
@@ -104,7 +103,6 @@ impl<C: Config> GenericAgent<C> {
 pub trait Agent {
     // todo: maybe having this trait is overkill for what I'm doing. Consider removing.
     #[allow(unused)]
-
     async fn chat<T: Into<ChatCompletionRequestUserMessageContent>>(
         &mut self,
         message: T,

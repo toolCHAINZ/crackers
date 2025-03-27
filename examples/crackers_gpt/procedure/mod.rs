@@ -107,6 +107,7 @@ impl GptProcedure {
         }
         let obj_path = obj_path.unwrap();
         let spec_config = SpecificationConfig {
+            base_address: Some(0),
             path: obj_path[0].to_str().unwrap().to_string(),
             max_instructions: 10,
         };

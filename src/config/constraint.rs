@@ -1,7 +1,7 @@
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::{RegisterManager, SpaceManager, VarNode};
+use jingle::sleigh::{ArchInfoProvider, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ pub struct Constraint {
 }
 
 impl Constraint {
-    pub fn get_preconditions<'a, T: SpaceManager + RegisterManager>(
+    pub fn get_preconditions<'a, T: ArchInfoProvider>(
         &'a self,
         sleigh: &'a T,
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
@@ -28,7 +28,7 @@ impl Constraint {
             .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
     }
 
-    pub fn get_postconditions<'a, T: SpaceManager + RegisterManager>(
+    pub fn get_postconditions<'a, T: ArchInfoProvider>(
         &'a self,
         sleigh: &'a T,
     ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
@@ -52,7 +52,7 @@ pub struct StateEqualityConstraint {
 }
 
 impl StateEqualityConstraint {
-    pub fn constraints<'a, T: SpaceManager + RegisterManager>(
+    pub fn constraints<'a, T: ArchInfoProvider>(
         &'a self,
         sleigh: &'a T,
         c: Option<PointerRangeConstraints>,
@@ -60,7 +60,7 @@ impl StateEqualityConstraint {
         let register_iterator = self.register.iter().flat_map(|map| {
             map.iter().filter_map(|(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
-                    Some(Arc::new(gen_register_constraint(vn, *value as u64))
+                    Some(Arc::new(gen_register_constraint(vn.clone(), *value as u64))
                         as Arc<StateConstraintGenerator>)
                 } else {
                     event!(Level::WARN, "Unrecognized register name: {}", name);
@@ -77,7 +77,7 @@ impl StateEqualityConstraint {
             map.iter().filter_map(move |(name, value)| {
                 if let Some(vn) = sleigh.get_register(name) {
                     Some(Arc::new(gen_register_pointer_constraint(
-                        vn,
+                        vn.clone(),
                         value.clone(),
                         c1.clone(),
                     )) as Arc<StateConstraintGenerator>)
