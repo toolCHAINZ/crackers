@@ -103,7 +103,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         if let Some(((index, g), choice)) = gadgets
             .iter()
             .enumerate()
-            .last()
+            .next_back()
             .zip(slot_assignments.choices().last())
         {
             let concat = Bool::fresh_const(self.j.z3, "m");
