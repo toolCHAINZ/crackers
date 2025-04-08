@@ -21,6 +21,7 @@ pub struct SpecificationConfig {
     pub base_address: Option<u64>,
 }
 
+#[cfg(feature = "pyo3")]
 #[pymethods]
 impl SpecificationConfig {
     #[new]
