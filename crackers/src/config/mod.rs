@@ -1,6 +1,6 @@
+use pyo3::PyResult;
 #[cfg(feature = "pyo3")]
 use pyo3::{pyclass, pymethods};
-use pyo3::PyResult;
 use serde::{Deserialize, Serialize};
 
 use crate::config::constraint::ConstraintConfig;
@@ -76,6 +76,46 @@ impl CrackersConfig {
     #[setter]
     fn set_specification(&mut self, spec: SpecificationConfig) {
         self.specification = spec
+    }
+
+    #[getter]
+    fn get_library(&self) -> GadgetLibraryConfig {
+        self.library.clone()
+    }
+
+    #[setter]
+    fn set_library(&mut self, library: GadgetLibraryConfig) {
+        self.library = library
+    }
+
+    #[getter]
+    fn get_sleigh(&self) -> SleighConfig {
+        self.sleigh.clone()
+    }
+    
+    #[setter]
+    fn set_sleigh(&mut self, sleigh: SleighConfig) {
+        self.sleigh = sleigh
+    }
+    
+    #[getter]
+    fn get_synthesis(&self) -> SynthesisConfig {
+        self.synthesis.clone()
+    }
+    
+    #[setter]
+    fn set_synthesis(&mut self, synthesis: SynthesisConfig) {
+        self.synthesis = synthesis
+    }
+    
+    #[getter]
+    fn get_constraint(&self) -> Option<ConstraintConfig> {
+        self.constraint.clone()
+    }
+    
+    #[setter]
+    fn set_constraint(&mut self, constraint: ConstraintConfig) {
+        self.constraint = Some(constraint)
     }
 }
 
