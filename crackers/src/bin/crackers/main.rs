@@ -14,7 +14,7 @@ use z3::{Config, Context};
 
 use crackers::bench::{bench, BenchCommand};
 use crackers::config::constraint::{
-    Constraint, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
+    ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
 use crackers::config::sleigh::SleighConfig;
@@ -64,7 +64,7 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
         sleigh: SleighConfig {
             ghidra_path: "/Applications/ghidra".to_string(),
         },
-        constraint: Some(Constraint {
+        constraint: Some(ConstraintConfig {
             precondition: Some(StateEqualityConstraint {
                 register: Some(HashMap::from([("ABC".to_string(), 123)])),
                 memory: Some(MemoryEqualityConstraint {

@@ -1,13 +1,15 @@
-use pyo3::pyclass;
+#[cfg(feature = "pyo3")]
+use pyo3::{pyclass, pymethods};
+use pyo3::PyResult;
 use serde::{Deserialize, Serialize};
 
-use crate::config::constraint::Constraint;
+use crate::config::constraint::ConstraintConfig;
 use crate::config::meta::MetaConfig;
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
-use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::library::builder::GadgetLibraryConfig;
 use crate::synthesis::builder::{SynthesisParams, SynthesisParamsBuilder};
 
 pub mod constraint;
@@ -28,10 +30,53 @@ pub struct CrackersConfig {
     #[serde(default)]
     pub meta: MetaConfig,
     pub specification: SpecificationConfig,
-    pub library: GadgetLibraryParams,
+    pub library: GadgetLibraryConfig,
     pub sleigh: SleighConfig,
     pub synthesis: SynthesisConfig,
-    pub constraint: Option<Constraint>,
+    pub constraint: Option<ConstraintConfig>,
+}
+
+#[cfg(feature = "pyo3")]
+#[pymethods]
+impl CrackersConfig {
+    #[new]
+    pub fn new(
+        specification: SpecificationConfig,
+        sleigh: SleighConfig,
+        meta: Option<MetaConfig>,
+        library: Option<GadgetLibraryConfig>,
+        synthesis: Option<SynthesisConfig>,
+        constraint: Option<ConstraintConfig>,
+    ) -> Self {
+        Self {
+            meta: meta.unwrap_or_default(),
+            specification,
+            library: library.unwrap_or_default(),
+            sleigh,
+            synthesis: synthesis.unwrap_or_default(),
+            constraint,
+        }
+    }
+
+    #[getter]
+    fn get_meta(&self) -> MetaConfig {
+        self.meta.clone()
+    }
+
+    #[setter]
+    fn set_meta(&mut self, meta: MetaConfig) {
+        self.meta = meta
+    }
+
+    #[getter]
+    fn get_specification(&self) -> SpecificationConfig {
+        self.specification.clone()
+    }
+
+    #[setter]
+    fn set_specification(&mut self, spec: SpecificationConfig) {
+        self.specification = spec
+    }
 }
 
 impl CrackersConfig {

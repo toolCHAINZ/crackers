@@ -6,7 +6,7 @@ use pyo3::PyErr;
 use thiserror::Error;
 
 use crate::config::error::CrackersConfigError;
-use crate::gadget::library::builder::GadgetLibraryParamsBuilderError;
+use crate::gadget::library::builder::GadgetLibraryConfigBuilderError;
 use crate::synthesis::builder::SynthesisParamsBuilderError;
 
 #[derive(Debug, Error)]
@@ -34,7 +34,7 @@ pub enum CrackersError {
     #[error("Jingle error")]
     Jingle(#[from] JingleError),
     #[error("Invalid gadget library params")]
-    LibraryConfig(#[from] GadgetLibraryParamsBuilderError),
+    LibraryConfig(#[from] GadgetLibraryConfigBuilderError),
     #[error("Invalid synthesis params")]
     SynthesisParams(#[from] SynthesisParamsBuilderError),
 }

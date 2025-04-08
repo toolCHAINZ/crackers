@@ -8,7 +8,7 @@ use rand::SeedableRng;
 use tracing::{event, Level};
 
 use crate::gadget::another_iterator::TraceCandidateIterator;
-use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::library::builder::GadgetLibraryConfig;
 use crate::gadget::Gadget;
 
 pub mod builder;
@@ -39,7 +39,7 @@ impl GadgetLibrary {
     }
     pub(super) fn build_from_image(
         sleigh: LoadedSleighContext,
-        builder: &GadgetLibraryParams,
+        builder: &GadgetLibraryConfig,
     ) -> Result<Self, JingleError> {
         let spaces: Vec<_> = sleigh.get_all_space_info().cloned().collect();
         let mut registers = vec![];
@@ -119,7 +119,7 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::gadget::library::builder::GadgetLibraryParams;
+    use crate::gadget::library::builder::GadgetLibraryConfig;
     use crate::gadget::library::GadgetLibrary;
     use jingle::sleigh::context::SleighContextBuilder;
     use object::File;
@@ -135,6 +135,6 @@ mod tests {
         let sleigh = builder.build("x86:LE:64:default").unwrap();
         let bin_sleigh = sleigh.initialize_with_image(file).unwrap();
         let _lib =
-            GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryParams::default()).unwrap();
+            GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryConfig::default()).unwrap();
     }
 }

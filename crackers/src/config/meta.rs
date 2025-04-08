@@ -1,3 +1,4 @@
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use rand::random;
 use serde::{Deserialize, Serialize};

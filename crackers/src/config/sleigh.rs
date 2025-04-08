@@ -1,4 +1,5 @@
 use jingle::sleigh::context::SleighContextBuilder;
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 

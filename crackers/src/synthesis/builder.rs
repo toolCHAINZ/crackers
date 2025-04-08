@@ -4,13 +4,14 @@ use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::Instruction;
 use jingle::JingleContext;
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use z3::ast::Bool;
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::gadget::library::builder::GadgetLibraryParams;
+use crate::gadget::library::builder::GadgetLibraryConfig;
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::combined::CombinedAssignmentSynthesis;
 use crate::synthesis::AssignmentSynthesis;
@@ -36,7 +37,7 @@ pub type TransitionConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &Mod
 #[derive(Clone, Debug)]
 pub enum Library {
     Library(GadgetLibrary),
-    Params(GadgetLibraryParams),
+    Params(GadgetLibraryConfig),
 }
 #[derive(Clone, Builder)]
 pub struct SynthesisParams {

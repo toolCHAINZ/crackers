@@ -4,6 +4,7 @@ use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleContext;
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,15 +13,15 @@ use std::sync::Arc;
 use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[cfg_attr(feature = "pyo3", pyclass)]
-pub struct Constraint {
+pub struct ConstraintConfig {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
     pub pointer: Option<PointerRangeConstraints>,
 }
 
-impl Constraint {
+impl ConstraintConfig {
     pub fn get_preconditions<'a, T: ArchInfoProvider>(
         &'a self,
         sleigh: &'a T,

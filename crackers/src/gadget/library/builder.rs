@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use derive_builder::Builder;
 use jingle::sleigh::OpCode;
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ use crate::gadget::library::GadgetLibrary;
 #[derive(Clone, Debug, Default, Builder, Deserialize, Serialize)]
 #[builder(default)]
 #[cfg_attr(feature = "pyo3", pyclass)]
-pub struct GadgetLibraryParams {
+pub struct GadgetLibraryConfig {
     pub max_gadget_length: usize,
     #[serde(skip, default = "default_blacklist")]
     pub operation_blacklist: HashSet<OpCode>,
@@ -22,7 +23,7 @@ pub struct GadgetLibraryParams {
     pub base_address: Option<u64>,
 }
 
-impl GadgetLibraryParams {
+impl GadgetLibraryConfig {
     pub fn build(&self, sleigh: &SleighConfig) -> Result<GadgetLibrary, CrackersConfigError> {
         let mut library_sleigh = load_sleigh(&self.path, sleigh)?;
         if let Some(addr) = self.base_address {
