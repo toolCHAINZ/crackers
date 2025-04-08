@@ -1,4 +1,3 @@
-use pyo3::PyResult;
 #[cfg(feature = "pyo3")]
 use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
