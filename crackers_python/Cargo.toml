@@ -1,0 +1,19 @@
+[package]
+name = "crackers_python"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "crackers_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"] }
+crackers = {path = "../crackers", features = ["pyo3"]}
+jingle_python = {git = "https://github.com/toolCHAINZ/jingle.git", branch = "main", features = ["extension-module"]}
+jingle = {git = "https://github.com/toolCHAINZ/jingle.git", branch = "main", features = ["pyo3"]}
+
+[dev-dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"] }
+jingle_python = {git = "https://github.com/toolCHAINZ/jingle.git", branch = "main", features = ["extension-module"]}
