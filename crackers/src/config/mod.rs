@@ -1,3 +1,4 @@
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
 use crate::config::constraint::Constraint;
@@ -18,6 +19,11 @@ pub mod specification;
 pub mod synthesis;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
+/// This struct represents the serializable configuration found
+/// in a crackers .toml file. Once parsed from a file or constructed
+/// programmatically, it can be used to produce a [crate::synthesis::builder::SynthesisParams]
+/// struct, which can run the actual algorithm
 pub struct CrackersConfig {
     #[serde(default)]
     pub meta: MetaConfig,

@@ -4,6 +4,7 @@ use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use jingle::JingleContext;
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Add;
@@ -12,6 +13,7 @@ use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct Constraint {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
@@ -45,6 +47,7 @@ impl Constraint {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,
@@ -94,6 +97,7 @@ impl StateEqualityConstraint {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct MemoryEqualityConstraint {
     pub space: String,
     pub address: u64,
@@ -102,6 +106,7 @@ pub struct MemoryEqualityConstraint {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct PointerRangeConstraints {
     pub read: Option<Vec<PointerRange>>,
     pub write: Option<Vec<PointerRange>>,
@@ -113,6 +118,7 @@ impl PointerRangeConstraints {
     }
 }
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct PointerRange {
     pub min: u64,
     pub max: u64,

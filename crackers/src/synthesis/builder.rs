@@ -4,6 +4,7 @@ use derive_builder::Builder;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::sleigh::Instruction;
 use jingle::JingleContext;
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use z3::ast::Bool;
 use z3::Context;
@@ -15,6 +16,7 @@ use crate::synthesis::combined::CombinedAssignmentSynthesis;
 use crate::synthesis::AssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub enum SynthesisSelectionStrategy {
     #[serde(rename = "sat")]
     SatStrategy,

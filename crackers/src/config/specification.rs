@@ -3,6 +3,7 @@ use std::fs;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSymbol};
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
@@ -11,6 +12,7 @@ use crate::config::object::load_sleigh_spec;
 use crate::config::sleigh::SleighConfig;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,

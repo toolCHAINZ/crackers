@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use derive_builder::Builder;
 use jingle::sleigh::OpCode;
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
@@ -11,6 +12,7 @@ use crate::gadget::library::GadgetLibrary;
 
 #[derive(Clone, Debug, Default, Builder, Deserialize, Serialize)]
 #[builder(default)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct GadgetLibraryParams {
     pub max_gadget_length: usize,
     #[serde(skip, default = "default_blacklist")]

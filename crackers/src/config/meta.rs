@@ -1,11 +1,12 @@
+use pyo3::pyclass;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub enum CrackersLogLevel {
-    #[serde(rename = "TRACE")]
     Trace,
     Debug,
     Warn,
@@ -26,6 +27,7 @@ impl From<CrackersLogLevel> for Level {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct MetaConfig {
     #[serde(default = "random")]
     pub seed: i64,
