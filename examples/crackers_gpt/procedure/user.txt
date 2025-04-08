@@ -1,4 +1,0 @@
-Write a program that performs the following syscall: execve('/bin/sh/').
-Do not include comments.
-Assume the string `/bin/sh` is already allocated and pointed to by R10.
-Do NOT use the xor instruction.
