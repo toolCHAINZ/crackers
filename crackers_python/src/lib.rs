@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use ::crackers::config::CrackersConfig;
-use ::crackers::config::meta::MetaConfig;
+use ::crackers::config::meta::{CrackersLogLevel, MetaConfig};
 use ::crackers::config::sleigh::SleighConfig;
 use ::crackers::config::specification::SpecificationConfig;
 use ::crackers::config::synthesis::SynthesisConfig;
@@ -16,5 +16,6 @@ fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SleighConfig>()?;
     m.add_class::<GadgetLibraryConfig>()?;
     m.add_class::<SynthesisConfig>()?;
+    m.add_class::<CrackersLogLevel>()?;
     Ok(())
 }
