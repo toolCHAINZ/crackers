@@ -5,6 +5,7 @@ use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSymbol};
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
+use pyo3::{pymethods, PyResult};
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
@@ -18,6 +19,48 @@ pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,
     pub base_address: Option<u64>,
+}
+
+#[pymethods]
+impl SpecificationConfig {
+    #[new]
+    fn new(path: String, max_instructions: usize, base_address: Option<u64>) -> Self {
+        Self {
+            path,
+            max_instructions,
+            base_address,
+        }
+    }
+
+    #[getter]
+    fn get_path(&self) -> String {
+        self.path.clone()
+    }
+
+    #[setter]
+    fn set_path(&mut self, path: String) {
+        self.path = path;
+    }
+
+    #[getter]
+    fn get_max_instructions(&self) -> usize {
+        self.max_instructions
+    }
+
+    #[setter]
+    fn set_max_instructions(&mut self, max_instructions: usize) {
+        self.max_instructions = max_instructions;
+    }
+
+    #[getter]
+    fn get_base_address(&self) -> Option<u64> {
+        self.base_address
+    }
+
+    #[setter]
+    fn set_base_address(&mut self, address: u64) {
+        self.base_address = Some(address);
+    }
 }
 
 impl SpecificationConfig {
