@@ -2,6 +2,7 @@ mod config;
 mod decision;
 mod synthesis;
 
+use crate::config::PythonCrackersConfig;
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
@@ -13,7 +14,6 @@ use ::crackers::config::synthesis::SynthesisConfig;
 use ::crackers::gadget::library::builder::GadgetLibraryConfig;
 use ::crackers::synthesis::builder::SynthesisSelectionStrategy;
 use pyo3::prelude::*;
-use crate::config::PythonCrackersConfig;
 
 /// A Python module implemented in Rust.
 #[pymodule]

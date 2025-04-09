@@ -6,8 +6,8 @@ use crackers::config::synthesis::SynthesisConfig;
 use crackers::config::CrackersConfig;
 use crackers::gadget::library::builder::GadgetLibraryConfig;
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{pyclass, pymethods, Bound, Py, PyErr, PyResult, Python};
 use pyo3::types::PyType;
+use pyo3::{pyclass, pymethods, Bound, Py, PyErr, PyResult, Python};
 
 mod constraint;
 
@@ -44,7 +44,6 @@ impl TryFrom<CrackersConfig> for PythonCrackersConfig {
 
 #[pymethods]
 impl PythonCrackersConfig {
-
     #[classmethod]
     pub fn from_toml(_: &Bound<'_, PyType>, path: &str) -> PyResult<Self> {
         let cfg_bytes = std::fs::read(path)?;

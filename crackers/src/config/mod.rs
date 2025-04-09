@@ -16,7 +16,6 @@ pub mod sleigh;
 pub mod specification;
 pub mod synthesis;
 
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 /// This struct represents the serializable configuration found
 /// in a crackers .toml file. Once parsed from a file or constructed
