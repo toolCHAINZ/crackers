@@ -18,18 +18,15 @@ impl TryFrom<ConstraintConfig> for PythonConstraintConfig {
     fn try_from(value: ConstraintConfig) -> Result<Self, Self::Error> {
         let precondition: PythonStateEqualityConstraint = value
             .precondition
-            .map(|f| f.try_into().ok())
-            .flatten()
+            .and_then(|f| f.try_into().ok())
             .unwrap_or_default();
         let postcondition: PythonStateEqualityConstraint = value
             .postcondition
-            .map(|f| f.try_into().ok())
-            .flatten()
+            .and_then(|f| f.try_into().ok())
             .unwrap_or_default();
         let pointer: PythonPointerRangeConstraints = value
             .pointer
-            .map(|f| f.try_into().ok())
-            .flatten()
+            .and_then(|f| f.try_into().ok())
             .unwrap_or_default();
         Python::with_gil(|py| {
             Ok(Self {
@@ -41,6 +38,7 @@ impl TryFrom<ConstraintConfig> for PythonConstraintConfig {
     }
 }
 
+#[derive(Default)]
 #[pyclass(get_all)]
 pub struct PythonStateEqualityConstraint {
     pub register: HashMap<String, i64>,
@@ -49,15 +47,7 @@ pub struct PythonStateEqualityConstraint {
     pub memory: Option<Py<MemoryEqualityConstraint>>,
 }
 
-impl Default for PythonStateEqualityConstraint {
-    fn default() -> Self {
-        Self {
-            register: HashMap::new(),
-            pointer: HashMap::new(),
-            memory: None,
-        }
-    }
-}
+
 
 impl TryFrom<StateEqualityConstraint> for PythonStateEqualityConstraint {
     type Error = PyErr;
@@ -66,8 +56,8 @@ impl TryFrom<StateEqualityConstraint> for PythonStateEqualityConstraint {
         Python::with_gil(|py| {
             let mem = value.memory.map(|f| Py::new(py, f).unwrap());
             Ok(Self {
-                register: value.register.clone().unwrap_or(HashMap::new()),
-                pointer: value.pointer.clone().unwrap_or(HashMap::new()),
+                register: value.register.clone().unwrap_or_default(),
+                pointer: value.pointer.clone().unwrap_or_default(),
                 memory: mem,
             })
         })
