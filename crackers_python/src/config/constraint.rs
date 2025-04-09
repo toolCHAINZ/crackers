@@ -47,8 +47,6 @@ pub struct PythonStateEqualityConstraint {
     pub memory: Option<Py<MemoryEqualityConstraint>>,
 }
 
-
-
 impl TryFrom<StateEqualityConstraint> for PythonStateEqualityConstraint {
     type Error = PyErr;
 
