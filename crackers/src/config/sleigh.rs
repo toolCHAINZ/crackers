@@ -1,13 +1,14 @@
 use jingle::sleigh::context::SleighContextBuilder;
 #[cfg(feature = "pyo3")]
-use pyo3::pyclass;
+use pyconfig::wrap_config;
+#[cfg(feature = "pyo3")]
 use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", wrap_config)]
 pub struct SleighConfig {
     pub ghidra_path: String,
 }

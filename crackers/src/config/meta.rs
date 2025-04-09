@@ -1,6 +1,10 @@
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
+#[cfg(feature = "pyo3")]
+use pyconfig::wrap_config;
+#[cfg(feature = "pyo3")]
 use pyo3::types::PyType;
+#[cfg(feature = "pyo3")]
 use pyo3::{pymethods, Py};
 use rand::random;
 use serde::{Deserialize, Serialize};
@@ -31,7 +35,7 @@ impl From<CrackersLogLevel> for Level {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature="pyo3", wrap_config)]
 pub struct MetaConfig {
     #[serde(default = "random")]
     pub seed: i64,
@@ -60,23 +64,4 @@ impl MetaConfig {
         MetaConfig::default()
     }
 
-    #[getter]
-    fn get_log_level(&self) -> CrackersLogLevel {
-        self.log_level.clone()
-    }
-
-    #[setter]
-    fn set_log_level(&mut self, log_level: CrackersLogLevel) {
-        self.log_level = log_level;
-    }
-
-    #[getter]
-    fn get_seed(&self) -> i64 {
-        self.seed
-    }
-
-    #[setter]
-    fn set_seed(&mut self, seed: i64) {
-        self.seed = seed;
-    }
 }

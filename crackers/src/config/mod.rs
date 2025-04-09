@@ -1,7 +1,14 @@
 #[cfg(feature = "pyo3")]
-use pyo3::{pyclass, pymethods};
+use pyo3::exceptions::PyRuntimeError;
+#[cfg(feature = "pyo3")]
+use pyo3::{Bound, PyResult};
+#[cfg(feature = "pyo3")]
+use pyo3::{pymethods};
+#[cfg(feature = "pyo3")]
+use pyconfig::wrap_config;
 use serde::{Deserialize, Serialize};
-
+#[cfg(feature = "pyo3")]
+use pyo3::types::PyType;
 use crate::config::constraint::ConstraintConfig;
 use crate::config::meta::MetaConfig;
 use crate::config::sleigh::SleighConfig;
@@ -20,7 +27,7 @@ pub mod specification;
 pub mod synthesis;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", wrap_config)]
 /// This struct represents the serializable configuration found
 /// in a crackers .toml file. Once parsed from a file or constructed
 /// programmatically, it can be used to produce a [crate::synthesis::builder::SynthesisParams]
@@ -57,65 +64,15 @@ impl CrackersConfig {
         }
     }
 
-    #[getter]
-    fn get_meta(&self) -> MetaConfig {
-        self.meta.clone()
+    #[classmethod]
+    pub fn from_toml(_: &Bound<'_, PyType>, path: &str) -> PyResult<Self> {
+        let cfg_bytes = std::fs::read(path)?;
+        let s = String::from_utf8(cfg_bytes)?;
+        let p: CrackersConfig =
+            toml_edit::de::from_str(&s).map_err(|e| PyRuntimeError::new_err(format!("{}", e)))?;
+        Ok(p)
     }
 
-    #[setter]
-    fn set_meta(&mut self, meta: MetaConfig) {
-        self.meta = meta
-    }
-
-    #[getter]
-    fn get_specification(&self) -> SpecificationConfig {
-        self.specification.clone()
-    }
-
-    #[setter]
-    fn set_specification(&mut self, spec: SpecificationConfig) {
-        self.specification = spec
-    }
-
-    #[getter]
-    fn get_library(&self) -> GadgetLibraryConfig {
-        self.library.clone()
-    }
-
-    #[setter]
-    fn set_library(&mut self, library: GadgetLibraryConfig) {
-        self.library = library
-    }
-
-    #[getter]
-    fn get_sleigh(&self) -> SleighConfig {
-        self.sleigh.clone()
-    }
-    
-    #[setter]
-    fn set_sleigh(&mut self, sleigh: SleighConfig) {
-        self.sleigh = sleigh
-    }
-    
-    #[getter]
-    fn get_synthesis(&self) -> SynthesisConfig {
-        self.synthesis.clone()
-    }
-    
-    #[setter]
-    fn set_synthesis(&mut self, synthesis: SynthesisConfig) {
-        self.synthesis = synthesis
-    }
-    
-    #[getter]
-    fn get_constraint(&self) -> Option<ConstraintConfig> {
-        self.constraint.clone()
-    }
-    
-    #[setter]
-    fn set_constraint(&mut self, constraint: ConstraintConfig) {
-        self.constraint = Some(constraint)
-    }
 }
 
 impl CrackersConfig {

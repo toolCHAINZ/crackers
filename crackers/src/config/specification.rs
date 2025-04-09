@@ -4,7 +4,8 @@ use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSymbol};
 #[cfg(feature = "pyo3")]
-use pyo3::pyclass;
+use pyconfig::wrap_config;
+#[cfg(feature = "pyo3")]
 use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +15,7 @@ use crate::config::object::load_sleigh_spec;
 use crate::config::sleigh::SleighConfig;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", wrap_config)]
 pub struct SpecificationConfig {
     pub path: String,
     pub max_instructions: usize,

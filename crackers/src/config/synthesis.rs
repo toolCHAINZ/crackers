@@ -1,12 +1,13 @@
 #[cfg(feature = "pyo3")]
-use pyo3::pyclass;
+use pyconfig::wrap_config;
+#[cfg(feature = "pyo3")]
 use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
 
 use crate::synthesis::builder::SynthesisSelectionStrategy;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", wrap_config)]
 pub struct SynthesisConfig {
     pub strategy: SynthesisSelectionStrategy,
     pub max_candidates_per_slot: usize,
