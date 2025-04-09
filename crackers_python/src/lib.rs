@@ -1,4 +1,9 @@
-use ::crackers::config::constraint::{ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints, StateEqualityConstraint};
+mod config;
+
+use ::crackers::config::constraint::{
+    ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
+    StateEqualityConstraint,
+};
 use ::crackers::config::meta::{CrackersLogLevel, MetaConfig};
 use ::crackers::config::sleigh::SleighConfig;
 use ::crackers::config::specification::SpecificationConfig;
@@ -7,11 +12,12 @@ use ::crackers::config::CrackersConfig;
 use ::crackers::gadget::library::builder::GadgetLibraryConfig;
 use ::crackers::synthesis::builder::SynthesisSelectionStrategy;
 use pyo3::prelude::*;
+use crate::config::PythonCrackersConfig;
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<CrackersConfig>()?;
+    m.add_class::<PythonCrackersConfig>()?;
     m.add_class::<MetaConfig>()?;
     m.add_class::<SpecificationConfig>()?;
     m.add_class::<SleighConfig>()?;

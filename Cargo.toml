@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crackers", "crackers_python", "pyconfig"]
+members = ["crackers", "crackers_python"]
 
 [profile.dev]
 opt-level = 3

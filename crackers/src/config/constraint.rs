@@ -14,7 +14,7 @@ use tracing::{event, Level};
 use z3::ast::{Ast, Bool, BV};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct ConstraintConfig {
     pub precondition: Option<StateEqualityConstraint>,
     pub postcondition: Option<StateEqualityConstraint>,
@@ -48,7 +48,7 @@ impl ConstraintConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct StateEqualityConstraint {
     pub register: Option<HashMap<String, i64>>,
     pub pointer: Option<HashMap<String, String>>,
@@ -98,7 +98,7 @@ impl StateEqualityConstraint {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct MemoryEqualityConstraint {
     pub space: String,
     pub address: u64,
@@ -106,8 +106,8 @@ pub struct MemoryEqualityConstraint {
     pub value: u8,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct PointerRangeConstraints {
     pub read: Option<Vec<PointerRange>>,
     pub write: Option<Vec<PointerRange>>,
@@ -119,7 +119,7 @@ impl PointerRangeConstraints {
     }
 }
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct PointerRange {
     pub min: u64,
     pub max: u64,

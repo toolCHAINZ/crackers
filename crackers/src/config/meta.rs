@@ -1,11 +1,5 @@
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
-#[cfg(feature = "pyo3")]
-use pyconfig::wrap_config;
-#[cfg(feature = "pyo3")]
-use pyo3::types::PyType;
-#[cfg(feature = "pyo3")]
-use pyo3::{pymethods, Py};
 use rand::random;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
@@ -21,7 +15,6 @@ pub enum CrackersLogLevel {
     Error,
 }
 
-
 impl From<CrackersLogLevel> for Level {
     fn from(value: CrackersLogLevel) -> Self {
         match value {
@@ -35,7 +28,7 @@ impl From<CrackersLogLevel> for Level {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature="pyo3", wrap_config)]
+#[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
 pub struct MetaConfig {
     #[serde(default = "random")]
     pub seed: i64,
@@ -49,19 +42,4 @@ impl Default for MetaConfig {
             log_level: CrackersLogLevel::Info,
         }
     }
-}
-
-#[cfg(feature = "pyo3")]
-#[pymethods]
-impl MetaConfig {
-    #[new]
-    fn new(seed: i64, log_level: CrackersLogLevel) -> MetaConfig {
-        Self { seed, log_level }
-    }
-
-    #[classmethod]
-    fn init_default(_: Py<PyType>) -> MetaConfig {
-        MetaConfig::default()
-    }
-
 }

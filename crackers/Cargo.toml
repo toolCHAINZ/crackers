@@ -12,7 +12,7 @@ required-features = ["bin"]
 [features]
 default = ["toml"]
 bin = ["dep:tracing-subscriber", "toml", "dep:clap", "dep:anyhow", "dep:tracing-indicatif"]
-pyo3 = ["dep:pyo3", "jingle/pyo3", "dep:pyconfig"]
+pyo3 = ["dep:pyo3", "jingle/pyo3"]
 toml = ["dep:toml_edit"]
 bundled = ["z3/bundled"]
 
@@ -32,4 +32,3 @@ derive_builder = "0.20"
 anyhow = { version = "1.0", optional = true }
 tracing-indicatif = { version = "0.3", optional = true }
 pyo3 = { version = "0.24", optional = true }
-pyconfig = {path = "../pyconfig", optional = true}
