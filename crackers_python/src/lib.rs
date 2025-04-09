@@ -1,4 +1,6 @@
 mod config;
+mod decision;
+mod synthesis;
 
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
@@ -8,7 +10,6 @@ use ::crackers::config::meta::{CrackersLogLevel, MetaConfig};
 use ::crackers::config::sleigh::SleighConfig;
 use ::crackers::config::specification::SpecificationConfig;
 use ::crackers::config::synthesis::SynthesisConfig;
-use ::crackers::config::CrackersConfig;
 use ::crackers::gadget::library::builder::GadgetLibraryConfig;
 use ::crackers::synthesis::builder::SynthesisSelectionStrategy;
 use pyo3::prelude::*;

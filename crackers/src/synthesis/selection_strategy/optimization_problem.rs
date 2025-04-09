@@ -26,7 +26,7 @@ impl<'ctx> OptimizationProblem<'ctx> {
 
     fn get_unsat_reason(&self, core: Vec<Bool<'ctx>>) -> SelectionFailure {
         SelectionFailure {
-            indexes: self
+            indices: self
                 .index_bools
                 .iter()
                 .enumerate()

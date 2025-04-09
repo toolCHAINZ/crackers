@@ -8,7 +8,6 @@ use crackers::gadget::library::builder::GadgetLibraryConfig;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass, pymethods, Bound, Py, PyErr, PyResult, Python};
 use pyo3::types::PyType;
-use crackers::config::constraint::ConstraintConfig;
 
 mod constraint;
 

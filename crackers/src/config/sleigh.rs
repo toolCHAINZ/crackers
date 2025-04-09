@@ -1,6 +1,6 @@
 use jingle::sleigh::context::SleighContextBuilder;
 #[cfg(feature = "pyo3")]
-use pyo3::{pyclass, pymethods, Py};
+use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;

@@ -4,7 +4,7 @@ use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::Instruction;
 use object::{File, Object, ObjectSymbol};
 #[cfg(feature = "pyo3")]
-use pyo3::{pyclass, pymethods, Py};
+use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
 
 use crate::config::error::CrackersConfigError;

@@ -1,5 +1,5 @@
 #[cfg(feature = "pyo3")]
-use pyo3::{pyclass, pymethods, Py};
+use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
 
 use crate::synthesis::builder::SynthesisSelectionStrategy;

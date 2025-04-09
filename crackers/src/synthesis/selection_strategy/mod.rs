@@ -1,4 +1,5 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use pyo3::pyclass;
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -49,9 +50,11 @@ pub enum AssignmentResult {
     Success(SlotAssignments),
     Failure(SelectionFailure),
 }
+
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct SelectionFailure {
-    pub indexes: Vec<usize>,
+    pub indices: Vec<usize>,
 }
 pub trait SelectionStrategy<'ctx> {
     fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
