@@ -42,6 +42,24 @@ impl TryFrom<CrackersConfig> for PythonCrackersConfig {
     }
 }
 
+impl TryFrom<PythonCrackersConfig> for CrackersConfig {
+    type Error = PyErr;
+
+    fn try_from(value: PythonCrackersConfig) -> Result<Self, Self::Error> {
+        Python::with_gil(|py|{
+
+        Ok(CrackersConfig{
+            meta: value.meta.borrow(py).clone(),
+            specification: value.spec.borrow(py).clone(),
+            library: value.library.borrow(py).clone(),
+            sleigh: value.sleigh.borrow(py).clone(),
+            synthesis: value.synthesis.borrow(py).clone(),
+            constraint: value.constraint.extract::<PythonConstraintConfig>(py)?.try_into().ok(),
+        })
+        })
+    }
+}
+
 #[pymethods]
 impl PythonCrackersConfig {
     #[classmethod]

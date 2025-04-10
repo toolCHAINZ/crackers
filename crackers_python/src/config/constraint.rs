@@ -6,6 +6,7 @@ use pyo3::{pyclass, Py, PyErr, Python};
 use std::collections::HashMap;
 
 #[pyclass(get_all, set_all)]
+#[derive(Clone)]
 pub struct PythonConstraintConfig {
     pub precondition: Py<PythonStateEqualityConstraint>,
     pub postcondition: Py<PythonStateEqualityConstraint>,
@@ -38,7 +39,20 @@ impl TryFrom<ConstraintConfig> for PythonConstraintConfig {
     }
 }
 
-#[derive(Default)]
+impl TryFrom<PythonConstraintConfig> for ConstraintConfig {
+    type Error = PyErr;
+
+    fn try_from(value: PythonConstraintConfig) -> Result<Self, Self::Error> {
+        Python::with_gil(|py| {
+            let precondition = Some(value.precondition.borrow(py).clone().try_into()?);
+            let postcondition = Some(value.postcondition.borrow(py).clone().try_into()?);
+            let pointer = Some(value.pointer.borrow(py).clone().try_into()?);
+            Ok(ConstraintConfig { precondition, postcondition, pointer })
+        })
+    }
+}
+
+#[derive(Default, Clone)]
 #[pyclass(get_all)]
 pub struct PythonStateEqualityConstraint {
     pub register: HashMap<String, i64>,
@@ -62,11 +76,45 @@ impl TryFrom<StateEqualityConstraint> for PythonStateEqualityConstraint {
     }
 }
 
+impl TryFrom<PythonStateEqualityConstraint> for StateEqualityConstraint {
+    type Error = PyErr;
+
+    fn try_from(value: PythonStateEqualityConstraint) -> Result<Self, Self::Error> {
+        let register = if value.register.is_empty() {
+            None
+        } else {
+            Some(value.register)
+        };
+        let pointer = if value.pointer.is_empty() {
+            None
+        } else {
+            Some(value.pointer)
+        };
+        Python::with_gil(|py| {
+            let memory = value.memory.map(|a| a.borrow(py).clone());
+            Ok(Self {
+                register,
+                pointer,
+                memory,
+            })
+        })
+    }
+}
+
 #[pyclass(get_all)]
 #[derive(Default)]
 pub struct PythonPointerRangeConstraints {
     pub read: Vec<Py<PointerRange>>,
     pub write: Vec<Py<PointerRange>>,
+}
+
+impl Clone for PythonPointerRangeConstraints {
+    fn clone(&self) -> Self {
+        Python::with_gil(|_| Self {
+            read: self.read.iter().map(|f| f.clone()).collect(),
+            write: self.write.iter().map(|f| f.clone()).collect(),
+        })
+    }
 }
 
 impl TryFrom<PointerRangeConstraints> for PythonPointerRangeConstraints {
@@ -89,6 +137,19 @@ impl TryFrom<PointerRangeConstraints> for PythonPointerRangeConstraints {
                 read: read?,
                 write: write?,
             })
+        })
+    }
+}
+
+impl TryFrom<PythonPointerRangeConstraints> for PointerRangeConstraints {
+    type Error = PyErr;
+    fn try_from(value: PythonPointerRangeConstraints) -> Result<Self, Self::Error> {
+        Python::with_gil(|py| {
+            let read: Vec<_> = value.read.iter().map(|f| f.borrow(py).clone()).collect();
+            let read = if read.len() > 0 { Some(read) } else { None };
+            let write: Vec<_> = value.write.iter().map(|f| f.borrow(py).clone()).collect();
+            let write = if write.len() > 0 { Some(write) } else { None };
+            Ok(Self { read, write })
         })
     }
 }
