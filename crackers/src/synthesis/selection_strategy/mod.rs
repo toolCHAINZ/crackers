@@ -1,4 +1,5 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
+#[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use z3::Context;
 
