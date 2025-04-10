@@ -7,7 +7,7 @@ use pyo3::{pyclass, pymethods, Py, PyResult, Python};
 
 #[pyclass]
 pub struct PythonSynthesisParams {
-    inner: SynthesisParams,
+    pub inner: SynthesisParams,
 }
 
 #[pymethods]

@@ -1,4 +1,5 @@
 use crate::config::constraint::PythonConstraintConfig;
+use crate::synthesis::PythonSynthesisParams;
 use crackers::config::meta::MetaConfig;
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
@@ -42,10 +43,10 @@ impl TryFrom<CrackersConfig> for PythonCrackersConfig {
     }
 }
 
-impl TryFrom<PythonCrackersConfig> for CrackersConfig {
+impl TryFrom<&PythonCrackersConfig> for CrackersConfig {
     type Error = PyErr;
 
-    fn try_from(value: PythonCrackersConfig) -> Result<Self, Self::Error> {
+    fn try_from(value: &PythonCrackersConfig) -> Result<Self, Self::Error> {
         Python::with_gil(|py|{
 
         Ok(CrackersConfig{
@@ -69,5 +70,11 @@ impl PythonCrackersConfig {
         let p: CrackersConfig =
             toml_edit::de::from_str(&s).map_err(|e| PyRuntimeError::new_err(format!("{}", e)))?;
         p.try_into()
+    }
+
+    pub fn resolve_config(&self) -> PyResult<PythonSynthesisParams> {
+        let cfg = CrackersConfig::try_from(self)?;
+        let syn = cfg.resolve()?;
+        Ok(PythonSynthesisParams{inner: syn})
     }
 }
