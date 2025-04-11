@@ -13,6 +13,8 @@ pyo3 = { version = "0.24", features = ["extension-module", "py-clone"] }
 crackers = {path = "../crackers", features = ["pyo3"]}
 jingle = {git = "https://github.com/toolCHAINZ/jingle.git", branch = "main", features = ["pyo3"]}
 toml_edit = "0.22.22"
+z3 = { git = "https://github.com/toolCHAINZ/z3.rs.git", branch = "patch-1" }
 
 [dev-dependencies]
 pyo3 = { version = "0.24", features = ["extension-module"] }
+z3 = { git = "https://github.com/toolCHAINZ/z3.rs.git", branch = "patch-1" }

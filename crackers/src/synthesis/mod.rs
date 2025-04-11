@@ -1,4 +1,4 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::Instruction;
 use jingle::JingleContext;
 use std::cmp::Ordering;
@@ -183,7 +183,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     "Theory returned SAT for {:?}!",
                                     response.assignment
                                 );
-                                dbg!("Terminating remaining workers");
                                 req_channels.clear();
                                 for x in &kill_senders {
                                     x.send(()).unwrap();
@@ -193,11 +192,11 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                 let jingle = JingleContext::new(self.z3, self.library.as_ref());
                                 let a: PcodeAssignment<'ctx> =
                                     t.build_assignment(&jingle, response.assignment)?;
-                                dbg!("Workers Terminated; building and checking model");
+                                event!(Level::DEBUG, "Workers Terminated; building and checking model");
                                 let solver = Solver::new(self.z3);
                                 let jingle = JingleContext::new(self.z3, self.library.as_ref());
                                 let model = a.check(&jingle, &solver)?;
-                                dbg!("Model built");
+                                event!(Level::DEBUG, "Model built");
                                 return Ok(DecisionResult::AssignmentFound(model));
                             }
                             Some(c) => {
