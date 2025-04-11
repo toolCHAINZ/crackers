@@ -15,7 +15,6 @@ pub struct PythonAssignmentModel {
 
 #[pymethods]
 impl PythonAssignmentModel {
-
     fn eval_bv(&self, bv: Py<PyAny>, model_completion: bool) -> PyResult<Py<PyAny>> {
         let bv = BV::try_from_python(bv)?;
         let val = self
@@ -48,14 +47,14 @@ impl PythonAssignmentModel {
     }
 
     pub fn inputs(&self) -> Option<VarNodeIterator> {
-        let state = self.inner.initial_state()?;
-        Some(VarNodeIterator::new(
-            state.clone(),
-            self.inner
-                .gadgets
-                .iter()
-                .flat_map(|g| g.get_inputs().into_iter()),
-        ))
+        let state = self.inner.initial_state()?.clone();
+        let gadgets = self
+            .inner
+            .gadgets
+            .clone()
+            .into_iter()
+            .flat_map(|g| g.get_inputs().into_iter());
+        Some(VarNodeIterator::new(state, gadgets))
     }
 
     pub fn outputs(&self) -> Option<VarNodeIterator> {
@@ -64,7 +63,8 @@ impl PythonAssignmentModel {
             state.clone(),
             self.inner
                 .gadgets
-                .iter()
+                .clone()
+                .into_iter()
                 .flat_map(|g| g.get_outputs().into_iter()),
         ))
     }

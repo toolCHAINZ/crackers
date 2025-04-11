@@ -21,27 +21,27 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
         &self.model
     }
 
-    pub fn initial_state(&'ctx self) -> Option<&'ctx State<'ctx>> {
+    pub fn initial_state<'a>(&'a self) -> Option<&'a State<'ctx>> {
         self.gadgets.first().map(|f| f.get_original_state())
     }
 
-    pub fn final_state(&'ctx self) -> Option<&'ctx State<'ctx>> {
+    pub fn final_state<'a>(&'a self) -> Option<&'a State<'ctx>> {
         self.gadgets.last().map(|f| f.get_final_state())
     }
 
-    pub fn read_original(&'ctx self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
+    pub fn read_original<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
         self.initial_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_output(&'ctx self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
+    pub fn read_output<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
         self.final_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_resolved(&'ctx self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
+    pub fn read_resolved<'a>(&'a self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
         self.final_state().and_then(|f| f.read_resolved(vn).ok())
     }
 
-    pub fn print_trace_of_reg(&'ctx self, reg: &str) {
+    pub fn print_trace_of_reg(&self, reg: &str) {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         for gadget in &self.gadgets {
             let val = gadget.get_original_state().read_varnode(r).unwrap();
@@ -51,7 +51,7 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
         }
     }
 
-    pub fn initial_reg(&'ctx self, reg: &str) -> Option<BV<'ctx>> {
+    pub fn initial_reg<'a>(&'a self, reg: &str) -> Option<BV<'ctx>> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         let val = self.gadgets[0]
             .get_original_state()

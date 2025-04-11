@@ -47,7 +47,11 @@ impl TryFrom<PythonConstraintConfig> for ConstraintConfig {
             let precondition = Some(value.precondition.borrow(py).clone().try_into()?);
             let postcondition = Some(value.postcondition.borrow(py).clone().try_into()?);
             let pointer = Some(value.pointer.borrow(py).clone().try_into()?);
-            Ok(ConstraintConfig { precondition, postcondition, pointer })
+            Ok(ConstraintConfig {
+                precondition,
+                postcondition,
+                pointer,
+            })
         })
     }
 }
@@ -111,8 +115,8 @@ pub struct PythonPointerRangeConstraints {
 impl Clone for PythonPointerRangeConstraints {
     fn clone(&self) -> Self {
         Python::with_gil(|_| Self {
-            read: self.read.iter().map(|f| f.clone()).collect(),
-            write: self.write.iter().map(|f| f.clone()).collect(),
+            read: self.read.to_vec(),
+            write: self.write.to_vec(),
         })
     }
 }
@@ -145,10 +149,10 @@ impl TryFrom<PythonPointerRangeConstraints> for PointerRangeConstraints {
     type Error = PyErr;
     fn try_from(value: PythonPointerRangeConstraints) -> Result<Self, Self::Error> {
         Python::with_gil(|py| {
-            let read: Vec<_> = value.read.iter().map(|f| f.borrow(py).clone()).collect();
-            let read = if read.len() > 0 { Some(read) } else { None };
-            let write: Vec<_> = value.write.iter().map(|f| f.borrow(py).clone()).collect();
-            let write = if write.len() > 0 { Some(write) } else { None };
+            let read: Vec<_> = value.read.iter().map(|f| *f.borrow(py)).collect();
+            let read = if !read.is_empty() { Some(read) } else { None };
+            let write: Vec<_> = value.write.iter().map(|f| *f.borrow(py)).collect();
+            let write = if !write.is_empty() { Some(write) } else { None };
             Ok(Self { read, write })
         })
     }

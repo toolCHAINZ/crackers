@@ -2,7 +2,7 @@ use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::decision::PythonDecisionResult;
 use crackers::synthesis::builder::SynthesisParams;
 use crackers::synthesis::DecisionResult;
-use jingle::python::bitvec::get_python_z3;
+use jingle::python::z3::get_python_z3;
 use pyo3::{pyclass, pymethods, Py, PyResult, Python};
 
 #[pyclass]
