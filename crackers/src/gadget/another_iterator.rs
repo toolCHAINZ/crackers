@@ -1,12 +1,12 @@
+use jingle::JingleContext;
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use jingle::JingleContext;
 use tracing::trace;
-use z3::ast::Ast;
 use z3::Solver;
+use z3::ast::Ast;
 
-use crate::gadget::signature::GadgetSignature;
 use crate::gadget::Gadget;
+use crate::gadget::signature::GadgetSignature;
 
 pub struct TraceCandidateIterator<'ctx, 'a, T>
 where
@@ -54,8 +54,7 @@ where
                 .map(|i| {
                     trace!(
                         "Checking {} signature vs gadget {}",
-                        i.instr.disassembly,
-                        gadget
+                        i.instr.disassembly, gadget
                     );
 
                     gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i))

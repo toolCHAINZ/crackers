@@ -1,8 +1,8 @@
 use jingle::JingleError;
 #[cfg(feature = "pyo3")]
-use pyo3::exceptions::PyRuntimeError;
-#[cfg(feature = "pyo3")]
 use pyo3::PyErr;
+#[cfg(feature = "pyo3")]
+use pyo3::exceptions::PyRuntimeError;
 use thiserror::Error;
 
 use crate::config::error::CrackersConfigError;

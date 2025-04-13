@@ -1,8 +1,8 @@
 use crate::error::CrackersError;
-use jingle::sleigh::context::image::{ImageProvider, ImageSection, ImageSectionIterator, Perms};
+use jingle::JingleError::Sleigh;
 use jingle::sleigh::JingleSleighError::ImageLoadError;
 use jingle::sleigh::VarNode;
-use jingle::JingleError::Sleigh;
+use jingle::sleigh::context::image::{ImageProvider, ImageSection, ImageSectionIterator, Perms};
 use object::elf::{PF_R, PF_W, PF_X};
 use object::macho::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE};
 use object::pe::{IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ, IMAGE_SCN_MEM_WRITE};

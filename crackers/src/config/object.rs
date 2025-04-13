@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::Path;
 
-use jingle::sleigh::context::image::gimli::{map_gimli_architecture, OwnedFile};
+use jingle::sleigh::context::image::gimli::{OwnedFile, map_gimli_architecture};
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use object::{File, Object};
 

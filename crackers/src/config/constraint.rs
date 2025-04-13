@@ -1,17 +1,17 @@
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
-use jingle::JingleContext;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
-use tracing::{event, Level};
-use z3::ast::{Ast, Bool, BV};
+use tracing::{Level, event};
+use z3::ast::{Ast, BV, Bool};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
@@ -129,10 +129,10 @@ pub struct PointerRange {
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
 ) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
-       + Send
-       + Sync
-       + Clone
-       + 'static {
++ Send
++ Sync
++ Clone
++ 'static {
     move |jingle, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(jingle.z3, m.value as u64, data.get_size()));
@@ -146,10 +146,10 @@ pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
 ) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
-       + 'static
-       + Send
-       + Sync
-       + Clone {
++ 'static
++ Send
++ Sync
++ Clone {
     move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(jingle.z3, value, data.get_size()));
@@ -209,8 +209,8 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
     &ResolvedVarnode<'a>,
     &State<'a>,
 ) -> Result<Option<Bool<'a>>, CrackersError>
-       + 'ctx
-       + Clone {
++ 'ctx
++ Clone {
     move |jingle, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
@@ -245,10 +245,10 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
 pub fn gen_pointer_range_transition_invariant(
     m: PointerRangeConstraints,
 ) -> impl for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
-       + Send
-       + Sync
-       + Clone
-       + 'static {
++ Send
++ Sync
++ Clone
++ 'static {
     move |jingle, block| {
         let mut bools = vec![];
         if let Some(r) = &m.read {

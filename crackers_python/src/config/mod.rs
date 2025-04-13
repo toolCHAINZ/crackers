@@ -1,14 +1,14 @@
 use crate::config::constraint::PythonConstraintConfig;
 use crate::synthesis::PythonSynthesisParams;
+use crackers::config::CrackersConfig;
 use crackers::config::meta::MetaConfig;
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
 use crackers::config::synthesis::SynthesisConfig;
-use crackers::config::CrackersConfig;
 use crackers::gadget::library::builder::GadgetLibraryConfig;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::types::PyType;
-use pyo3::{pyclass, pymethods, Bound, Py, PyErr, PyResult, Python};
+use pyo3::{Bound, Py, PyErr, PyResult, Python, pyclass, pymethods};
 
 mod constraint;
 

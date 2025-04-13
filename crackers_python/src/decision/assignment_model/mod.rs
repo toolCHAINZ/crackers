@@ -11,7 +11,7 @@ use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
 use jingle::sleigh::{SpaceType, VarNode, VarNodeDisplay};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult};
+use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
 use z3::ast::BV;
 
 #[pyclass(unsendable)]
