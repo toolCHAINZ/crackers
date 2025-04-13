@@ -1,5 +1,5 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::JingleContext;
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use std::sync::Arc;
 use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};

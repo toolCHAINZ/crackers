@@ -1,13 +1,13 @@
 use std::fmt::{Display, Formatter};
 
-use z3::ast::Bool;
 use z3::Model;
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
-use crate::synthesis::Decision;
 
 mod display;
 

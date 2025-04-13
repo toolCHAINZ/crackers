@@ -2,7 +2,7 @@ use crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
-use pyo3::{pyclass, Py, PyErr, Python};
+use pyo3::{Py, PyErr, Python, pyclass};
 use std::collections::HashMap;
 
 #[pyclass(get_all, set_all)]

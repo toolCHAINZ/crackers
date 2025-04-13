@@ -1,6 +1,6 @@
+use jingle::JingleContext;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SpaceInfo};
-use jingle::JingleContext;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};

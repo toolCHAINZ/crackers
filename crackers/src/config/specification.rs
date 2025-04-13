@@ -1,7 +1,7 @@
 use std::fs;
 
-use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::Instruction;
+use jingle::sleigh::context::loaded::LoadedSleighContext;
 use object::{File, Object, ObjectSymbol};
 #[cfg(feature = "pyo3")]
 use pyo3::{pyclass, pymethods};

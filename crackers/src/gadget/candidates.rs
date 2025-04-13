@@ -1,5 +1,5 @@
-use jingle::modeling::ModeledBlock;
 use jingle::JingleContext;
+use jingle::modeling::ModeledBlock;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::UnsimulatedOperation;

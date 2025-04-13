@@ -1,6 +1,6 @@
 use crate::decision::assignment_model::PythonAssignmentModel;
 use crackers::synthesis::selection_strategy::SelectionFailure;
-use pyo3::{pyclass, Py};
+use pyo3::{Py, pyclass};
 
 pub mod assignment_model;
 

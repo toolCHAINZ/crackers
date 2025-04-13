@@ -2,14 +2,14 @@ use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
 use jingle::{JingleContext, JingleError};
+use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand::SeedableRng;
-use tracing::{event, Level};
+use tracing::{Level, event};
 
+use crate::gadget::Gadget;
 use crate::gadget::another_iterator::TraceCandidateIterator;
 use crate::gadget::library::builder::GadgetLibraryConfig;
-use crate::gadget::Gadget;
 
 pub mod builder;
 pub mod image;
@@ -119,8 +119,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::gadget::library::builder::GadgetLibraryConfig;
     use crate::gadget::library::GadgetLibrary;
+    use crate::gadget::library::builder::GadgetLibraryConfig;
     use jingle::sleigh::context::SleighContextBuilder;
     use object::File;
 
