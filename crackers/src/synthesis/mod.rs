@@ -1,15 +1,16 @@
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext};
 use jingle::sleigh::Instruction;
+use jingle::JingleContext;
 use std::cmp::Ordering;
 use std::sync::Arc;
-use tracing::{Level, event, instrument};
+use tracing::{event, instrument, Level};
 use z3::{Config, Context, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
+use crate::synthesis::assignment_model::builder::{ArchInfo, AssignmentModelBuilder};
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
@@ -18,11 +19,12 @@ use crate::synthesis::builder::{
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
+use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
 pub mod builder;
@@ -45,8 +47,8 @@ impl PartialOrd for Decision {
 }
 
 #[derive(Debug)]
-pub enum DecisionResult<'ctx, T: ModelingContext<'ctx>> {
-    AssignmentFound(AssignmentModel<'ctx, T>),
+pub enum DecisionResult {
+    AssignmentFound(AssignmentModelBuilder),
     Unsat(SelectionFailure),
 }
 
@@ -107,11 +109,43 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         })
     }
 
+    fn make_model_builder(&self, slot_assignments: SlotAssignments) -> AssignmentModelBuilder {
+        AssignmentModelBuilder {
+            templates: self.instructions.clone(),
+            gadgets: slot_assignments.interpret_from_library(&self.candidates),
+            preconditions: self.preconditions.clone(),
+            postconditions: self.postconditions.clone(),
+            pointer_invariants: self.pointer_invariants.clone(),
+            arch_info: ArchInfo::from(self.library.as_ref())
+        }
+    }
+
+    fn make_pcode_theory_builder(&self) -> PcodeTheoryBuilder {
+        PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
+            .with_pointer_invariants(&self.pointer_invariants)
+            .with_preconditions(&self.preconditions)
+            .with_postconditions(&self.postconditions)
+            .with_max_candidates(self.candidates_per_slot)
+            .with_templates(self.instructions.clone().into_iter())
+    }
+
+    fn build_model(
+        &self,
+        assignments: SlotAssignments,
+    ) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
+        let t = self.make_pcode_theory_builder();
+        let jingle = JingleContext::new(self.z3, self.library.as_ref());
+        let pcode_assignment = t.build_assignment(&jingle, assignments)?;
+        let solver = Solver::new(self.z3);
+        let model = pcode_assignment.check(&jingle, &solver)?;
+        Ok(model)
+    }
     #[instrument(skip_all)]
-    pub fn decide(&mut self) -> Result<DecisionResult<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+    pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
         let mut req_channels = vec![];
         let mut kill_senders = vec![];
-        let theory_builder = PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
+        let library = self.library.clone();
+        let theory_builder = PcodeTheoryBuilder::new(self.candidates.clone(), &library)
             .with_pointer_invariants(&self.pointer_invariants)
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
@@ -188,19 +222,9 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                                     x.send(()).unwrap();
                                 }
                                 kill_senders.clear();
-                                let t = theory_builder.clone();
-                                let jingle = JingleContext::new(self.z3, self.library.as_ref());
-                                let a: PcodeAssignment<'ctx> =
-                                    t.build_assignment(&jingle, response.assignment)?;
-                                event!(
-                                    Level::DEBUG,
-                                    "Workers Terminated; building and checking model"
-                                );
-                                let solver = Solver::new(self.z3);
-                                let jingle = JingleContext::new(self.z3, self.library.as_ref());
-                                let model = a.check(&jingle, &solver)?;
-                                event!(Level::DEBUG, "Model built");
-                                return Ok(DecisionResult::AssignmentFound(model));
+                                return Ok(DecisionResult::AssignmentFound(
+                                    self.make_model_builder(response.assignment),
+                                ));
                             }
                             Some(c) => {
                                 event!(

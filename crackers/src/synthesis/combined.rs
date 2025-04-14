@@ -1,6 +1,6 @@
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::Instruction;
-use tracing::{Level, event};
+use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -14,7 +14,7 @@ pub struct CombinedAssignmentSynthesis<'a> {
 }
 
 impl<'a> CombinedAssignmentSynthesis<'a> {
-    pub fn decide(&mut self) -> Result<DecisionResult<'a, ModeledBlock<'a>>, CrackersError> {
+    pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
         let mut ordering: Vec<Vec<Instruction>> = self
             .base_config
             .instructions
@@ -29,7 +29,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
         // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
         ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
         let iter = ordering.into_iter();
-        let mut last: Option<DecisionResult<'a, ModeledBlock<'a>>> = None;
+        let mut last: Option<_> = None;
         for instructions in iter {
             // todo: filter for instruction combinations that have already been ruled out?
             // if instructions.iter().any(|i| blacklist.contains(i)) {

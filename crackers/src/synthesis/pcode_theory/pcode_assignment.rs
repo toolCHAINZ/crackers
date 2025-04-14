@@ -1,5 +1,5 @@
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
+use jingle::JingleContext;
 use std::sync::Arc;
 use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
@@ -69,7 +69,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
                 let model = solver
                     .get_model()
                     .ok_or(CrackersError::ModelGenerationError)?;
-                Ok(AssignmentModel::generate(model, self.eval_trace.to_vec()))
+                Ok(AssignmentModel::new(model, self.eval_trace.to_vec()))
             }
         }
     }
