@@ -72,15 +72,11 @@ impl PythonAssignmentModel {
     }
 
     pub fn initial_state(&self) -> Option<PythonState> {
-        self.inner.gadgets.first().map(|f| PythonState {
-            state: f.get_original_state().clone(),
-        })
+        self.inner.gadgets.first().map(|f| PythonState::try_from(f.get_original_state().clone()).ok())?
     }
 
     pub fn final_state(&self) -> Option<PythonState> {
-        self.inner.gadgets.last().map(|f| PythonState {
-            state: f.get_final_state().clone(),
-        })
+        self.inner.gadgets.last().map(|f| PythonState::try_from(f.get_final_state().clone()).ok())?
     }
 
     pub fn gadgets(&self) -> Vec<PythonModeledBlock> {
@@ -125,19 +121,21 @@ impl PythonAssignmentModel {
     }
 
     pub fn input_summary(&self, model_completion: bool) -> Option<ModelVarNodeIterator> {
-        let initial = self.initial_state()?.state;
+        let initial = self.initial_state()?;
+        let initial = initial.state();
         let iter: Vec<_> = self
             .inputs()?
-            .flat_map(|p| self.eval_vn(&initial, p, model_completion))
+            .flat_map(|p| self.eval_vn(initial, p, model_completion))
             .collect();
         Some(ModelVarNodeIterator::new(iter.into_iter()))
     }
 
     pub fn output_summary(&self, model_completion: bool) -> Option<ModelVarNodeIterator> {
-        let initial = self.final_state()?.state;
+        let initial = self.final_state()?;
+        let initial = initial.state();
         let iter: Vec<_> = self
             .outputs()?
-            .flat_map(|p| self.eval_vn(&initial, p, model_completion))
+            .flat_map(|p| self.eval_vn(initial, p, model_completion))
             .collect();
         Some(ModelVarNodeIterator::new(iter.into_iter()))
     }
