@@ -1,8 +1,8 @@
 use jingle::JingleError;
 #[cfg(feature = "pyo3")]
-use pyo3::PyErr;
-#[cfg(feature = "pyo3")]
 use pyo3::exceptions::PyRuntimeError;
+#[cfg(feature = "pyo3")]
+use pyo3::PyErr;
 use thiserror::Error;
 
 use crate::config::error::CrackersConfigError;
@@ -37,6 +37,9 @@ pub enum CrackersError {
     LibraryConfig(#[from] GadgetLibraryConfigBuilderError),
     #[error("Invalid synthesis params")]
     SynthesisParams(#[from] SynthesisParamsBuilderError),
+    #[cfg(feature = "pyo3")]
+    #[error("Python error: {0}")]
+    PythonError(#[from] PyErr),
 }
 
 #[cfg(feature = "pyo3")]
