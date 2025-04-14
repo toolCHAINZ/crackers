@@ -4,10 +4,9 @@ use pyo3::pyclass;
 
 pub mod assignment_model;
 
-#[pyclass(unsendable)]
+#[pyclass]
 pub enum PythonDecisionResult {
     AssignmentFound(PythonAssignmentModel),
     Unsat(SelectionFailure),
 }
 
-unsafe impl Send for PythonDecisionResult {}
