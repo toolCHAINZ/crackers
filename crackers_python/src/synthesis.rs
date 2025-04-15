@@ -1,7 +1,7 @@
 use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::decision::PythonDecisionResult;
 use crackers::error::CrackersError;
-use crackers::synthesis::builder::{StateConstraintGenerator, SynthesisParams};
+use crackers::synthesis::builder::SynthesisParams;
 use crackers::synthesis::DecisionResult;
 use jingle::modeling::State;
 use jingle::python::state::PythonState;
@@ -25,8 +25,8 @@ impl PythonSynthesisParams {
             py.allow_threads(|| {
                 let z3 = get_python_z3()?;
                 let res = match self.inner.combine_instructions {
-                    false => self.inner.build_single(z3)?.decide(),
-                    true => self.inner.build_combined(z3)?.decide(),
+                    false => self.inner.build_single(z3)?.decide_single_threaded(),
+                    true => self.inner.build_combined(z3)?.decide_single_threaded(),
                 };
                 res
             })
@@ -43,18 +43,16 @@ impl PythonSynthesisParams {
     }
 
     pub fn add_precondition(&mut self, obj: Py<PyAny>) {
-        let closure: Arc<StateConstraintGenerator> = Arc::new(move |jingle, s, a| {
-            let state = PythonState::try_from(s.clone())?;
+        let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |_, s, a| {
+            let state = PythonState::from(s.clone());
             Python::with_gil(|py| {
-                println!("Hello!");
-                let res = dbg!(obj.call(py, (state, a), None))?;
-                println!("Called");
-                let bool = Bool::try_from_python(res, jingle.z3)
+                let res = obj.call(py, (state, a), None)?;
+                let bool = Bool::try_from_python(res)
                     .map_err(|e| CrackersError::PythonError(e))?;
                 Ok(bool)
             })
         });
-        self.inner.preconditions.push(closure);
+        self.inner.preconditions.push(unsafe{std::mem::transmute(closure)});
     }
 }
 

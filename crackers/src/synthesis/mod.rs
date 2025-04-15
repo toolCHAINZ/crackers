@@ -17,13 +17,14 @@ use crate::synthesis::builder::{
     TransitionConstraintGenerator,
 };
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
+use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
-use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
+use crate::synthesis::selection_strategy::{AssignmentResult, OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -139,6 +140,29 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         let solver = Solver::new(self.z3);
         let model = pcode_assignment.check(&jingle, &solver)?;
         Ok(model)
+    }
+
+    pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
+        let theory_builder = self.make_pcode_theory_builder();
+        let theory = theory_builder.build(self.z3)?;
+        loop{
+            let assignment = self.outer_problem.get_assignments()?;
+            match assignment{
+                Success(a) => {
+                    let theory_result = theory.check_assignment(&a)?;
+                    match theory_result{
+                        None => {
+                            // success
+                            return Ok(DecisionResult::AssignmentFound(self.make_model_builder(a)))
+                        }
+                        Some(conflict) => {
+                            self.outer_problem.add_theory_clauses(&conflict);
+                        }
+                    }
+                }
+                Failure(d) => return Ok(DecisionResult::Unsat(d))
+            }
+        }
     }
     #[instrument(skip_all)]
     pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {

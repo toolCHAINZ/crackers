@@ -8,7 +8,6 @@ use jingle::python::resolved_varnode::PythonResolvedVarNode;
 use jingle::python::state::PythonState;
 use jingle::python::varode_iterator::VarNodeIterator;
 use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
-use jingle::python::z3::get_python_z3;
 use jingle::sleigh::{SpaceType, VarNode, VarNodeDisplay};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
@@ -62,7 +61,7 @@ impl PythonAssignmentModel {
 #[pymethods]
 impl PythonAssignmentModel {
     fn eval_bv(&self, bv: Py<PyAny>, model_completion: bool) -> PyResult<Py<PyAny>> {
-        let bv = BV::try_from_python(bv, get_python_z3()?)?;
+        let bv = BV::try_from_python(bv)?;
         let val = self
             .inner
             .model()
