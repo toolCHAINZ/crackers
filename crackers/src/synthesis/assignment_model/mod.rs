@@ -1,3 +1,5 @@
+pub mod builder;
+
 use std::fmt::{Display, Formatter};
 
 use jingle::modeling::{ModelingContext, State};
@@ -13,7 +15,7 @@ pub struct AssignmentModel<'ctx, T: ModelingContext<'ctx>> {
 }
 
 impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
-    pub fn generate(model: Model<'ctx>, gadgets: Vec<T>) -> Self {
+    pub fn new(model: Model<'ctx>, gadgets: Vec<T>) -> Self {
         Self { model, gadgets }
     }
 

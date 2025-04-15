@@ -129,6 +129,8 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     match result {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
+                let z3 = Context::new(&Config::new());
+                let a = a.build(&z3)?;
                 event!(Level::INFO, "Synthesis successful :)");
                 event!(Level::INFO, "{}", a)
             }

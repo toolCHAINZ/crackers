@@ -37,6 +37,9 @@ pub enum CrackersError {
     LibraryConfig(#[from] GadgetLibraryConfigBuilderError),
     #[error("Invalid synthesis params")]
     SynthesisParams(#[from] SynthesisParamsBuilderError),
+    #[cfg(feature = "pyo3")]
+    #[error("Python error: {0}")]
+    PythonError(#[from] PyErr),
 }
 
 #[cfg(feature = "pyo3")]

@@ -73,7 +73,6 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         let final_state = self.j.fresh_state();
         self.solver
             .assert(&assert_concat(self.j.z3, &self.templates)?);
-
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         for (index, x) in gadgets.windows(2).enumerate() {
             let branch = Bool::fresh_const(self.j.z3, "b");

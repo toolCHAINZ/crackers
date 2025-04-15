@@ -5,6 +5,8 @@ use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
+use crate::gadget::Gadget;
+use crate::gadget::candidates::Candidates;
 use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
@@ -67,6 +69,15 @@ impl SlotAssignments {
             assignment: self,
             conflict: conflicts,
         }
+    }
+
+    pub fn interpret_from_library(&self, candidates: &Candidates) -> Vec<Gadget> {
+        self.choices()
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(index, selection)| candidates.candidates[index][selection].clone())
+            .collect()
     }
 }
 

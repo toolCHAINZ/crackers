@@ -69,7 +69,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
                 let model = solver
                     .get_model()
                     .ok_or(CrackersError::ModelGenerationError)?;
-                Ok(AssignmentModel::generate(model, self.eval_trace.to_vec()))
+                Ok(AssignmentModel::new(model, self.eval_trace.to_vec()))
             }
         }
     }
