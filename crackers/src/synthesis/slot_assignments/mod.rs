@@ -1,15 +1,15 @@
 use std::fmt::{Display, Formatter};
 
-use z3::ast::Bool;
 use z3::Model;
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
-use crate::gadget::candidates::Candidates;
 use crate::gadget::Gadget;
+use crate::gadget::candidates::Candidates;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
-use crate::synthesis::Decision;
 
 mod display;
 
@@ -72,7 +72,8 @@ impl SlotAssignments {
     }
 
     pub fn interpret_from_library(&self, candidates: &Candidates) -> Vec<Gadget> {
-        self.choices().into_iter()
+        self.choices()
+            .into_iter()
             .copied()
             .enumerate()
             .map(|(index, selection)| candidates.candidates[index][selection].clone())

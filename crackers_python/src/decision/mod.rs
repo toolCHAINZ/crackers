@@ -9,4 +9,3 @@ pub enum PythonDecisionResult {
     AssignmentFound(PythonAssignmentModel),
     Unsat(SelectionFailure),
 }
-

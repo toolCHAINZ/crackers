@@ -1,4 +1,3 @@
-use jingle::modeling::ModeledBlock;
 use jingle::sleigh::Instruction;
 use tracing::{event, Level};
 use z3::Context;
@@ -65,7 +64,6 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
         // Only an empty specification can possibly result in this being `None`
         last.ok_or(CrackersError::EmptySpecification)
     }
-
 
     // gross but I don't feel like rewriting this right now
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {

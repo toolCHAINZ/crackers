@@ -5,22 +5,22 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use jingle::JingleContext;
 use toml_edit::ser::to_string_pretty;
-use tracing::{event, Level};
+use tracing::{Level, event};
 use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
-use crackers::bench::{bench, BenchCommand};
+use crackers::bench::{BenchCommand, bench};
+use crackers::config::CrackersConfig;
 use crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
-use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
 #[derive(Parser, Debug)]
@@ -131,7 +131,7 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
                 let z3 = Context::new(&Config::new());
-                let a  = a.build(&z3)?;
+                let a = a.build(&z3)?;
                 event!(Level::INFO, "Synthesis successful :)");
                 event!(Level::INFO, "{}", a)
             }

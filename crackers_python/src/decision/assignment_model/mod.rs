@@ -12,13 +12,13 @@ use jingle::sleigh::{SpaceType, VarNode, VarNodeDisplay};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass, pymethods, Py, PyAny, PyResult};
-use std::sync::Arc;
+use std::rc::Rc;
 use z3::ast::BV;
 
 #[pyclass(unsendable)]
 #[derive(Clone)]
 pub struct PythonAssignmentModel {
-    pub inner: Arc<AssignmentModel<'static, ModeledBlock<'static>>>,
+    pub inner: Rc<AssignmentModel<'static, ModeledBlock<'static>>>,
 }
 
 impl PythonAssignmentModel {
@@ -71,11 +71,17 @@ impl PythonAssignmentModel {
     }
 
     pub fn initial_state(&self) -> Option<PythonState> {
-        self.inner.gadgets.first().map(|f| PythonState::try_from(f.get_original_state().clone()).ok())?
+        self.inner
+            .gadgets
+            .first()
+            .map(|f| PythonState::from(f.get_original_state().clone()))
     }
 
     pub fn final_state(&self) -> Option<PythonState> {
-        self.inner.gadgets.last().map(|f| PythonState::try_from(f.get_final_state().clone()).ok())?
+        self.inner
+            .gadgets
+            .last()
+            .map(|f| PythonState::from(f.get_final_state().clone()))
     }
 
     pub fn gadgets(&self) -> Vec<PythonModeledBlock> {

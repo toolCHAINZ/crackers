@@ -1,12 +1,12 @@
 use crate::error::CrackersError;
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::Gadget;
+use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
-use jingle::JingleContext;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use z3::{Context, Solver};
@@ -90,10 +90,10 @@ impl AssignmentModelBuilder {
             .templates
             .iter()
             .cloned()
-            .map(|i| ModeledInstruction::new(i, &jingle).map_err(|f|CrackersError::from(f)))
+            .map(|i| ModeledInstruction::new(i, &jingle).map_err(|f| CrackersError::from(f)))
             .collect();
         let modeled_spec = modeled_spec?;
-        let modeled_gadgets: Result<_,_> = self
+        let modeled_gadgets: Result<_, _> = self
             .gadgets
             .iter()
             .cloned()
