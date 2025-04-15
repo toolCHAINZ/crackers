@@ -31,4 +31,4 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{matrix.rust}}
-      - run: cargo build --all-features
+      - run: cargo build --all-features --manifest-path crackers/Cargo.toml
