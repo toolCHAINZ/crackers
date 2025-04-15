@@ -1,5 +1,5 @@
 use jingle::sleigh::Instruction;
-use tracing::{event, Level};
+use tracing::{Level, event};
 use z3::Context;
 
 use crate::error::CrackersError;
