@@ -73,7 +73,7 @@ impl SlotAssignments {
 
     pub fn interpret_from_library(&self, candidates: &Candidates) -> Vec<Gadget> {
         self.choices()
-            .into_iter()
+            .iter()
             .copied()
             .enumerate()
             .map(|(index, selection)| candidates.candidates[index][selection].clone())

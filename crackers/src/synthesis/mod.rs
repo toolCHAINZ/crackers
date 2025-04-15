@@ -1,30 +1,27 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use jingle::sleigh::Instruction;
 use jingle::JingleContext;
+use jingle::modeling::ModeledInstruction;
+use jingle::sleigh::Instruction;
 use std::cmp::Ordering;
 use std::sync::Arc;
-use tracing::{event, instrument, Level};
-use z3::{Config, Context, Solver};
+use tracing::{Level, event, instrument};
+use z3::{Config, Context};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
 use crate::synthesis::assignment_model::builder::{ArchInfo, AssignmentModelBuilder};
-use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
     TransitionConstraintGenerator,
 };
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
-use crate::synthesis::selection_strategy::{
-    OuterProblem, SelectionFailure, SelectionStrategy,
-};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
@@ -129,7 +126,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_max_candidates(self.candidates_per_slot)
             .with_templates(self.instructions.clone().into_iter())
     }
-
 
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
         let theory_builder = self.make_pcode_theory_builder();

@@ -3,7 +3,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use jingle::JingleContext;
 use toml_edit::ser::to_string_pretty;
 use tracing::{Level, event};
 use tracing_indicatif::IndicatifLayer;
