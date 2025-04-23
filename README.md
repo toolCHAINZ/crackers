@@ -1,4 +1,4 @@
-# `crackers`: A Decision Procedure for Code Reuse Attack Synthesis
+# `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
 code-reuse attacks (e.g. ROP). `crackers` takes as input a specification computation, usually
