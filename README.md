@@ -137,3 +137,23 @@ The second type is used for asserting read/write invariants. These functions tak
 the bitvector corresponding to the read/write address, as well as the state the read/write is being performed on. 
 Any time a chain reads or writes from memory, the procedure will automatically call these functions and assert the returned
 booleans. This can allow for setting safe/unsafe ranges of memory or even the register space.
+
+# Research Paper
+
+`crackers` was developed in support of our research paper _Synthesis of Code-Reuse Attacks from `p-code` Programs_.
+You can find the author accepted manuscript [here](https://ora.ox.ac.uk/objects/uuid:906d32ca-407c-4cab-beab-b90200f81d65).
+This work has been accepted to Usenix Security 2025.
+
+You can cite this work with the following BibTex:
+
+```bibtex
+@inproceedings {denhoed2025synthesis,
+author = {Mark DenHoed and Thomas Melham},
+title = {Synthesis of Code-Reuse Attacks from p-code Programs},
+booktitle = {34th USENIX Security Symposium (USENIX Security 25)},
+year = {2025},
+address = {Seattle, WA},
+publisher = {USENIX Association},
+month = aug
+}
+```
