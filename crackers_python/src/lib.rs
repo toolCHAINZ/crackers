@@ -23,6 +23,7 @@ use ::jingle::python::sleigh_context::LoadedSleighContextWrapper;
 use ::jingle::python::state::PythonState;
 use ::jingle::sleigh::{IndirectVarNode, PcodeOperation, VarNode};
 use pyo3::prelude::*;
+use crate::decision::assignment_model::PythonAssignmentModel;
 
 #[pymodule]
 #[pyo3(submodule)]
@@ -47,6 +48,7 @@ fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PythonCrackersConfig>()?;
     m.add_class::<PythonDecisionResult>()?;
     m.add_class::<PythonSynthesisParams>()?;
+    m.add_class::<PythonAssignmentModel>()?;
     m.add_class::<MetaConfig>()?;
     m.add_class::<SpecificationConfig>()?;
     m.add_class::<SleighConfig>()?;
