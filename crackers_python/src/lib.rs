@@ -4,6 +4,7 @@ mod synthesis;
 
 use crate::config::PythonCrackersConfig;
 use crate::decision::PythonDecisionResult;
+use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::synthesis::PythonSynthesisParams;
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
@@ -23,7 +24,6 @@ use ::jingle::python::sleigh_context::LoadedSleighContextWrapper;
 use ::jingle::python::state::PythonState;
 use ::jingle::sleigh::{IndirectVarNode, PcodeOperation, VarNode};
 use pyo3::prelude::*;
-use crate::decision::assignment_model::PythonAssignmentModel;
 
 #[pymodule]
 #[pyo3(submodule)]
