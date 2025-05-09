@@ -15,7 +15,7 @@ use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
 use std::rc::Rc;
 use z3::ast::BV;
 
-#[pyclass(unsendable)]
+#[pyclass(unsendable, name = "AssignmentModel")]
 #[derive(Clone)]
 pub struct PythonAssignmentModel {
     pub inner: Rc<AssignmentModel<'static, ModeledBlock<'static>>>,

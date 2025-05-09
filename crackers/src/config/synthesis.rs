@@ -41,44 +41,5 @@ impl SynthesisConfig {
             combine_instructions,
         }
     }
-
-    #[getter]
-    fn strategy(&self) -> SynthesisSelectionStrategy {
-        self.strategy
-    }
-
-    #[setter]
-    fn set_strategy(&mut self, strategy: SynthesisSelectionStrategy) {
-        self.strategy = strategy;
-    }
-
-    #[getter]
-    fn max_candidates_per_slot(&self) -> usize {
-        self.max_candidates_per_slot
-    }
-
-    #[setter]
-    fn set_max_candidates_per_slot(&mut self, max_candidates_per_slot: usize) {
-        self.max_candidates_per_slot = max_candidates_per_slot
-    }
-
-    #[getter]
-    fn parallel(&self) -> usize {
-        self.parallel
-    }
-
-    #[setter]
-    fn set_parallel(&mut self, parallel: usize) {
-        self.parallel = parallel
-    }
-
-    #[getter]
-    fn combine_instructions(&self) -> bool {
-        self.combine_instructions
-    }
-
-    #[setter]
-    fn set_combine_instructions(&mut self, combine_instructions: bool) {
-        self.combine_instructions = combine_instructions
-    }
+    
 }

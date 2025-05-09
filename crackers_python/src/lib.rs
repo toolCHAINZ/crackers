@@ -21,6 +21,8 @@ use ::jingle::python::modeled_instruction::PythonModeledInstruction;
 use ::jingle::python::sleigh_context::LoadedSleighContextWrapper;
 use ::jingle::python::state::PythonState;
 use ::jingle::sleigh::{IndirectVarNode, PcodeOperation, VarNode};
+use crate::decision::PythonDecisionResult;
+use crate::synthesis::PythonSynthesisParams;
 
 #[pymodule]
 #[pyo3(submodule)]
@@ -43,6 +45,8 @@ fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     jingle(&j)?;
     m.add_submodule(&j)?;
     m.add_class::<PythonCrackersConfig>()?;
+    m.add_class::<PythonDecisionResult>()?;
+    m.add_class::<PythonSynthesisParams>()?;
     m.add_class::<MetaConfig>()?;
     m.add_class::<SpecificationConfig>()?;
     m.add_class::<SleighConfig>()?;
