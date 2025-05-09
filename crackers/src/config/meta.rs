@@ -4,9 +4,9 @@ use rand::random;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
-#[cfg_attr(feature = "pyo3", pyclass)]
+#[cfg_attr(feature = "pyo3", pyclass(eq, eq_int))]
 pub enum CrackersLogLevel {
     Trace,
     Debug,
