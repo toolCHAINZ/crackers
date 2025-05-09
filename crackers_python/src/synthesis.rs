@@ -16,7 +16,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use z3::ast::Bool;
 
-#[pyclass]
+#[pyclass(name = "SynthesisParams")]
 #[derive(Clone)]
 pub struct PythonSynthesisParams {
     pub inner: SynthesisParams,

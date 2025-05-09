@@ -3,6 +3,8 @@ mod decision;
 mod synthesis;
 
 use crate::config::PythonCrackersConfig;
+use crate::decision::PythonDecisionResult;
+use crate::synthesis::PythonSynthesisParams;
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
@@ -13,14 +15,38 @@ use ::crackers::config::specification::SpecificationConfig;
 use ::crackers::config::synthesis::SynthesisConfig;
 use ::crackers::gadget::library::builder::GadgetLibraryConfig;
 use ::crackers::synthesis::builder::SynthesisSelectionStrategy;
+use ::jingle::python::instruction::PythonInstruction;
+use ::jingle::python::jingle_context::PythonJingleContext;
+use ::jingle::python::modeled_block::PythonModeledBlock;
+use ::jingle::python::modeled_instruction::PythonModeledInstruction;
+use ::jingle::python::sleigh_context::LoadedSleighContextWrapper;
+use ::jingle::python::state::PythonState;
+use ::jingle::sleigh::{IndirectVarNode, PcodeOperation, VarNode};
 use pyo3::prelude::*;
-use std::ffi::CString;
 
+#[pymodule]
+#[pyo3(submodule)]
+fn jingle(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<VarNode>()?;
+    m.add_class::<IndirectVarNode>()?;
+    m.add_class::<PcodeOperation>()?;
+    m.add_class::<PythonInstruction>()?;
+    m.add_class::<LoadedSleighContextWrapper>()?;
+    m.add_class::<PythonJingleContext>()?;
+    m.add_class::<PythonState>()?;
+    m.add_class::<PythonModeledInstruction>()?;
+    m.add_class::<PythonModeledBlock>()?;
+    Ok(())
+}
 /// A Python module implemented in Rust.
 #[pymodule]
 fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.py().run(&CString::new("import z3")?, None, None)?;
+    let j = PyModule::new(m.py(), "jingle")?;
+    jingle(&j)?;
+    m.add_submodule(&j)?;
     m.add_class::<PythonCrackersConfig>()?;
+    m.add_class::<PythonDecisionResult>()?;
+    m.add_class::<PythonSynthesisParams>()?;
     m.add_class::<MetaConfig>()?;
     m.add_class::<SpecificationConfig>()?;
     m.add_class::<SleighConfig>()?;

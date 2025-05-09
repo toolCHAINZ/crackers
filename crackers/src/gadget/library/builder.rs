@@ -1,10 +1,10 @@
-use std::collections::HashSet;
-
 use derive_builder::Builder;
 use jingle::sleigh::OpCode;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
+use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 use crate::config::error::CrackersConfigError;
 use crate::config::object::load_sleigh;
@@ -66,4 +66,53 @@ fn default_blacklist() -> HashSet<OpCode> {
         OpCode::CPUI_CAST,
         OpCode::CPUI_MULTIEQUAL,
     ])
+}
+
+/**
+
+pub sample_size: Option<usize>,
+pub base_address: Option<u64>,
+*/
+
+#[pymethods]
+impl GadgetLibraryConfig {
+    #[getter]
+    pub fn get_max_gadget_length(&self) -> usize {
+        self.max_gadget_length
+    }
+
+    #[setter]
+    pub fn set_max_gadget_length(&mut self, l: usize) {
+        self.max_gadget_length = l;
+    }
+
+    #[getter]
+    pub fn get_path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    #[setter]
+    pub fn set_path(&mut self, l: String) {
+        self.path = l;
+    }
+
+    #[getter]
+    pub fn get_sample_size(&self) -> Option<usize> {
+        self.sample_size
+    }
+
+    #[setter]
+    pub fn set_sample_size(&mut self, l: Option<usize>) {
+        self.sample_size = l;
+    }
+
+    #[getter]
+    pub fn get_base_address(&self) -> Option<u64> {
+        self.base_address
+    }
+
+    #[setter]
+    pub fn set_base_address(&mut self, l: Option<u64>) {
+        self.base_address = l;
+    }
 }
