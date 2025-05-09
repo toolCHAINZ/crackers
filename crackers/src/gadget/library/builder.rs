@@ -1,10 +1,10 @@
-use std::collections::HashSet;
 use derive_builder::Builder;
 use jingle::sleigh::OpCode;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 use crate::config::error::CrackersConfigError;
 use crate::config::object::load_sleigh;
@@ -82,7 +82,7 @@ impl GadgetLibraryConfig {
     }
 
     #[setter]
-    pub fn set_max_gadget_length(&mut self, l: usize){
+    pub fn set_max_gadget_length(&mut self, l: usize) {
         self.max_gadget_length = l;
     }
 
@@ -92,7 +92,7 @@ impl GadgetLibraryConfig {
     }
 
     #[setter]
-    pub fn set_path(&mut self, l: String){
+    pub fn set_path(&mut self, l: String) {
         self.path = l;
     }
 
@@ -102,7 +102,7 @@ impl GadgetLibraryConfig {
     }
 
     #[setter]
-    pub fn set_sample_size(&mut self, l: Option<usize>){
+    pub fn set_sample_size(&mut self, l: Option<usize>) {
         self.sample_size = l;
     }
 
@@ -112,7 +112,7 @@ impl GadgetLibraryConfig {
     }
 
     #[setter]
-    pub fn set_base_address(&mut self, l: Option<u64>){
+    pub fn set_base_address(&mut self, l: Option<u64>) {
         self.base_address = l;
     }
 }

@@ -3,6 +3,8 @@ mod decision;
 mod synthesis;
 
 use crate::config::PythonCrackersConfig;
+use crate::decision::PythonDecisionResult;
+use crate::synthesis::PythonSynthesisParams;
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
@@ -13,7 +15,6 @@ use ::crackers::config::specification::SpecificationConfig;
 use ::crackers::config::synthesis::SynthesisConfig;
 use ::crackers::gadget::library::builder::GadgetLibraryConfig;
 use ::crackers::synthesis::builder::SynthesisSelectionStrategy;
-use pyo3::prelude::*;
 use ::jingle::python::instruction::PythonInstruction;
 use ::jingle::python::jingle_context::PythonJingleContext;
 use ::jingle::python::modeled_block::PythonModeledBlock;
@@ -21,8 +22,7 @@ use ::jingle::python::modeled_instruction::PythonModeledInstruction;
 use ::jingle::python::sleigh_context::LoadedSleighContextWrapper;
 use ::jingle::python::state::PythonState;
 use ::jingle::sleigh::{IndirectVarNode, PcodeOperation, VarNode};
-use crate::decision::PythonDecisionResult;
-use crate::synthesis::PythonSynthesisParams;
+use pyo3::prelude::*;
 
 #[pymodule]
 #[pyo3(submodule)]

@@ -41,5 +41,4 @@ impl SynthesisConfig {
             combine_instructions,
         }
     }
-    
 }
