@@ -4,6 +4,7 @@ mod synthesis;
 
 use crate::config::PythonCrackersConfig;
 use crate::decision::PythonDecisionResult;
+use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::synthesis::PythonSynthesisParams;
 use ::crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
@@ -47,6 +48,7 @@ fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PythonCrackersConfig>()?;
     m.add_class::<PythonDecisionResult>()?;
     m.add_class::<PythonSynthesisParams>()?;
+    m.add_class::<PythonAssignmentModel>()?;
     m.add_class::<MetaConfig>()?;
     m.add_class::<SpecificationConfig>()?;
     m.add_class::<SleighConfig>()?;
