@@ -1,4 +1,5 @@
-import z3
+from .preamble import *
+
 from .crackers import *
 
 __doc__ = crackers.__doc__
