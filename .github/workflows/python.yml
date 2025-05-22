@@ -61,7 +61,6 @@ jobs:
           path: crackers_python/dist
 
   linux-arm:
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     name: Build wheel on ${{ matrix.platform.name }}
     runs-on: ubuntu-latest
     strategy:
