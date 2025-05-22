@@ -1,4 +1,4 @@
-from .preamble import *
+from . import preamble
 
 from .crackers import *
 
