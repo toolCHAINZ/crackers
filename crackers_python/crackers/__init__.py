@@ -1,5 +1,3 @@
-import z3
-
 from .crackers import *
 
 __doc__ = crackers.__doc__
