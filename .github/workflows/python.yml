@@ -48,7 +48,6 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
             uv venv
             source .venv/bin/activate
-            uv sync
             python3 gh_actions_setup.py ${{ matrix.platform.target }}
             if [ -f .z3env ]; then
                 # shellcheck disable=SC1091
@@ -57,6 +56,7 @@ jobs:
             else
                 echo "❌ .z3env not found. Please run the installer script first."
             fi
+            uv sync
             export TARGET_SYSROOT=/usr/local/
             export RUSTFLAGS="-C link-arg=-Wl,-rpath,\$ORIGIN/../z3/lib"
           # sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
