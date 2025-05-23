@@ -5,6 +5,7 @@ import atexit
 import sys, os
 import contextlib
 import ctypes
+from os import RTLD_GLOBAL, RTLD_NOW
 
 from z3 import Z3Exception
 
@@ -53,10 +54,8 @@ for d in _all_dirs:
             d_dir = d
             d = os.path.join(d, 'libz3.%s' % _ext)
             if os.path.isfile(d):
-                _lib = ctypes.CDLL(d)
+                _lib = ctypes.CDLL(d, mode=RTLD_GLOBAL | RTLD_NOW)
                 # change: we need to add this to this process's LD_LIBRARY_PATH
-                os.environ['LD_LIBRARY_PATH'] = f"{d_dir}:{os.environ.get('LD_LIBRARY_PATH', '')}"
-                print(os.environ["LD_LIBRARY_PATH"])
                 break
     except Exception as e:
         _failures += [e]
