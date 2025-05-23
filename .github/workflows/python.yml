@@ -48,6 +48,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
             uv venv
             source .venv/bin/activate
+            uv sync
             python3 gh_actions_setup.py ${{ matrix.platform.target }}
             if [ -f .z3env ]; then
                 # shellcheck disable=SC1091
