@@ -54,7 +54,7 @@ for d in _all_dirs:
             d_dir = d
             d = os.path.join(d, 'libz3.%s' % _ext)
             if os.path.isfile(d):
-                _lib = ctypes.CDLL(d, mode=RTLD_GLOBAL | RTLD_NOW)
+                _lib = ctypes.CDLL(d, mode=ctypes.RTLD_GLOBAL)
                 # change: we need to add this to this process's LD_LIBRARY_PATH
                 break
     except Exception as e:
