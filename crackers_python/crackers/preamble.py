@@ -50,11 +50,12 @@ for d in _all_dirs:
     try:
         d = os.path.realpath(d)
         if os.path.isdir(d):
+            d_dir = d
             d = os.path.join(d, 'libz3.%s' % _ext)
             if os.path.isfile(d):
                 _lib = ctypes.CDLL(d)
                 # change: we need to add this to this process's LD_LIBRARY_PATH
-                os.environ['LD_LIBRARY_PATH'] = f"{d}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+                os.environ['LD_LIBRARY_PATH'] = f"{d_dir}:{os.environ.get('LD_LIBRARY_PATH', '')}"
                 print(os.environ["LD_LIBRARY_PATH"])
                 break
     except Exception as e:
