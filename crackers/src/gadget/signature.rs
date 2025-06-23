@@ -53,6 +53,8 @@ impl GadgetSignature {
         for op in &value.ops {
             if let Some(op) = op.output() {
                 if let GeneralizedVarNode::Direct(v) = &op {
+                    // todo: fix this once the new syntax is in stable
+                    #[allow(clippy::collapsible_if)]
                     if let Some(h) = t.get_space_info(v.space_index) {
                         if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);
@@ -89,6 +91,8 @@ impl From<&Gadget> for GadgetSignature {
         for op in value.instructions.iter().flat_map(|i| &i.ops) {
             if let Some(op) = op.output() {
                 if let GeneralizedVarNode::Direct(v) = &op {
+                    // todo: fix this once the new syntax is in stable
+                    #[allow(clippy::collapsible_if)]
                     if let Some(h) = value.spaces.get(v.space_index) {
                         if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);

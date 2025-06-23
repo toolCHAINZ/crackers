@@ -40,7 +40,7 @@ fn load_image_spec<T: AsRef<Path>>(
 pub fn load_sleigh<T: AsRef<Path>>(
     file_path: T,
     sleigh_config: &SleighConfig,
-) -> Result<LoadedSleighContext, CrackersConfigError> {
+) -> Result<LoadedSleighContext<'_>, CrackersConfigError> {
     let (img, arch) = load_image(file_path)?;
     let builder = sleigh_config.context_builder()?;
     let ctx = builder.build(arch)?;
@@ -51,7 +51,7 @@ pub fn load_sleigh<T: AsRef<Path>>(
 pub fn load_sleigh_spec<T: AsRef<Path>>(
     file_path: T,
     sleigh_config: &SleighConfig,
-) -> Result<LoadedSleighContext, CrackersConfigError> {
+) -> Result<LoadedSleighContext<'_>, CrackersConfigError> {
     let (img, arch) = load_image_spec(file_path)?;
     let builder = sleigh_config.context_builder()?;
     let ctx = builder.build(arch)?;

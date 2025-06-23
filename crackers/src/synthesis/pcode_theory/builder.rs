@@ -37,7 +37,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
             candidates_per_slot: 200,
         }
     }
-    pub fn build(self, z3: &Context) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
+    pub fn build(self, z3: &Context) -> Result<PcodeTheory<'_, ModeledInstruction<'_>>, CrackersError> {
         let jingle = JingleContext::new(z3, self.library);
         let modeled_templates = self.model_instructions(&jingle)?;
         let gadget_candidates = self.candidates.model(&jingle)?;

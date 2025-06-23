@@ -119,7 +119,7 @@ impl ImageProvider for SegmentFile {
         })
     }
 
-    fn get_section_info(&self) -> ImageSectionIterator {
+    fn get_section_info(&self) -> ImageSectionIterator<'_> {
         ImageSectionIterator::new(self.segments.iter().map(ImageSection::from))
     }
 }

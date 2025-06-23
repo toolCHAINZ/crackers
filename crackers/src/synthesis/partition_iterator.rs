@@ -1,17 +1,17 @@
 use std::cmp::max;
 
 pub trait Partition<T> {
-    fn partitions(&self) -> PartitionIterator<T>;
+    fn partitions(&self) -> PartitionIterator<'_, T>;
 }
 
 impl<T> Partition<T> for &[T] {
-    fn partitions(&self) -> PartitionIterator<T> {
+    fn partitions(&self) -> PartitionIterator<'_, T> {
         PartitionIterator::new(self)
     }
 }
 
 impl<T> Partition<T> for Vec<T> {
-    fn partitions(&self) -> PartitionIterator<T> {
+    fn partitions(&self) -> PartitionIterator<'_, T> {
         PartitionIterator::new(self.as_slice())
     }
 }

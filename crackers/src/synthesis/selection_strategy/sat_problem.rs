@@ -73,7 +73,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         }
         for (i, slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            let b = Bool::fresh_const(z3, &format!("slot_{}", i));
+            let b = Bool::fresh_const(z3, &format!("slot_{i}"));
             prob.index_bools.push(b.clone());
             prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b);
         }

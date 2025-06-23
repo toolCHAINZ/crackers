@@ -65,7 +65,7 @@ pub trait SelectionStrategy<'ctx> {
     fn add_theory_clause(&mut self, clause: &ConflictClause);
 
     fn derive_var_name(target_index: usize, gadget_index: usize) -> String {
-        format!("i{}_g{}", target_index, gadget_index)
+        format!("i{target_index}_g{gadget_index}")
     }
 }
 
