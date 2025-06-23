@@ -32,7 +32,7 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
     let env_filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::ERROR.into())
         .from_env()?
-        .add_directive(format!("crackers={}", level).parse()?);
+        .add_directive(format!("crackers={level}").parse()?);
     let indicatif_layer = IndicatifLayer::new();
     let writer = indicatif_layer.get_stderr_writer();
     tracing_subscriber::registry()

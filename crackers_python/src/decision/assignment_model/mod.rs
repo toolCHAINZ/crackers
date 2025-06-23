@@ -32,7 +32,7 @@ impl PythonAssignmentModel {
             PythonResolvedVarNode::Direct(a) => {
                 let bv = state.read_varnode(&VarNode::from(a.clone())).ok()?;
                 let val = self.inner.model().eval(&bv, completion)?;
-                Some((format!("{}", a), val))
+                Some((format!("{a}"), val))
             }
             PythonResolvedVarNode::Indirect(i) => {
                 let pointer_value = self.inner.model().eval(&i.inner.pointer, completion)?;

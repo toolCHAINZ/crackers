@@ -71,21 +71,21 @@ impl PythonCrackersConfig {
         let cfg_bytes = std::fs::read(path)?;
         let s = String::from_utf8(cfg_bytes)?;
         let p: CrackersConfig =
-            toml_edit::de::from_str(&s).map_err(|e| PyRuntimeError::new_err(format!("{}", e)))?;
+            toml_edit::de::from_str(&s).map_err(|e| PyRuntimeError::new_err(format!("{e}")))?;
         p.try_into()
     }
 
     pub fn to_json(&self) -> PyResult<String> {
         let unwrapped: CrackersConfig = self.try_into()?;
         let json = serde_json::to_string_pretty(&unwrapped)
-            .map_err(|e| PyRuntimeError::new_err(format!("{}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("{e}")))?;
         Ok(json)
     }
 
     #[classmethod]
     pub fn from_json(_: &Bound<'_, PyType>, json: &str) -> PyResult<Self> {
         let p: CrackersConfig =
-            serde_json::from_str(json).map_err(|e| PyRuntimeError::new_err(format!("{}", e)))?;
+            serde_json::from_str(json).map_err(|e| PyRuntimeError::new_err(format!("{e}")))?;
         p.try_into()
     }
 

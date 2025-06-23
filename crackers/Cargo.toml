@@ -18,7 +18,7 @@ bundled = ["z3/bundled"]
 
 [dependencies]
 jingle = { git = "https://github.com/toolCHAINZ/jingle", branch = "main", features = ["gimli"] }
-z3 = { git = "https://github.com/toolCHAINZ/z3.rs.git", branch = "patch-1" }
+z3 = { git = "https://github.com/prove-rs/z3.rs.git", branch = "master" }
 serde = { version = "1.0.203", features = ["derive"] }
 thiserror = "2.0"
 tracing = "0.1"

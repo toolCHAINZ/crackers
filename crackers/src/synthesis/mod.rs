@@ -118,7 +118,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
         }
     }
 
-    fn make_pcode_theory_builder(&self) -> PcodeTheoryBuilder {
+    fn make_pcode_theory_builder(&self) -> PcodeTheoryBuilder<'_> {
         PcodeTheoryBuilder::new(self.candidates.clone(), &self.library)
             .with_pointer_invariants(&self.pointer_invariants)
             .with_preconditions(&self.preconditions)

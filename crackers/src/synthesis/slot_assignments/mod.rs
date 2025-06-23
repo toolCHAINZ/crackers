@@ -85,11 +85,11 @@ impl Display for SlotAssignments {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for (i, assignment) in self.choices.iter().enumerate() {
-            let token = format!("{:04}", assignment);
+            let token = format!("{assignment:04}");
             if i > 0 {
-                write!(f, ", {}", token)?;
+                write!(f, ", {token}")?;
             } else {
-                write!(f, "{}", token)?;
+                write!(f, "{token}")?;
             }
         }
         write!(f, "]")

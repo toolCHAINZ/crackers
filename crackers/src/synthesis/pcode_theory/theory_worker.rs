@@ -68,7 +68,6 @@ impl<'ctx> TheoryWorker<'ctx> {
             Ok(_) => {}
             Err(_) => {
                 event!(Level::TRACE, "Exiting worker {}", self.id);
-                return;
             }
         }
     }

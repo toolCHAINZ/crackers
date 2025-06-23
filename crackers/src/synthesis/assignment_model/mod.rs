@@ -67,7 +67,7 @@ impl<'ctx, T: ModelingContext<'ctx> + Display> Display for AssignmentModel<'ctx,
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Gadgets:\n")?;
         for block in &self.gadgets {
-            writeln!(f, "{}\n", block)?;
+            writeln!(f, "{block}\n")?;
         }
         Ok(())
     }
