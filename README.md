@@ -1,3 +1,10 @@
+<div align="center">
+
+<img src="./crackers.svg" width="350"/>
+
+</div>
+
+
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
