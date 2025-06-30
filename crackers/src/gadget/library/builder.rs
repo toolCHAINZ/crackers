@@ -2,6 +2,7 @@ use derive_builder::Builder;
 use jingle::sleigh::OpCode;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
+#[cfg(feature = "pyo3")]
 use pyo3::pymethods;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -74,6 +75,7 @@ pub sample_size: Option<usize>,
 pub base_address: Option<u64>,
 */
 
+#[cfg(feature = "pyo3")]
 #[pymethods]
 impl GadgetLibraryConfig {
     #[getter]
