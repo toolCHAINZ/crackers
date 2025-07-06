@@ -4,23 +4,59 @@ use crate::config::error::CrackersConfigError::{
 };
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
+use crate::error::CrackersError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
 use jingle::analysis::varnode::VarNodeSet;
+use jingle::modeling::State;
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{GeneralizedVarNode, VarNode};
+use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
+use std::ops::Range;
+use z3::ast::{Ast, Bool, BV};
 
 mod step;
 
 #[derive(Debug, Clone, Default)]
+pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
+
+impl MemoryValuation {
+    pub fn to_constraint<'a>(
+        &self,
+    ) -> impl Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError> {
+        let map = self.0.clone();
+        move |ctx, state, _addr| {
+            let mut v = vec![];
+            for (vn, value) in &map {
+                let mut temp_vn: VarNode = VarNode {
+                    space_index: vn.space_index,
+                    size: 1,
+                    offset: vn.offset,
+                };
+                let r: Range<u64> = vn.try_into().unwrap();
+                for (index, offset) in r.enumerate() {
+                    temp_vn.offset = offset;
+                    v.push(state.read_varnode(&temp_vn)?._eq(&BV::from_u64(
+                        ctx.z3,
+                        value[index] as u64,
+                        8,
+                    )))
+                }
+            }
+            Ok(Bool::and(ctx.z3, &v))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct ReferenceProgram {
     steps: Vec<Step>,
-    initial_memory: HashMap<VarNode, Vec<u8>>,
+    initial_memory: MemoryValuation,
 }
 
 impl ReferenceProgram {
@@ -56,7 +92,7 @@ impl ReferenceProgram {
         let initial_memory = Self::calc_initial_memory_valuation(&steps, sleigh);
         Ok(Self {
             steps,
-            initial_memory,
+            initial_memory: MemoryValuation(initial_memory),
         })
     }
 
@@ -81,7 +117,7 @@ impl ReferenceProgram {
             }
         }
         for x in covering_set.varnodes() {
-            if let Some(b) = image.read_bytes(&x){
+            if let Some(b) = image.read_bytes(&x) {
                 valuation.insert(x, b);
             }
         }
@@ -99,16 +135,20 @@ impl ReferenceProgram {
         })
     }
 
-    pub fn len(&self) -> usize{
+    pub fn len(&self) -> usize {
         self.steps.len()
     }
 
-    pub fn is_empty(&self) -> bool{
+    pub fn is_empty(&self) -> bool {
         self.steps.is_empty()
     }
 
     pub fn steps(&self) -> &[Step] {
         &self.steps
+    }
+
+    pub fn initial_memory(&self) -> &MemoryValuation {
+        &self.initial_memory
     }
 }
 

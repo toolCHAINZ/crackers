@@ -101,6 +101,7 @@ impl AssignmentModelBuilder {
             .collect();
         let modeled_gadgets = modeled_gadgets?;
         Ok(PcodeAssignment::new(
+            self.templates.initial_memory().clone(),
             modeled_spec,
             modeled_gadgets,
             self.preconditions.clone(),

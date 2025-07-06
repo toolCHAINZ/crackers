@@ -47,6 +47,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         let t = PcodeTheory::new(
             jingle,
             modeled_templates,
+            self.reference_program.initial_memory().clone(),
             gadget_candidates,
             self.preconditions,
             self.postconditions,
@@ -69,6 +70,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
             .map(|(i, c)| gadget_candidates[i][*c].clone())
             .collect();
         Ok(PcodeAssignment::new(
+            self.reference_program.initial_memory().clone(),
             modeled_templates,
             selected_candidates,
             self.preconditions.clone(),
