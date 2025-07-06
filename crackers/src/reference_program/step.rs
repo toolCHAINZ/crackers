@@ -1,7 +1,10 @@
+use crate::config::error::CrackersConfigError;
+use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::Instruction;
-use std::fmt::{Display, Formatter, LowerExp, LowerHex};
+use jingle::JingleContext;
+use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Step {
     instructions: Vec<Instruction>,
 }
@@ -21,6 +24,11 @@ impl Step {
     
     pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
+    }
+
+    pub fn model<'ctx>(&self, ctx: &JingleContext<'ctx>) -> Result<ModeledInstruction<'ctx>, CrackersConfigError>{
+        let i: Instruction = self.instructions.as_slice().try_into()?;
+        ModeledInstruction::new(i, ctx).map_err(CrackersConfigError::from)
     }
 }
 

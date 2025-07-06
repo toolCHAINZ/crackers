@@ -1,5 +1,4 @@
 use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::Instruction;
 use jingle::JingleContext;
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -66,14 +65,14 @@ pub struct AssignmentSynthesis<'ctx> {
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn new(z3: &'ctx Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
-        let instrs = &builder.instructions;
+        let instrs = &builder.reference_program;
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
-        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
-            .iter()
-            .map(|i| ModeledInstruction::new(i.clone(), &jingle).unwrap())
+        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs.
+            steps()
+            .iter().map(|i| i.model(&jingle).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()
@@ -91,9 +90,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
             }
         };
-        for x in &builder.instructions {
-            println!("{}", x.disassembly)
-        }
+        println!("{}", builder.reference_program);
         Ok(AssignmentSynthesis {
             z3,
             outer_problem,
@@ -103,7 +100,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             preconditions: builder.preconditions.clone(),
             postconditions: builder.postconditions.clone(),
             candidates_per_slot: builder.candidates_per_slot,
-            instructions: builder.instructions.clone(),
+            instructions: builder.reference_program.clone(),
             parallel: builder.parallel,
         })
     }
@@ -125,7 +122,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
             .with_max_candidates(self.candidates_per_slot)
-            .with_templates(self.instructions.clone().into_iter())
+            .with_templates(self.instructions.clone())
     }
 
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
@@ -160,7 +157,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
             .with_max_candidates(self.candidates_per_slot)
-            .with_templates(self.instructions.clone().into_iter());
+            .with_templates(self.instructions.clone());
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
             for idx in 0..self.parallel {

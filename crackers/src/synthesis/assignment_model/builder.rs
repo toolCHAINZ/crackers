@@ -1,12 +1,13 @@
 use crate::error::CrackersError;
-use crate::gadget::Gadget;
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::Gadget;
+use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
+use jingle::sleigh::{ArchInfoProvider, SpaceInfo, VarNode};
+use jingle::JingleContext;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use z3::{Context, Solver};
@@ -63,7 +64,7 @@ impl ArchInfoProvider for ArchInfo {
 
 #[derive(Clone)]
 pub struct AssignmentModelBuilder {
-    pub templates: Vec<Instruction>,
+    pub templates: ReferenceProgram,
     pub gadgets: Vec<Gadget>,
     pub preconditions: Vec<Arc<StateConstraintGenerator>>,
     pub postconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -87,10 +88,9 @@ impl AssignmentModelBuilder {
         jingle: &JingleContext<'ctx>,
     ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
         let modeled_spec: Result<Vec<ModeledInstruction<'ctx>>, _> = self
-            .templates
+            .templates.steps()
             .iter()
-            .cloned()
-            .map(|i| ModeledInstruction::new(i, jingle).map_err(CrackersError::from))
+            .map(|i| i.model(&jingle).map_err(CrackersError::from))
             .collect();
         let modeled_spec = modeled_spec?;
         let modeled_gadgets: Result<_, _> = self

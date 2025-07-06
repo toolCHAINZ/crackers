@@ -6,19 +6,18 @@ use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
-use anyhow::Context;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{GeneralizedVarNode, VarNode};
 use object::{File, Object, ObjectSymbol};
 use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
 use std::fs;
-use tracing::Instrument;
 
 mod step;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ReferenceProgram {
     steps: Vec<Step>,
     initial_memory: HashMap<VarNode, Vec<u8>>,
@@ -97,5 +96,29 @@ impl ReferenceProgram {
                 initial_memory: init.clone(),
             }
         })
+    }
+    
+    pub fn len(&self) -> usize{
+        self.steps.len()
+    }
+    
+    pub fn is_empty(&self) -> bool{
+        self.steps.is_empty()
+    }
+    
+    pub fn steps(&self) -> &[Step] {
+        &self.steps
+    }
+}
+
+impl Display for ReferenceProgram {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (index, step) in self.steps.iter().enumerate() {
+            writeln!(f, "Step {}:", index)?;
+            for x in step.instructions() {
+                writeln!(f, "  {}", x.disassembly)?;
+            }
+        }
+        Ok(())
     }
 }

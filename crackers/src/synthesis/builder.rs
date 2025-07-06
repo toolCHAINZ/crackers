@@ -49,7 +49,7 @@ pub struct SynthesisParams {
     pub gadget_library: Arc<GadgetLibrary>,
     pub candidates_per_slot: usize,
     pub parallel: usize,
-    pub instructions: ReferenceProgram,
+    pub reference_program: ReferenceProgram,
     #[builder(default)]
     pub preconditions: Vec<Arc<StateConstraintGenerator>>,
     #[builder(default)]
