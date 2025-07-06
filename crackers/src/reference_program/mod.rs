@@ -53,9 +53,10 @@ impl ReferenceProgram {
             .read_until_branch(addr, spec.max_instructions)
             .map(Step::from_instr)
             .collect();
+        let initial_memory = Self::calc_initial_memory_valuation(&steps, sleigh);
         Ok(Self {
             steps,
-            initial_memory: HashMap::new(),
+            initial_memory,
         })
     }
 
@@ -97,15 +98,15 @@ impl ReferenceProgram {
             }
         })
     }
-    
+
     pub fn len(&self) -> usize{
         self.steps.len()
     }
-    
+
     pub fn is_empty(&self) -> bool{
         self.steps.is_empty()
     }
-    
+
     pub fn steps(&self) -> &[Step] {
         &self.steps
     }
