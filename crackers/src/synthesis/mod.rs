@@ -1,15 +1,16 @@
-use jingle::JingleContext;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::Instruction;
+use jingle::JingleContext;
 use std::cmp::Ordering;
 use std::sync::Arc;
-use tracing::{Level, event, instrument};
+use tracing::{event, instrument, Level};
 use z3::{Config, Context};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
+use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::builder::{ArchInfo, AssignmentModelBuilder};
 use crate::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
@@ -17,17 +18,17 @@ use crate::synthesis::builder::{
 };
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
-use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
 use crate::synthesis::selection_strategy::sat_problem::SatProblem;
+use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
+use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub mod assignment_model;
 pub mod builder;
 mod combined;
-mod partition_iterator;
+pub(crate) mod partition_iterator;
 pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
@@ -59,7 +60,7 @@ pub struct AssignmentSynthesis<'ctx> {
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     candidates_per_slot: usize,
-    instructions: Vec<Instruction>,
+    instructions: ReferenceProgram,
     parallel: usize,
 }
 

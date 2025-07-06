@@ -5,6 +5,7 @@ use crate::config::specification::SpecificationConfig;
 use crate::config::synthesis::SynthesisConfig;
 use crate::error::CrackersError;
 use crate::gadget::library::builder::GadgetLibraryConfig;
+use crate::reference_program::ReferenceProgram;
 use crate::synthesis::builder::{SynthesisParams, SynthesisParamsBuilder};
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +43,7 @@ impl CrackersConfig {
         }
         b.gadget_library(library)
             .seed(self.meta.seed)
-            .instructions(self.specification.get_spec(&self.sleigh)?);
+            .instructions(ReferenceProgram::try_load(&self.specification, &self.sleigh)?);
         b.selection_strategy(self.synthesis.strategy);
         b.combine_instructions(self.synthesis.combine_instructions);
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
