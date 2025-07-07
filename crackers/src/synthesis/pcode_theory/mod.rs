@@ -10,6 +10,7 @@ use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
+use crate::reference_program::MemoryValuation;
 use crate::synthesis::Decision;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{
@@ -30,6 +31,7 @@ pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
     j: JingleContext<'ctx>,
     solver: Solver<'ctx>,
     templates: Vec<S>,
+    initial_memory: MemoryValuation,
     gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -40,6 +42,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
     pub fn new(
         j: JingleContext<'ctx>,
         templates: Vec<S>,
+        initial_memory: MemoryValuation,
         gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -50,6 +53,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             j,
             solver,
             templates,
+            initial_memory,
             gadget_candidates,
             preconditions,
             postconditions,
@@ -74,6 +78,9 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         self.solver
             .assert(&assert_concat(self.j.z3, &self.templates)?);
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
+        let mem_cnstr = self.initial_memory.to_constraint();
+        self.solver
+            .assert(&mem_cnstr(&self.j, self.templates[0].get_original_state())?);
         for (index, x) in gadgets.windows(2).enumerate() {
             let branch = Bool::fresh_const(self.j.z3, "b");
             let concat = Bool::fresh_const(self.j.z3, "m");

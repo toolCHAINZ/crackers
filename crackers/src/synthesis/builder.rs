@@ -3,7 +3,6 @@ use std::sync::Arc;
 use derive_builder::Builder;
 use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
-use jingle::sleigh::Instruction;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
@@ -13,6 +12,7 @@ use z3::ast::Bool;
 use crate::error::CrackersError;
 use crate::gadget::library::GadgetLibrary;
 use crate::gadget::library::builder::GadgetLibraryConfig;
+use crate::reference_program::ReferenceProgram;
 use crate::synthesis::AssignmentSynthesis;
 use crate::synthesis::combined::CombinedAssignmentSynthesis;
 
@@ -49,7 +49,7 @@ pub struct SynthesisParams {
     pub gadget_library: Arc<GadgetLibrary>,
     pub candidates_per_slot: usize,
     pub parallel: usize,
-    pub instructions: Vec<Instruction>,
+    pub reference_program: ReferenceProgram,
     #[builder(default)]
     pub preconditions: Vec<Arc<StateConstraintGenerator>>,
     #[builder(default)]

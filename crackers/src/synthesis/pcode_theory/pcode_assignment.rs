@@ -5,10 +5,12 @@ use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
+use crate::reference_program::MemoryValuation;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
 pub struct PcodeAssignment<'ctx> {
+    initial_spec_memory: MemoryValuation,
     spec_trace: Vec<ModeledInstruction<'ctx>>,
     eval_trace: Vec<ModeledBlock<'ctx>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -18,6 +20,7 @@ pub struct PcodeAssignment<'ctx> {
 
 impl<'ctx> PcodeAssignment<'ctx> {
     pub fn new(
+        initial_spec_memory: MemoryValuation,
         spec_trace: Vec<ModeledInstruction<'ctx>>,
         eval_trace: Vec<ModeledBlock<'ctx>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
@@ -25,6 +28,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Self {
         Self {
+            initial_spec_memory,
             spec_trace,
             eval_trace,
             preconditions,
@@ -38,6 +42,8 @@ impl<'ctx> PcodeAssignment<'ctx> {
         jingle: &JingleContext<'ctx>,
         solver: &Solver<'ctx>,
     ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+        let mem_cnstr = self.initial_spec_memory.to_constraint();
+        solver.assert(&mem_cnstr(jingle, self.spec_trace[0].get_original_state())?);
         solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
         solver.assert(&assert_concat(jingle.z3, &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {

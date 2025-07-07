@@ -1,6 +1,5 @@
 use jingle::JingleContext;
 use jingle::modeling::ModeledInstruction;
-use jingle::sleigh::Instruction;
 use std::cmp::Ordering;
 use std::sync::Arc;
 use tracing::{Level, event, instrument};
@@ -10,6 +9,7 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
+use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::builder::{ArchInfo, AssignmentModelBuilder};
 use crate::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
@@ -27,7 +27,7 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 pub mod assignment_model;
 pub mod builder;
 mod combined;
-mod partition_iterator;
+pub(crate) mod partition_iterator;
 pub mod pcode_theory;
 pub mod selection_strategy;
 pub mod slot_assignments;
@@ -59,20 +59,21 @@ pub struct AssignmentSynthesis<'ctx> {
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     candidates_per_slot: usize,
-    instructions: Vec<Instruction>,
+    instructions: ReferenceProgram,
     parallel: usize,
 }
 
 impl<'ctx> AssignmentSynthesis<'ctx> {
     pub fn new(z3: &'ctx Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
-        let instrs = &builder.instructions;
+        let instrs = &builder.reference_program;
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
         let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
+            .steps()
             .iter()
-            .map(|i| ModeledInstruction::new(i.clone(), &jingle).unwrap())
+            .map(|i| i.model(&jingle).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()
@@ -90,9 +91,6 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
                 OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
             }
         };
-        for x in &builder.instructions {
-            println!("{}", x.disassembly)
-        }
         Ok(AssignmentSynthesis {
             z3,
             outer_problem,
@@ -102,7 +100,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             preconditions: builder.preconditions.clone(),
             postconditions: builder.postconditions.clone(),
             candidates_per_slot: builder.candidates_per_slot,
-            instructions: builder.instructions.clone(),
+            instructions: builder.reference_program.clone(),
             parallel: builder.parallel,
         })
     }
@@ -124,7 +122,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
             .with_max_candidates(self.candidates_per_slot)
-            .with_templates(self.instructions.clone().into_iter())
+            .with_templates(self.instructions.clone())
     }
 
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
@@ -159,7 +157,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             .with_preconditions(&self.preconditions)
             .with_postconditions(&self.postconditions)
             .with_max_candidates(self.candidates_per_slot)
-            .with_templates(self.instructions.clone().into_iter());
+            .with_templates(self.instructions.clone());
         let (resp_sender, resp_receiver) = std::sync::mpsc::channel();
         std::thread::scope(|s| {
             for idx in 0..self.parallel {
