@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::JingleContext;
-use tracing::{event, Level};
+use jingle::modeling::{ModeledBlock, ModelingContext, State};
+use tracing::{Level, event};
 use z3::ast::Bool;
 use z3::{SatResult, Solver};
 
@@ -11,15 +11,15 @@ use conflict_clause::ConflictClause;
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
 use crate::reference_program::MemoryValuation;
+use crate::synthesis::Decision;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{
     assert_compatible_semantics, assert_concat, assert_state_constraints,
 };
 use crate::synthesis::pcode_theory::theory_constraint::{
-    gen_conflict_clauses, ConjunctiveConstraint, TheoryStage,
+    ConjunctiveConstraint, TheoryStage, gen_conflict_clauses,
 };
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 pub mod builder;
 pub mod conflict_clause;
@@ -79,7 +79,8 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             .assert(&assert_concat(self.j.z3, &self.templates)?);
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         let mem_cnstr = self.initial_memory.to_constraint();
-        self.solver.assert(&mem_cnstr(&self.j, self.templates[0].get_original_state())?);
+        self.solver
+            .assert(&mem_cnstr(&self.j, self.templates[0].get_original_state())?);
         for (index, x) in gadgets.windows(2).enumerate() {
             let branch = Bool::fresh_const(self.j.z3, "b");
             let concat = Bool::fresh_const(self.j.z3, "m");

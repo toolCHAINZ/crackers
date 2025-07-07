@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::JingleContext;
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -9,8 +9,8 @@ use crate::gadget::candidates::Candidates;
 use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
-use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::pcode_theory::PcodeTheory;
+use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Clone)]

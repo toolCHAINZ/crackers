@@ -1,13 +1,13 @@
 use crate::error::CrackersError;
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::Gadget;
+use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::{ArchInfoProvider, SpaceInfo, VarNode};
-use jingle::JingleContext;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use z3::{Context, Solver};
@@ -88,7 +88,8 @@ impl AssignmentModelBuilder {
         jingle: &JingleContext<'ctx>,
     ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
         let modeled_spec: Result<Vec<ModeledInstruction<'ctx>>, _> = self
-            .templates.steps()
+            .templates
+            .steps()
             .iter()
             .map(|i| i.model(&jingle).map_err(CrackersError::from))
             .collect();

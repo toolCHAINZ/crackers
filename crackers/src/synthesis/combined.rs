@@ -1,4 +1,4 @@
-use tracing::{event, Level};
+use tracing::{Level, event};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -13,11 +13,8 @@ pub struct CombinedAssignmentSynthesis<'a> {
 
 impl<'a> CombinedAssignmentSynthesis<'a> {
     pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
-        let mut ordering: Vec<ReferenceProgram> = self
-            .base_config
-            .reference_program
-            .partitions()
-            .collect();
+        let mut ordering: Vec<ReferenceProgram> =
+            self.base_config.reference_program.partitions().collect();
         // let mut blacklist = HashSet::new();
         // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
         ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
@@ -29,7 +26,11 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
             //     continue;
             // }
             event!(Level::INFO, "Attempting Synthesis of:\n{}", instructions);
-            event!(Level::DEBUG, "Initial memory valuation:\n{:?}", instructions.initial_memory());
+            event!(
+                Level::DEBUG,
+                "Initial memory valuation:\n{:?}",
+                instructions.initial_memory()
+            );
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions.clone();
             let synth = AssignmentSynthesis::new(self.z3, &new_config);
@@ -63,11 +64,8 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
 
     // gross but I don't feel like rewriting this right now
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
-        let mut ordering: Vec<ReferenceProgram> = self
-            .base_config
-            .reference_program
-            .partitions()
-            .collect();
+        let mut ordering: Vec<ReferenceProgram> =
+            self.base_config.reference_program.partitions().collect();
         // let mut blacklist = HashSet::new();
         // todo: gross hack to avoid rewriting the partitioning algorithm to be breadth-first
         ordering.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());

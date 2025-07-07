@@ -7,5 +7,5 @@ pub mod bench;
 pub mod config;
 pub mod error;
 pub mod gadget;
-pub mod synthesis;
 mod reference_program;
+pub mod synthesis;

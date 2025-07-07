@@ -1,8 +1,8 @@
-use jingle::modeling::ModeledInstruction;
 use jingle::JingleContext;
+use jingle::modeling::ModeledInstruction;
 use std::cmp::Ordering;
 use std::sync::Arc;
-use tracing::{event, instrument, Level};
+use tracing::{Level, event, instrument};
 use z3::{Config, Context};
 
 use crate::error::CrackersError;
@@ -17,10 +17,10 @@ use crate::synthesis::builder::{
 };
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::theory_worker::TheoryWorker;
-use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
-use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::OuterProblem::{OptimizeProb, SatProb};
+use crate::synthesis::selection_strategy::optimization_problem::OptimizationProblem;
+use crate::synthesis::selection_strategy::sat_problem::SatProblem;
 use crate::synthesis::selection_strategy::{OuterProblem, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
 
@@ -70,9 +70,10 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             return Err(EmptySpecification);
         }
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
-        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs.
-            steps()
-            .iter().map(|i| i.model(&jingle).unwrap())
+        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
+            .steps()
+            .iter()
+            .map(|i| i.model(&jingle).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()

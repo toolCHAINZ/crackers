@@ -5,24 +5,24 @@ use crate::config::error::CrackersConfigError::{
 use crate::config::sleigh::SleighConfig;
 use crate::config::specification::SpecificationConfig;
 use crate::error::CrackersError;
+use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
+use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
-use jingle::JingleContext;
+use jingle::varnode::ResolvedVarnode;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use jingle::varnode::ResolvedVarnode;
-use z3::ast::{Ast, Bool, BV};
+use z3::ast::{Ast, BV, Bool};
 use z3::{Config, Context, SatResult, Solver};
-use crate::error::CrackersError::ModelGenerationError;
 
 mod step;
 
@@ -93,15 +93,16 @@ impl ReferenceProgram {
             .read_until_branch(addr, spec.max_instructions)
             .map(Step::from_instr)
             .collect();
-        let mut ref_program = Self{steps, initial_memory: Default::default()};
+        let mut ref_program = Self {
+            steps,
+            initial_memory: Default::default(),
+        };
 
         ref_program.calc_initial_memory_valuation(sleigh);
         Ok(ref_program)
     }
 
-    fn calc_initial_memory_valuation(&mut self,
-        image: LoadedSleighContext<'_>,
-    ) {
+    fn calc_initial_memory_valuation(&mut self, image: LoadedSleighContext<'_>) {
         let steps = &self.steps;
         let mut covering_set = VarNodeSet::default();
         // initial direct pass
@@ -142,7 +143,8 @@ impl ReferenceProgram {
                                     } else {
                                         image.read_bytes(&vn.pointer_location)
                                     };
-                                if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le) {
+                                if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le)
+                                {
                                     let mut buffer: [u8; 8] = [0; 8];
                                     let max = min(buffer.len(), pointer_offset_bytes_le.len());
                                     buffer[0..max]
@@ -167,7 +169,9 @@ impl ReferenceProgram {
         self.initialize_valuation(&covering_set, &image);
         let z3 = Context::new(&Config::new());
         let jingle_ctx = JingleContext::new(&z3, &image);
-        let extended_constraints = self.get_extended_constraints_from_indirect(jingle_ctx).unwrap();
+        let extended_constraints = self
+            .get_extended_constraints_from_indirect(jingle_ctx)
+            .unwrap();
         self.initialize_valuation(&extended_constraints, &image);
     }
 
@@ -192,9 +196,11 @@ impl ReferenceProgram {
         })
     }
 
-    
-    fn get_extended_constraints_from_indirect<'ctx>(&self, ctx: JingleContext<'ctx>) -> Result<VarNodeSet, CrackersError> {
-        let i : Vec<_>= self.instructions().cloned().collect();
+    fn get_extended_constraints_from_indirect<'ctx>(
+        &self,
+        ctx: JingleContext<'ctx>,
+    ) -> Result<VarNodeSet, CrackersError> {
+        let i: Vec<_> = self.instructions().cloned().collect();
         let i: Instruction = i.as_slice().try_into().unwrap();
         let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
         let init_constraint = self.initial_memory.to_constraint();
@@ -202,17 +208,19 @@ impl ReferenceProgram {
         let solver = Solver::new(ctx.z3);
         let mut vn_set = VarNodeSet::default();
         solver.assert(&constraint);
-        match solver.check(){
+        match solver.check() {
             SatResult::Sat => {
                 let model = solver.get_model().ok_or(ModelGenerationError)?;
                 for x in modeled_instr.get_inputs() {
-                    match x{
+                    match x {
                         ResolvedVarnode::Direct(vn) => {
                             vn_set.insert(&vn);
                         }
                         ResolvedVarnode::Indirect(ivn) => {
                             vn_set.insert(&ivn.pointer_location);
-                            if let Some(res) = model.eval(&ivn.pointer, true).and_then(|f|f.as_u64()){
+                            if let Some(res) =
+                                model.eval(&ivn.pointer, true).and_then(|f| f.as_u64())
+                            {
                                 let new_vn = VarNode {
                                     size: ivn.access_size_bytes,
                                     space_index: ivn.pointer_space_idx,
@@ -234,8 +242,8 @@ impl ReferenceProgram {
     pub fn len(&self) -> usize {
         self.steps.len()
     }
-    
-    fn instructions(&self) -> impl Iterator<Item=&Instruction>{
+
+    fn instructions(&self) -> impl Iterator<Item = &Instruction> {
         self.steps.iter().flat_map(|step| step.instructions())
     }
 

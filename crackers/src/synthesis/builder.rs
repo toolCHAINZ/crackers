@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use derive_builder::Builder;
-use jingle::modeling::{ModeledBlock, State};
 use jingle::JingleContext;
+use jingle::modeling::{ModeledBlock, State};
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
-use z3::ast::Bool;
 use z3::Context;
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
-use crate::gadget::library::builder::GadgetLibraryConfig;
 use crate::gadget::library::GadgetLibrary;
+use crate::gadget::library::builder::GadgetLibraryConfig;
 use crate::reference_program::ReferenceProgram;
-use crate::synthesis::combined::CombinedAssignmentSynthesis;
 use crate::synthesis::AssignmentSynthesis;
+use crate::synthesis::combined::CombinedAssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "pyo3", pyclass)]

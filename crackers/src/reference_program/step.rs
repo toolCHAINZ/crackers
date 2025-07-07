@@ -1,7 +1,7 @@
 use crate::config::error::CrackersConfigError;
+use jingle::JingleContext;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::Instruction;
-use jingle::JingleContext;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default)]
@@ -10,23 +10,33 @@ pub struct Step {
 }
 
 impl Step {
-    pub fn new<'a, T: Iterator<Item=&'a Instruction>>(instructions: T) -> Self {
-        Self { instructions: instructions.cloned().collect() }
+    pub fn new<'a, T: Iterator<Item = &'a Instruction>>(instructions: T) -> Self {
+        Self {
+            instructions: instructions.cloned().collect(),
+        }
     }
 
-    pub fn combine<'a, T: Iterator<Item=&'a Step>>(steps: T) -> Self{
-        let instructions = steps.map(|step| step.instructions.clone()).flatten().collect();
+    pub fn combine<'a, T: Iterator<Item = &'a Step>>(steps: T) -> Self {
+        let instructions = steps
+            .map(|step| step.instructions.clone())
+            .flatten()
+            .collect();
         Self { instructions }
     }
     pub fn from_instr(instr: Instruction) -> Self {
-        Self { instructions: vec![instr] }
+        Self {
+            instructions: vec![instr],
+        }
     }
-    
+
     pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 
-    pub fn model<'ctx>(&self, ctx: &JingleContext<'ctx>) -> Result<ModeledInstruction<'ctx>, CrackersConfigError>{
+    pub fn model<'ctx>(
+        &self,
+        ctx: &JingleContext<'ctx>,
+    ) -> Result<ModeledInstruction<'ctx>, CrackersConfigError> {
         let i: Instruction = self.instructions.as_slice().try_into()?;
         ModeledInstruction::new(i, ctx).map_err(CrackersConfigError::from)
     }

@@ -43,7 +43,10 @@ impl CrackersConfig {
         }
         b.gadget_library(library)
             .seed(self.meta.seed)
-            .reference_program(ReferenceProgram::try_load(&self.specification, &self.sleigh)?);
+            .reference_program(ReferenceProgram::try_load(
+                &self.specification,
+                &self.sleigh,
+            )?);
         b.selection_strategy(self.synthesis.strategy);
         b.combine_instructions(self.synthesis.combine_instructions);
         b.candidates_per_slot(self.synthesis.max_candidates_per_slot);
