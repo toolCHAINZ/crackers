@@ -8,20 +8,20 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
-use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
 use jingle::varnode::ResolvedVarnode;
+use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, BV, Bool};
+use z3::ast::{Ast, Bool, BV};
 use z3::{Config, Context, SatResult, Solver};
 
 mod step;
@@ -106,7 +106,7 @@ impl ReferenceProgram {
         let steps = &self.steps;
         let mut covering_set = VarNodeSet::default();
         // initial direct pass
-        for x in dbg!(steps)
+        for x in steps
             .iter()
             .flat_map(|step| step.instructions())
             .flat_map(|i| i.ops.clone())
@@ -129,7 +129,7 @@ impl ReferenceProgram {
             {
                 for vn in x.inputs() {
                     if let GeneralizedVarNode::Indirect(vn) = vn {
-                        if covering_set.covers(dbg!(&vn.pointer_location)) {
+                        if covering_set.covers(&vn.pointer_location) {
                             let pointer_offset_bytes_le =
                                 if image.spaces()[image.get_code_space_idx()].isBigEndian() {
                                     image.read_bytes(&vn.pointer_location).map(|mut f| {
@@ -139,12 +139,12 @@ impl ReferenceProgram {
                                 } else {
                                     image.read_bytes(&vn.pointer_location)
                                 };
-                            if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le) {
+                            if let Some(pointer_offset_bytes_le) = pointer_offset_bytes_le {
                                 let mut buffer: [u8; 8] = [0; 8];
                                 let max = min(buffer.len(), pointer_offset_bytes_le.len());
                                 buffer[0..max].copy_from_slice(&pointer_offset_bytes_le[0..max]);
                                 let ptr = u64::from_le_bytes(buffer);
-                                let new_vn = dbg!(VarNode {
+                                let new_vn = (VarNode {
                                     size: vn.access_size_bytes,
                                     space_index: vn.pointer_space_index,
                                     offset: ptr,
