@@ -91,7 +91,7 @@ impl AssignmentModelBuilder {
             .templates
             .steps()
             .iter()
-            .map(|i| i.model(&jingle).map_err(CrackersError::from))
+            .map(|i| i.model(jingle).map_err(CrackersError::from))
             .collect();
         let modeled_spec = modeled_spec?;
         let modeled_gadgets: Result<_, _> = self

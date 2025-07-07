@@ -18,8 +18,7 @@ impl Step {
 
     pub fn combine<'a, T: Iterator<Item = &'a Step>>(steps: T) -> Self {
         let instructions = steps
-            .map(|step| step.instructions.clone())
-            .flatten()
+            .flat_map(|step| step.instructions.clone())
             .collect();
         Self { instructions }
     }

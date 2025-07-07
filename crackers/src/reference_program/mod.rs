@@ -42,7 +42,7 @@ impl MemoryValuation {
                     size: 1,
                     offset: vn.offset,
                 };
-                let r: Range<u64> = vn.try_into().unwrap();
+                let r: Range<u64> = vn.into();
                 for (index, offset) in r.enumerate() {
                     temp_vn.offset = offset;
                     v.push(state.read_varnode(&temp_vn)?._eq(&BV::from_u64(
@@ -112,11 +112,8 @@ impl ReferenceProgram {
             .flat_map(|i| i.ops.clone())
         {
             for vn in x.inputs() {
-                match vn {
-                    GeneralizedVarNode::Direct(vn) => {
-                        covering_set.insert(&vn);
-                    }
-                    _ => {}
+                if let GeneralizedVarNode::Direct(vn) = vn {
+                    covering_set.insert(&vn);
                 }
             }
         }
@@ -131,36 +128,31 @@ impl ReferenceProgram {
                 .flat_map(|i| i.ops.clone())
             {
                 for vn in x.inputs() {
-                    match vn {
-                        GeneralizedVarNode::Indirect(vn) => {
-                            if covering_set.covers(dbg!(&vn.pointer_location)) {
-                                let pointer_offset_bytes_le =
-                                    if image.spaces()[image.get_code_space_idx()].isBigEndian() {
-                                        image.read_bytes(&vn.pointer_location).map(|mut f| {
-                                            f.reverse();
-                                            f
-                                        })
-                                    } else {
-                                        image.read_bytes(&vn.pointer_location)
-                                    };
-                                if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le)
-                                {
-                                    let mut buffer: [u8; 8] = [0; 8];
-                                    let max = min(buffer.len(), pointer_offset_bytes_le.len());
-                                    buffer[0..max]
-                                        .copy_from_slice(&pointer_offset_bytes_le[0..max]);
-                                    let ptr = u64::from_le_bytes(buffer);
-                                    let new_vn = dbg!(VarNode {
-                                        size: vn.access_size_bytes,
-                                        space_index: vn.pointer_space_index,
-                                        offset: ptr,
-                                    });
-                                    covering_set.insert(&new_vn);
-                                    stablized = false;
-                                }
+                    if let GeneralizedVarNode::Indirect(vn) = vn {
+                        if covering_set.covers(dbg!(&vn.pointer_location)) {
+                            let pointer_offset_bytes_le =
+                                if image.spaces()[image.get_code_space_idx()].isBigEndian() {
+                                    image.read_bytes(&vn.pointer_location).map(|mut f| {
+                                        f.reverse();
+                                        f
+                                    })
+                                } else {
+                                    image.read_bytes(&vn.pointer_location)
+                                };
+                            if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le) {
+                                let mut buffer: [u8; 8] = [0; 8];
+                                let max = min(buffer.len(), pointer_offset_bytes_le.len());
+                                buffer[0..max].copy_from_slice(&pointer_offset_bytes_le[0..max]);
+                                let ptr = u64::from_le_bytes(buffer);
+                                let new_vn = dbg!(VarNode {
+                                    size: vn.access_size_bytes,
+                                    space_index: vn.pointer_space_index,
+                                    offset: ptr,
+                                });
+                                covering_set.insert(&new_vn);
+                                stablized = false;
                             }
                         }
-                        _ => {}
                     }
                 }
             }
@@ -263,7 +255,7 @@ impl ReferenceProgram {
 impl Display for ReferenceProgram {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for (index, step) in self.steps.iter().enumerate() {
-            writeln!(f, "Step {}:", index)?;
+            writeln!(f, "Step {index}:")?;
             for x in step.instructions() {
                 writeln!(f, "  {}", x.disassembly)?;
             }
