@@ -8,7 +8,7 @@ use crate::error::CrackersError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
 use jingle::analysis::varnode::VarNodeSet;
-use jingle::modeling::{ModeledInstruction, State};
+use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
@@ -19,7 +19,10 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
+use jingle::varnode::ResolvedVarnode;
 use z3::ast::{Ast, Bool, BV};
+use z3::{Config, Context, SatResult, Solver};
+use crate::error::CrackersError::ModelGenerationError;
 
 mod step;
 
@@ -29,9 +32,9 @@ pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 impl MemoryValuation {
     pub fn to_constraint<'a>(
         &self,
-    ) -> impl Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError> {
+    ) -> impl Fn(&JingleContext<'a>, &State<'a>) -> Result<Bool<'a>, CrackersError> {
         let map = self.0.clone();
-        move |ctx, state, _addr| {
+        move |ctx, state| {
             let mut v = vec![];
             for (vn, value) in &map {
                 let mut temp_vn: VarNode = VarNode {
@@ -92,16 +95,15 @@ impl ReferenceProgram {
             .collect();
         let mut ref_program = Self{steps, initial_memory: Default::default()};
 
-        let initial_memory = ref_program.calc_initial_memory_valuation(&steps, sleigh);
+        ref_program.calc_initial_memory_valuation(sleigh);
         Ok(ref_program)
     }
 
     fn calc_initial_memory_valuation(&mut self,
-        steps: &[Step],
         image: LoadedSleighContext<'_>,
     ) {
+        let steps = &self.steps;
         let mut covering_set = VarNodeSet::default();
-        let mut valuation = HashMap::new();
         // initial direct pass
         for x in dbg!(steps)
             .iter()
@@ -162,6 +164,15 @@ impl ReferenceProgram {
             }
         }
 
+        self.initialize_valuation(&covering_set, &image);
+        let z3 = Context::new(&Config::new());
+        let jingle_ctx = JingleContext::new(&z3, &image);
+        let extended_constraints = self.get_extended_constraints_from_indirect(jingle_ctx).unwrap();
+        self.initialize_valuation(&extended_constraints, &image);
+    }
+
+    fn initialize_valuation(&mut self, covering_set: &VarNodeSet, image: &LoadedSleighContext<'_>) {
+        let mut valuation = HashMap::new();
         for x in covering_set.varnodes() {
             if let Some(b) = image.read_bytes(&x) {
                 valuation.insert(x, b);
@@ -180,12 +191,44 @@ impl ReferenceProgram {
             }
         })
     }
+
     
-    fn make_solver<'ctx>(&self, ctx: JingleContext<'ctx>) -> Vec<Bool<'ctx>>{
+    fn get_extended_constraints_from_indirect<'ctx>(&self, ctx: JingleContext<'ctx>) -> Result<VarNodeSet, CrackersError> {
         let i : Vec<_>= self.instructions().cloned().collect();
         let i: Instruction = i.as_slice().try_into().unwrap();
-        let model = ModeledInstruction::new(i, &ctx).unwrap();
-        
+        let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
+        let init_constraint = self.initial_memory.to_constraint();
+        let constraint = init_constraint(&ctx, modeled_instr.get_original_state())?;
+        let solver = Solver::new(ctx.z3);
+        let mut vn_set = VarNodeSet::default();
+        solver.assert(&constraint);
+        match solver.check(){
+            SatResult::Sat => {
+                let model = solver.get_model().ok_or(ModelGenerationError)?;
+                for x in modeled_instr.get_inputs() {
+                    match x{
+                        ResolvedVarnode::Direct(vn) => {
+                            vn_set.insert(&vn);
+                        }
+                        ResolvedVarnode::Indirect(ivn) => {
+                            vn_set.insert(&ivn.pointer_location);
+                            if let Some(res) = model.eval(&ivn.pointer, true).and_then(|f|f.as_u64()){
+                                let new_vn = VarNode {
+                                    size: ivn.access_size_bytes,
+                                    space_index: ivn.pointer_space_idx,
+                                    offset: res,
+                                };
+                                vn_set.insert(&new_vn);
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {
+                return Err(CrackersError::ModelGenerationError);
+            }
+        }
+        Ok(vn_set)
     }
 
     pub fn len(&self) -> usize {

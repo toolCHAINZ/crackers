@@ -43,7 +43,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
         solver: &Solver<'ctx>,
     ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
         let mem_cnstr = self.initial_spec_memory.to_constraint();
-        solver.assert(&mem_cnstr(jingle, self.spec_trace[0].get_original_state(),0)?);
+        solver.assert(&mem_cnstr(jingle, self.spec_trace[0].get_original_state())?);
         solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
         solver.assert(&assert_concat(jingle.z3, &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
