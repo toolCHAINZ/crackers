@@ -8,12 +8,13 @@ use crate::error::CrackersError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
 use jingle::analysis::varnode::VarNodeSet;
-use jingle::modeling::State;
+use jingle::modeling::{ModeledInstruction, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{GeneralizedVarNode, VarNode};
+use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
 use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
+use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
@@ -89,20 +90,20 @@ impl ReferenceProgram {
             .read_until_branch(addr, spec.max_instructions)
             .map(Step::from_instr)
             .collect();
-        let initial_memory = Self::calc_initial_memory_valuation(&steps, sleigh);
-        Ok(Self {
-            steps,
-            initial_memory: MemoryValuation(initial_memory),
-        })
+        let mut ref_program = Self{steps, initial_memory: Default::default()};
+
+        let initial_memory = ref_program.calc_initial_memory_valuation(&steps, sleigh);
+        Ok(ref_program)
     }
 
-    fn calc_initial_memory_valuation(
+    fn calc_initial_memory_valuation(&mut self,
         steps: &[Step],
         image: LoadedSleighContext<'_>,
-    ) -> HashMap<VarNode, Vec<u8>> {
+    ) {
         let mut covering_set = VarNodeSet::default();
         let mut valuation = HashMap::new();
-        for x in steps
+        // initial direct pass
+        for x in dbg!(steps)
             .iter()
             .flat_map(|step| step.instructions())
             .flat_map(|i| i.ops.clone())
@@ -116,12 +117,57 @@ impl ReferenceProgram {
                 }
             }
         }
+
+        // now load indirect until it stablizes
+        let mut stablized = false;
+        while !stablized {
+            stablized = true;
+            for x in steps
+                .iter()
+                .flat_map(|step| step.instructions())
+                .flat_map(|i| i.ops.clone())
+            {
+                for vn in x.inputs() {
+                    match vn {
+                        GeneralizedVarNode::Indirect(vn) => {
+                            if covering_set.covers(dbg!(&vn.pointer_location)) {
+                                let pointer_offset_bytes_le =
+                                    if image.spaces()[image.get_code_space_idx()].isBigEndian() {
+                                        image.read_bytes(&vn.pointer_location).map(|mut f| {
+                                            f.reverse();
+                                            f
+                                        })
+                                    } else {
+                                        image.read_bytes(&vn.pointer_location)
+                                    };
+                                if let Some(pointer_offset_bytes_le) = dbg!(pointer_offset_bytes_le) {
+                                    let mut buffer: [u8; 8] = [0; 8];
+                                    let max = min(buffer.len(), pointer_offset_bytes_le.len());
+                                    buffer[0..max]
+                                        .copy_from_slice(&pointer_offset_bytes_le[0..max]);
+                                    let ptr = u64::from_le_bytes(buffer);
+                                    let new_vn = dbg!(VarNode {
+                                        size: vn.access_size_bytes,
+                                        space_index: vn.pointer_space_index,
+                                        offset: ptr,
+                                    });
+                                    covering_set.insert(&new_vn);
+                                    stablized = false;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
         for x in covering_set.varnodes() {
             if let Some(b) = image.read_bytes(&x) {
                 valuation.insert(x, b);
             }
         }
-        valuation
+        self.initial_memory = MemoryValuation(valuation);
     }
 
     pub fn partitions(&self) -> impl Iterator<Item = Self> {
@@ -134,9 +180,20 @@ impl ReferenceProgram {
             }
         })
     }
+    
+    fn make_solver<'ctx>(&self, ctx: JingleContext<'ctx>) -> Vec<Bool<'ctx>>{
+        let i : Vec<_>= self.instructions().cloned().collect();
+        let i: Instruction = i.as_slice().try_into().unwrap();
+        let model = ModeledInstruction::new(i, &ctx).unwrap();
+        
+    }
 
     pub fn len(&self) -> usize {
         self.steps.len()
+    }
+    
+    fn instructions(&self) -> impl Iterator<Item=&Instruction>{
+        self.steps.iter().flat_map(|step| step.instructions())
     }
 
     pub fn is_empty(&self) -> bool {

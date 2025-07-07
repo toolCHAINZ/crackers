@@ -28,8 +28,10 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
             // if instructions.iter().any(|i| blacklist.contains(i)) {
             //     continue;
             // }
+            event!(Level::INFO, "Attempting Synthesis of:\n{}", instructions);
+            event!(Level::DEBUG, "Initial memory valuation:\n{:?}", instructions.initial_memory());
             let mut new_config = self.base_config.clone();
-            new_config.reference_program = instructions;
+            new_config.reference_program = instructions.clone();
             let synth = AssignmentSynthesis::new(self.z3, &new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
