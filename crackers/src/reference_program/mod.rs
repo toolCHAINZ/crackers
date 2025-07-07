@@ -8,20 +8,20 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
+use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
 use jingle::varnode::ResolvedVarnode;
-use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, Bool, BV};
+use z3::ast::{Ast, BV, Bool};
 use z3::{Config, Context, SatResult, Solver};
 
 mod step;
@@ -144,11 +144,11 @@ impl ReferenceProgram {
                                 let max = min(buffer.len(), pointer_offset_bytes_le.len());
                                 buffer[0..max].copy_from_slice(&pointer_offset_bytes_le[0..max]);
                                 let ptr = u64::from_le_bytes(buffer);
-                                let new_vn = (VarNode {
+                                let new_vn = VarNode {
                                     size: vn.access_size_bytes,
                                     space_index: vn.pointer_space_index,
                                     offset: ptr,
-                                });
+                                };
                                 covering_set.insert(&new_vn);
                                 stablized = false;
                             }
