@@ -7,3 +7,8 @@ name = "crackers_python"
 publish = false # disable `cargo publish` for `package_a`
 git_release_enable = false
 git_tag_enable = false
+version_group = "crackers"
+
+[[package]]
+name = "crackers"
+version_group = "crackers"
