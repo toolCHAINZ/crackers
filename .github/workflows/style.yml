@@ -41,15 +41,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-${{ steps.toolchain.outputs.cachekey }}-
             ${{ runner.os }}-cargo-registry-
 
-      - name: Cache cargo git index
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-git-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-git-${{ steps.toolchain.outputs.cachekey }}-
-            ${{ runner.os }}-cargo-git-
-
       - name: Cache target directory
         uses: actions/cache@v4
         with:

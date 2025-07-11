@@ -19,8 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [nightly, beta, stable]
-        os: [ubuntu]
+        rust: [ nightly, beta, stable ]
+        os: [ ubuntu ]
     env:
       RUSTFLAGS: --cfg deny_warnings -Dwarnings
     timeout-minutes: 45
@@ -32,4 +32,25 @@ jobs:
         id: toolchain
         with:
           toolchain: ${{matrix.rust}}
-      - run: cargo build --all-features --manifest-path crackers/Cargo.toml
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-${{ steps.toolchain.outputs.cachekey }}-
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-${{ steps.toolchain.outputs.cachekey }}-
+            ${{ runner.os }}-target-
+      - name: Build crackers
+        run: cargo build --all-features --manifest-path crackers/Cargo.toml
+        env:
+          READ_ONLY_GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+
