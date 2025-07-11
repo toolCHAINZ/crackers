@@ -20,11 +20,11 @@ default = ["toml"]
 bin = ["dep:tracing-subscriber", "toml", "dep:clap", "dep:anyhow", "dep:tracing-indicatif"]
 pyo3 = ["dep:pyo3", "jingle/pyo3"]
 toml = ["dep:toml_edit"]
-bundled = ["z3/bundled"]
+z3-gh-release = ["z3/gh-release"]
 
 [dependencies]
 jingle = { version = "0.1.2", features = ["gimli"] }
-z3 = "0.13.0"
+z3 = "0.13.1"
 serde = { version = "1.0.203", features = ["derive"] }
 thiserror = "2.0"
 tracing = "0.1"
