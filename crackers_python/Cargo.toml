@@ -1,6 +1,6 @@
 [package]
 name = "crackers_python"
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 edition = "2024"
 description = "pyo3 bindings for crackers"
@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.24", features = ["extension-module", "py-clone"] }
-crackers = {path = "../crackers", features = ["pyo3"], version = "0.1.1"}
+crackers = {path = "../crackers", features = ["pyo3"], version = "0.1.2" }
 jingle = {version = "0.1.2", features = ["pyo3"]}
 toml_edit = "0.22.22"
 z3 = "0.13.0"
