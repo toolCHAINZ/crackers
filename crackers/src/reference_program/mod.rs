@@ -13,11 +13,11 @@ use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, VarNode};
+use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, OpCode, VarNode};
 use jingle::varnode::ResolvedVarnode;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
@@ -67,6 +67,7 @@ impl ReferenceProgram {
     pub fn try_load(
         spec: &SpecificationConfig,
         sleigh_config: &SleighConfig,
+        blacklist: &HashSet<OpCode>,
     ) -> Result<Self, CrackersConfigError> {
         let bytes = fs::read(&spec.path)?;
         let gimli_file = File::parse(&*bytes)?;
@@ -89,10 +90,16 @@ impl ReferenceProgram {
             sleigh.set_base_address(o);
             addr = addr.wrapping_add(o);
         }
-        let steps: Vec<_> = sleigh
+        let instrs: Vec<_> = sleigh
             .read_until_branch(addr, spec.max_instructions)
-            .map(Step::from_instr)
             .collect();
+        for op in instrs.iter().flat_map(|i| i.ops.iter()) {
+            if blacklist.contains(&op.opcode()) {
+                return Err(CrackersConfigError::IllegalPcodeOperation(op.opcode()));
+            }
+        }
+
+        let steps: Vec<_> = instrs.into_iter().map(Step::from_instr).collect();
         let mut ref_program = Self {
             steps,
             initial_memory: Default::default(),
