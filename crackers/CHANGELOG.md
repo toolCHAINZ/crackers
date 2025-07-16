@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.1.3...crackers-v0.2.0) - 2025-07-16
+
+### Fixed
+
+- verify reference program operations against blacklist ([#51](https://github.com/toolCHAINZ/crackers/pull/51))
+
 ## [0.1.3](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.1.2...crackers-v0.1.3) - 2025-07-16
 
 ### Other
