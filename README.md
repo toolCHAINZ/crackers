@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./crackers.svg" width="350"/>
+<img src="https://raw.githubusercontent.com/toolCHAINZ/crackers/refs/heads/main/crackers.svg" width="350"/>
 
 </div>
 
