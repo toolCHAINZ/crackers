@@ -1,5 +1,5 @@
 use jingle::JingleError;
-use jingle::sleigh::JingleSleighError;
+use jingle::sleigh::{JingleSleighError, OpCode};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -14,6 +14,8 @@ pub enum CrackersConfigError {
     SpecMissingStartSymbol,
     #[error("Unable to parse a segment from the target binary")]
     LibraryParse,
+    #[error("The reference program had an illegal p-code operation: {0:?}")]
+    IllegalPcodeOperation(OpCode),
     #[error("Spec objects must have a '.text' symbol")]
     SpecMissingTextSection,
     #[error(

@@ -91,6 +91,7 @@ pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
     Ok(Bool::and(z3, &bools))
 }
 
+#[expect(deprecated)]
 pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
     jingle: &JingleContext<'ctx>,
     spec: &S,

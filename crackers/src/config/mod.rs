@@ -46,6 +46,7 @@ impl CrackersConfig {
             .reference_program(ReferenceProgram::try_load(
                 &self.specification,
                 &self.sleigh,
+                &self.library.operation_blacklist,
             )?);
         b.selection_strategy(self.synthesis.strategy);
         b.combine_instructions(self.synthesis.combine_instructions);
