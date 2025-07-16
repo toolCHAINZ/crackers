@@ -69,6 +69,11 @@ impl ReferenceProgram {
         sleigh_config: &SleighConfig,
         blacklist: &HashSet<OpCode>,
     ) -> Result<Self, CrackersConfigError> {
+        let mut blacklist = blacklist.clone();
+        // We _do_ want to allow these in the reference program
+        blacklist.remove(&OpCode::CPUI_BRANCH);
+        blacklist.remove(&OpCode::CPUI_CALL);
+        
         let bytes = fs::read(&spec.path)?;
         let gimli_file = File::parse(&*bytes)?;
         let sleigh_context_builder = sleigh_config.context_builder()?;
