@@ -8,16 +8,16 @@ use crate::gadget::library::GadgetLibrary;
 use crate::gadget::signature::OutputSignature;
 use crate::gadget::Gadget;
 
-pub struct GadgetIterator<'a, 'ctx> {
-    z3: &'ctx Context,
+pub struct GadgetIterator<'a> {
+    z3: & Context,
     library: &'a GadgetLibrary,
     offset: usize,
-    instr: ModeledInstruction<'ctx>,
+    instr: ModeledInstruction,
 }
 
-impl<'a, 'ctx> GadgetIterator<'a, 'ctx> {
+impl<'a> GadgetIterator<'a> {
     pub fn new(
-        z3: &'ctx Context,
+        z3: & Context,
         library: &'a GadgetLibrary,
         sig: Instruction,
     ) -> Result<Self, CrackersError> {
@@ -30,7 +30,7 @@ impl<'a, 'ctx> GadgetIterator<'a, 'ctx> {
     }
 }
 
-impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
+impl<'a> Iterator for GadgetIterator<'a> {
     type Item = &'a Gadget;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -43,7 +43,7 @@ impl<'a, 'ctx> Iterator for GadgetIterator<'a, 'ctx> {
             if OutputSignature::from(x).covers(&OutputSignature::from(&self.instr.instr))
                 && syscall_cond
             {
-                match ModeledBlock::read(self.z3, self.library, x.instructions.clone().into_iter())
+                match ModeledBlock::read(self.ctx(), self.library, x.instructions.clone().into_iter())
                 {
                     Ok(h) => h,
                     Err(e) => {

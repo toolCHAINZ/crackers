@@ -18,7 +18,7 @@ pub trait InstrLen {
     fn instr_len(&self) -> usize;
 }
 
-impl InstrLen for ModeledBlock<'_> {
+impl InstrLen for ModeledBlock {
     fn instr_len(&self) -> usize {
         self.instructions.len()
     }
@@ -35,7 +35,7 @@ impl<T: InstrLen> InstrLen for &T {
         (*self).instr_len()
     }
 }
-impl InstrLen for ModeledInstruction<'_> {
+impl InstrLen for ModeledInstruction {
     fn instr_len(&self) -> usize {
         1
     }
@@ -57,8 +57,8 @@ pub enum AssignmentResult {
 pub struct SelectionFailure {
     pub indices: Vec<usize>,
 }
-pub trait SelectionStrategy<'ctx> {
-    fn initialize<T: InstrLen>(z3: &'ctx Context, choices: &[Vec<T>]) -> Self;
+pub trait SelectionStrategy {
+    fn initialize<T: InstrLen>(z3: &Context, choices: &[Vec<T>]) -> Self;
 
     fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError>;
 
@@ -69,12 +69,12 @@ pub trait SelectionStrategy<'ctx> {
     }
 }
 
-pub enum OuterProblem<'ctx> {
-    SatProb(SatProblem<'ctx>),
-    OptimizeProb(OptimizationProblem<'ctx>),
+pub enum OuterProblem {
+    SatProb(SatProblem),
+    OptimizeProb(OptimizationProblem),
 }
 
-impl OuterProblem<'_> {
+impl OuterProblem {
     pub(crate) fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError> {
         match self {
             OuterProblem::SatProb(s) => s.get_assignments(),

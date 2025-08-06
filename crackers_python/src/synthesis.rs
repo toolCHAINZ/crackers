@@ -93,15 +93,10 @@ impl PythonSynthesisParams {
     }
 }
 
-pub type PythonStateConstraintGenerator = dyn Fn(&JingleContext<'static>, &State<'static>, u64) -> Result<Bool<'static>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
+pub type PythonStateConstraintGenerator =
+    dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
 
-pub type PythonTransitionConstraintGenerator = dyn Fn(
-        &JingleContext<'static>,
-        &ModeledBlock<'static>,
-    ) -> Result<Option<Bool<'static>>, CrackersError>
+pub type PythonTransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
     + Send
     + Sync
     + 'static;

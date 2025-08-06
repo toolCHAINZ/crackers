@@ -30,11 +30,9 @@ mod step;
 pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 
 impl MemoryValuation {
-    pub fn to_constraint<'a>(
-        &self,
-    ) -> impl Fn(&JingleContext<'a>, &State<'a>) -> Result<Bool<'a>, CrackersError> {
+    pub fn to_constraint(&self) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
         let map = self.0.clone();
-        move |ctx, state| {
+        move |jingle, state| {
             let mut v = vec![];
             for (vn, value) in &map {
                 let mut temp_vn: VarNode = VarNode {
@@ -46,13 +44,13 @@ impl MemoryValuation {
                 for (index, offset) in r.enumerate() {
                     temp_vn.offset = offset;
                     v.push(state.read_varnode(&temp_vn)?._eq(&BV::from_u64(
-                        ctx.z3,
+                        jingle.ctx(),
                         value[index] as u64,
                         8,
                     )))
                 }
             }
-            Ok(Bool::and(ctx.z3, &v))
+            Ok(Bool::and(jingle.ctx(), &v))
         }
     }
 }
@@ -200,16 +198,16 @@ impl ReferenceProgram {
         })
     }
 
-    fn get_extended_constraints_from_indirect<'ctx>(
+    fn get_extended_constraints_from_indirect(
         &self,
-        ctx: JingleContext<'ctx>,
+        ctx: JingleContext,
     ) -> Result<VarNodeSet, CrackersError> {
         let i: Vec<_> = self.instructions().cloned().collect();
         let i: Instruction = i.as_slice().try_into().unwrap();
         let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
         let init_constraint = self.initial_memory.to_constraint();
         let constraint = init_constraint(&ctx, modeled_instr.get_original_state())?;
-        let solver = Solver::new(ctx.z3);
+        let solver = Solver::new(ctx.ctx());
         let mut vn_set = VarNodeSet::default();
         solver.assert(&constraint);
         match solver.check() {

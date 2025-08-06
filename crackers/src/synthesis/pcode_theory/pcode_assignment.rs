@@ -9,20 +9,20 @@ use crate::reference_program::MemoryValuation;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 
-pub struct PcodeAssignment<'ctx> {
+pub struct PcodeAssignment {
     initial_spec_memory: MemoryValuation,
-    spec_trace: Vec<ModeledInstruction<'ctx>>,
-    eval_trace: Vec<ModeledBlock<'ctx>>,
+    spec_trace: Vec<ModeledInstruction>,
+    eval_trace: Vec<ModeledBlock>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
-impl<'ctx> PcodeAssignment<'ctx> {
+impl PcodeAssignment {
     pub fn new(
         initial_spec_memory: MemoryValuation,
-        spec_trace: Vec<ModeledInstruction<'ctx>>,
-        eval_trace: Vec<ModeledBlock<'ctx>>,
+        spec_trace: Vec<ModeledInstruction>,
+        eval_trace: Vec<ModeledBlock>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
@@ -39,13 +39,13 @@ impl<'ctx> PcodeAssignment<'ctx> {
 
     pub fn check(
         &self,
-        jingle: &JingleContext<'ctx>,
-        solver: &Solver<'ctx>,
-    ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+        jingle: &JingleContext,
+        solver: &Solver,
+    ) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
         let mem_cnstr = self.initial_spec_memory.to_constraint();
         solver.assert(&mem_cnstr(jingle, self.spec_trace[0].get_original_state())?);
-        solver.assert(&assert_concat(jingle.z3, &self.spec_trace)?);
-        solver.assert(&assert_concat(jingle.z3, &self.eval_trace)?);
+        solver.assert(&assert_concat(jingle.ctx(), &self.spec_trace)?);
+        solver.assert(&assert_concat(jingle.ctx(), &self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
         }
@@ -80,10 +80,7 @@ impl<'ctx> PcodeAssignment<'ctx> {
         }
     }
 }
-pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
-    z3: &'ctx Context,
-    items: &[T],
-) -> Result<Bool<'ctx>, CrackersError> {
+pub fn assert_concat<T: ModelingContext>(z3: &Context, items: &[T]) -> Result<Bool, CrackersError> {
     let mut bools = vec![];
     for x in items.windows(2) {
         bools.push(x[0].assert_concat(&x[1])?)
@@ -92,12 +89,12 @@ pub fn assert_concat<'ctx, T: ModelingContext<'ctx>>(
 }
 
 #[expect(deprecated)]
-pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
-    jingle: &JingleContext<'ctx>,
+pub fn assert_compatible_semantics<S: ModelingContext>(
+    jingle: &JingleContext,
     spec: &S,
-    item: &ModeledBlock<'ctx>,
+    item: &ModeledBlock,
     invariants: &[Arc<TransitionConstraintGenerator>],
-) -> Result<Bool<'ctx>, CrackersError> {
+) -> Result<Bool, CrackersError> {
     let mut bools = vec![];
     // First, all outputs of the item under test must be assignable to the same values
     // as in our specification computation
@@ -114,19 +111,19 @@ pub fn assert_compatible_semantics<'ctx, S: ModelingContext<'ctx>>(
             bools.push(b)
         }
     }
-    Ok(Bool::and(jingle.z3, &bools))
+    Ok(Bool::and(jingle.ctx(), &bools))
 }
 
-pub fn assert_state_constraints<'ctx>(
-    jingle: &JingleContext<'ctx>,
+pub fn assert_state_constraints(
+    jingle: &JingleContext,
     constraints: &[Arc<StateConstraintGenerator>],
-    state: &State<'ctx>,
+    state: &State,
     addr: u64,
-) -> Result<Bool<'ctx>, CrackersError> {
+) -> Result<Bool, CrackersError> {
     let mut bools = vec![];
     for x in constraints.iter() {
         let assertion = x(jingle, state, addr)?;
         bools.push(assertion);
     }
-    Ok(Bool::and(jingle.z3, &bools))
+    Ok(Bool::and(jingle.ctx(), &bools))
 }

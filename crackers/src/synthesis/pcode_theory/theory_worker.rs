@@ -16,20 +16,20 @@ pub struct TheoryWorkerResponse {
     pub theory_result: Result<Option<ConflictClause>, CrackersError>,
 }
 
-pub struct TheoryWorker<'ctx> {
+pub struct TheoryWorker {
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
     receiver: Receiver<SlotAssignments>,
-    theory: PcodeTheory<'ctx, ModeledInstruction<'ctx>>,
+    theory: PcodeTheory<ModeledInstruction>,
 }
 
-impl<'ctx> TheoryWorker<'ctx> {
+impl TheoryWorker {
     pub fn new(
-        z3: &'ctx Context,
+        z3: &Context,
         id: usize,
         sender: Sender<TheoryWorkerResponse>,
         receiver: Receiver<SlotAssignments>,
-        builder: PcodeTheoryBuilder<'ctx>,
+        builder: PcodeTheoryBuilder,
     ) -> Result<Self, CrackersError> {
         Ok(Self {
             id,

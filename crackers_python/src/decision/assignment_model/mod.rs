@@ -18,16 +18,16 @@ use z3::ast::BV;
 #[pyclass(unsendable, name = "AssignmentModel")]
 #[derive(Clone)]
 pub struct PythonAssignmentModel {
-    pub inner: Rc<AssignmentModel<'static, ModeledBlock<'static>>>,
+    pub inner: Rc<AssignmentModel<ModeledBlock>>,
 }
 
 impl PythonAssignmentModel {
     fn eval_vn(
         &self,
-        state: &State<'static>,
+        state: &State,
         vn: PythonResolvedVarNode,
         completion: bool,
-    ) -> Option<(String, BV<'static>)> {
+    ) -> Option<(String, BV)> {
         match vn {
             PythonResolvedVarNode::Direct(a) => {
                 let bv = state.read_varnode(&VarNode::from(a.clone())).ok()?;

@@ -12,19 +12,19 @@ use crate::synthesis::selection_strategy::{
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug)]
-pub struct OptimizationProblem<'ctx> {
-    variables: Vec<Vec<Bool<'ctx>>>,
-    z3: &'ctx Context,
-    solver: Optimize<'ctx>,
-    index_bools: Vec<Bool<'ctx>>,
+pub struct OptimizationProblem {
+    variables: Vec<Vec<Bool>>,
+    z3: Context,
+    solver: Optimize,
+    index_bools: Vec<Bool>,
 }
 
-impl<'ctx> OptimizationProblem<'ctx> {
-    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
+impl OptimizationProblem {
+    fn get_decision_variable(&self, var: &Decision) -> &Bool {
         &self.variables[var.index][var.choice]
     }
 
-    fn get_unsat_reason(&self, core: Vec<Bool<'ctx>>) -> SelectionFailure {
+    fn get_unsat_reason(&self, core: Vec<Bool>) -> SelectionFailure {
         SelectionFailure {
             indices: self
                 .index_bools
@@ -37,18 +37,18 @@ impl<'ctx> OptimizationProblem<'ctx> {
     }
 }
 
-impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
-    fn initialize<T: InstrLen>(z3: &'ctx Context, gadgets: &[Vec<T>]) -> Self {
+impl SelectionStrategy for OptimizationProblem {
+    fn initialize<T: InstrLen>(z3: &Context, gadgets: &[Vec<T>]) -> Self {
         let mut prob = Self {
             variables: Default::default(),
-            z3,
+            z3: z3.clone(),
             solver: Optimize::new(z3),
             index_bools: Vec::with_capacity(gadgets.len()),
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
             for (j, _) in slot.iter().enumerate() {
-                let var = Bool::new_const(prob.z3, Self::derive_var_name(i, j));
+                let var = Bool::new_const(&prob.z3, Self::derive_var_name(i, j));
                 prob.solver
                     .assert_soft(&var.not(), gadgets[i][j].instr_len(), None);
                 vars.push(var)
@@ -56,7 +56,7 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
             prob.variables.push(vars);
         }
         for (i, slot) in prob.variables.iter().enumerate() {
-            let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
+            let pbs: Vec<(&Bool, i32)> = slot.iter().map(|b| (b, 1)).collect();
             let b = Bool::fresh_const(z3, &format!("slot_{i}"));
             prob.index_bools.push(b.clone());
             prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b)
@@ -73,12 +73,12 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
                 let model = self.solver.get_model().ok_or(ModelGenerationError)?;
                 let assignment =
                     SlotAssignments::create_from_model(model, self.variables.as_slice())?;
-                let decisions: Vec<&Bool<'ctx>> = assignment
+                let decisions: Vec<&Bool> = assignment
                     .to_decisions()
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                self.solver.assert(&Bool::and(self.z3, &decisions).not());
+                self.solver.assert(&Bool::and(&self.z3, &decisions).not());
 
                 Ok(Success(assignment))
             }
@@ -92,6 +92,6 @@ impl<'ctx> SelectionStrategy<'ctx> for OptimizationProblem<'ctx> {
             .map(|b| self.get_decision_variable(b))
             .collect();
         self.solver
-            .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
+            .assert(&Bool::and(&self.z3, choices.as_slice()).not().simplify());
     }
 }

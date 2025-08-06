@@ -9,37 +9,37 @@ use z3::Model;
 use z3::ast::BV;
 
 #[derive(Debug)]
-pub struct AssignmentModel<'ctx, T: ModelingContext<'ctx>> {
-    model: Model<'ctx>,
+pub struct AssignmentModel<T: ModelingContext> {
+    model: Model,
     pub gadgets: Vec<T>,
 }
 
-impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
-    pub fn new(model: Model<'ctx>, gadgets: Vec<T>) -> Self {
+impl<T: ModelingContext> AssignmentModel<T> {
+    pub fn new(model: Model, gadgets: Vec<T>) -> Self {
         Self { model, gadgets }
     }
 
-    pub fn model(&self) -> &Model<'ctx> {
+    pub fn model(&self) -> &Model {
         &self.model
     }
 
-    pub fn initial_state<'a>(&'a self) -> Option<&'a State<'ctx>> {
+    pub fn initial_state(&self) -> Option<&State> {
         self.gadgets.first().map(|f| f.get_original_state())
     }
 
-    pub fn final_state<'a>(&'a self) -> Option<&'a State<'ctx>> {
+    pub fn final_state(&self) -> Option<&State> {
         self.gadgets.last().map(|f| f.get_final_state())
     }
 
-    pub fn read_original<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
+    pub fn read_original(&self, vn: GeneralizedVarNode) -> Option<BV> {
         self.initial_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_output<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV<'ctx>> {
+    pub fn read_output(&self, vn: GeneralizedVarNode) -> Option<BV> {
         self.final_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_resolved<'a>(&'a self, vn: &ResolvedVarnode<'ctx>) -> Option<BV<'ctx>> {
+    pub fn read_resolved(&self, vn: &ResolvedVarnode) -> Option<BV> {
         self.final_state().and_then(|f| f.read_resolved(vn).ok())
     }
 
@@ -53,7 +53,7 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
         }
     }
 
-    pub fn initial_reg<'a>(&'a self, reg: &str) -> Option<BV<'ctx>> {
+    pub fn initial_reg(&self, reg: &str) -> Option<BV> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         let val = self.gadgets[0]
             .get_original_state()
@@ -63,7 +63,7 @@ impl<'ctx, T: ModelingContext<'ctx>> AssignmentModel<'ctx, T> {
     }
 }
 
-impl<'ctx, T: ModelingContext<'ctx> + Display> Display for AssignmentModel<'ctx, T> {
+impl<T: ModelingContext + Display> Display for AssignmentModel<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Gadgets:\n")?;
         for block in &self.gadgets {

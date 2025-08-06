@@ -10,23 +10,23 @@ use crate::synthesis::selection_strategy::{AssignmentResult, SelectionFailure, S
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Debug, Clone)]
-pub struct SatProblem<'ctx> {
-    variables: Vec<Vec<Bool<'ctx>>>,
-    z3: &'ctx Context,
-    solver: Solver<'ctx>,
+pub struct SatProblem {
+    variables: Vec<Vec<Bool>>,
+    z3: Context,
+    solver: Solver,
     last_conflict: Option<ConflictClause>,
     last_assignment: Option<SlotAssignments>,
-    index_bools: Vec<Bool<'ctx>>,
+    index_bools: Vec<Bool>,
 }
 
-impl<'ctx> SatProblem<'ctx> {
-    fn get_decision_variable(&self, var: &Decision) -> &Bool<'ctx> {
+impl SatProblem {
+    fn get_decision_variable(&self, var: &Decision) -> &Bool {
         &self.variables[var.index][var.choice]
     }
 
-    fn get_last_conflict_refutation(&self) -> Option<Bool<'ctx>> {
+    fn get_last_conflict_refutation(&self) -> Option<Bool> {
         self.last_conflict.clone().map(|c| {
-            let mut decisions: Vec<&Bool<'ctx>> = vec![];
+            let mut decisions: Vec<&Bool> = vec![];
             for x in c.decisions() {
                 decisions.push(self.get_decision_variable(x));
             }
@@ -38,11 +38,11 @@ impl<'ctx> SatProblem<'ctx> {
                     }))
                 }
             }
-            return Bool::or(self.z3, &decisions).not();
+            Bool::or(&self.z3, &decisions).not()
         })
     }
 
-    fn get_unsat_reason(&self, core: Vec<Bool<'ctx>>) -> SelectionFailure {
+    fn get_unsat_reason(&self, core: Vec<Bool>) -> SelectionFailure {
         SelectionFailure {
             indices: self
                 .index_bools
@@ -54,11 +54,11 @@ impl<'ctx> SatProblem<'ctx> {
         }
     }
 }
-impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
-    fn initialize<T>(z3: &'ctx Context, gadgets: &[Vec<T>]) -> SatProblem<'ctx> {
+impl SelectionStrategy for SatProblem {
+    fn initialize<T>(z3: &Context, gadgets: &[Vec<T>]) -> SatProblem {
         let mut prob = SatProblem {
             variables: Default::default(),
-            z3,
+            z3: z3.clone(),
             solver: Solver::new(z3),
             last_conflict: None,
             last_assignment: None,
@@ -67,12 +67,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
             for (j, _) in slot.iter().enumerate() {
-                vars.push(Bool::new_const(prob.z3, SatProblem::derive_var_name(i, j)))
+                vars.push(Bool::new_const(&prob.z3, SatProblem::derive_var_name(i, j)))
             }
             prob.variables.push(vars);
         }
         for (i, slot) in prob.variables.iter().enumerate() {
-            let pbs: Vec<(&Bool<'ctx>, i32)> = slot.iter().map(|b| (b, 1)).collect();
+            let pbs: Vec<(&Bool, i32)> = slot.iter().map(|b| (b, 1)).collect();
             let b = Bool::fresh_const(z3, &format!("slot_{i}"));
             prob.index_bools.push(b.clone());
             prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b);
@@ -98,12 +98,12 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
                 let assignment =
                     SlotAssignments::create_from_model(model, self.variables.as_slice())?;
                 self.last_assignment = Some(assignment.clone());
-                let decisions: Vec<&Bool<'ctx>> = assignment
+                let decisions: Vec<&Bool> = assignment
                     .to_decisions()
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                self.solver.assert(&Bool::and(self.z3, &decisions).not());
+                self.solver.assert(&Bool::and(&self.z3, &decisions).not());
 
                 Ok(Success(assignment))
             }
@@ -118,7 +118,7 @@ impl<'ctx> SelectionStrategy<'ctx> for SatProblem<'ctx> {
             .map(|b| self.get_decision_variable(b))
             .collect();
         self.solver
-            .assert(&Bool::and(self.z3, choices.as_slice()).not().simplify());
+            .assert(&Bool::and(&self.z3, choices.as_slice()).not().simplify());
     }
 }
 

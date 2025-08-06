@@ -83,11 +83,8 @@ impl Debug for AssignmentModelBuilder {
 }
 
 impl AssignmentModelBuilder {
-    fn make_pcode_model<'ctx>(
-        &self,
-        jingle: &JingleContext<'ctx>,
-    ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
-        let modeled_spec: Result<Vec<ModeledInstruction<'ctx>>, _> = self
+    fn make_pcode_model(&self, jingle: &JingleContext) -> Result<PcodeAssignment, CrackersError> {
+        let modeled_spec: Result<Vec<ModeledInstruction>, _> = self
             .templates
             .steps()
             .iter()
@@ -110,14 +107,11 @@ impl AssignmentModelBuilder {
             self.pointer_invariants.clone(),
         ))
     }
-    pub fn build<'ctx>(
-        &self,
-        z3: &'ctx Context,
-    ) -> Result<AssignmentModel<'ctx, ModeledBlock<'ctx>>, CrackersError> {
+    pub fn build(&self, z3: &Context) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
         let jingle = JingleContext::new(z3, &self.arch_info);
 
         let pcode_model = self.make_pcode_model(&jingle)?;
-        let s = Solver::new(jingle.z3);
+        let s = Solver::new(jingle.ctx());
         pcode_model.check(&jingle, &s)
     }
 }

@@ -50,9 +50,9 @@ pub enum DecisionResult {
     Unsat(SelectionFailure),
 }
 
-pub struct AssignmentSynthesis<'ctx> {
-    z3: &'ctx Context,
-    outer_problem: OuterProblem<'ctx>,
+pub struct AssignmentSynthesis {
+    z3: Context,
+    outer_problem: OuterProblem,
     library: Arc<GadgetLibrary>,
     candidates: Candidates,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
@@ -63,14 +63,14 @@ pub struct AssignmentSynthesis<'ctx> {
     parallel: usize,
 }
 
-impl<'ctx> AssignmentSynthesis<'ctx> {
-    pub fn new(z3: &'ctx Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
+impl AssignmentSynthesis {
+    pub fn new(z3: &Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
         let instrs = &builder.reference_program;
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
         let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
-        let modeled_instrs: Vec<ModeledInstruction<'ctx>> = instrs
+        let modeled_instrs: Vec<ModeledInstruction> = instrs
             .steps()
             .iter()
             .map(|i| i.model(&jingle).unwrap())
@@ -92,7 +92,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
             }
         };
         Ok(AssignmentSynthesis {
-            z3,
+            z3: z3.clone(),
             outer_problem,
             candidates,
             library: builder.gadget_library.clone(),
@@ -127,7 +127,7 @@ impl<'ctx> AssignmentSynthesis<'ctx> {
 
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
         let theory_builder = self.make_pcode_theory_builder();
-        let theory = theory_builder.build(self.z3)?;
+        let theory = theory_builder.build(&self.z3)?;
         loop {
             let assignment = self.outer_problem.get_assignments()?;
             match assignment {

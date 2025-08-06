@@ -25,11 +25,9 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
-pub type TransitionConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+pub type StateConstraintGenerator =
+    dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
+pub type TransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
     + Send
     + Sync
     + 'static;
@@ -66,21 +64,18 @@ impl SynthesisParamsBuilder {
 }
 
 impl SynthesisParams {
-    pub fn build_single<'a>(
-        &self,
-        z3: &'a Context,
-    ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
+    pub fn build_single(&self, z3: &Context) -> Result<AssignmentSynthesis, CrackersError> {
         let s = AssignmentSynthesis::new(z3, self)?;
         Ok(s)
     }
 
-    pub fn build_combined<'a>(
+    pub fn build_combined(
         &self,
-        z3: &'a Context,
-    ) -> Result<CombinedAssignmentSynthesis<'a>, CrackersError> {
+        z3: &Context,
+    ) -> Result<CombinedAssignmentSynthesis, CrackersError> {
         Ok(CombinedAssignmentSynthesis {
             base_config: self.clone(),
-            z3,
+            z3: z3.clone(),
         })
     }
 }

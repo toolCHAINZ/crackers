@@ -4,11 +4,11 @@ use z3::ast::BV;
 
 #[pyclass(unsendable)]
 pub struct ModelVarNodeIterator {
-    vn: Box<dyn Iterator<Item = (String, BV<'static>)>>,
+    vn: Box<dyn Iterator<Item = (String, BV)>>,
 }
 
 impl ModelVarNodeIterator {
-    pub fn new<T: Iterator<Item = (String, BV<'static>)> + 'static>(vn: T) -> Self {
+    pub fn new<T: Iterator<Item = (String, BV)> + 'static>(vn: T) -> Self {
         Self { vn: Box::new(vn) }
     }
 }

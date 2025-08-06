@@ -58,10 +58,7 @@ pub struct Candidates {
 }
 
 impl Candidates {
-    pub fn model<'ctx>(
-        &self,
-        jingle: &JingleContext<'ctx>,
-    ) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError> {
+    pub fn model(&self, jingle: &JingleContext) -> Result<Vec<Vec<ModeledBlock>>, CrackersError> {
         let mut result = vec![];
         for x in &self.candidates {
             let mut v = vec![];

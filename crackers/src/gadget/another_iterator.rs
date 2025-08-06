@@ -8,26 +8,22 @@ use z3::ast::Ast;
 use crate::gadget::Gadget;
 use crate::gadget::signature::GadgetSignature;
 
-pub struct TraceCandidateIterator<'ctx, 'a, T>
+pub struct TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    jingle: JingleContext<'ctx>,
-    _solver: Solver<'ctx>,
+    jingle: JingleContext,
+    _solver: Solver,
     gadgets: T,
-    trace: Vec<ModeledInstruction<'ctx>>,
+    trace: Vec<ModeledInstruction>,
 }
 
-impl<'ctx, 'a, T> TraceCandidateIterator<'ctx, 'a, T>
+impl<'a, T> TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(
-        jingle: &JingleContext<'ctx>,
-        gadgets: T,
-        trace: Vec<ModeledInstruction<'ctx>>,
-    ) -> Self {
-        let _solver = Solver::new(jingle.z3);
+    pub(crate) fn new(jingle: &JingleContext, gadgets: T, trace: Vec<ModeledInstruction>) -> Self {
+        let _solver = Solver::new(jingle.ctx());
         Self {
             jingle: jingle.clone(),
             _solver,
@@ -36,7 +32,7 @@ where
         }
     }
 }
-impl<'a, T> Iterator for TraceCandidateIterator<'_, 'a, T>
+impl<'a, T> Iterator for TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {

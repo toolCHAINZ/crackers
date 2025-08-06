@@ -128,14 +128,11 @@ pub struct PointerRange {
 /// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
-) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
-+ Send
-+ Sync
-+ Clone
-+ 'static {
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + Clone + 'static
+{
     move |jingle, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
-        let constraint = data._eq(&BV::from_u64(jingle.z3, m.value as u64, data.get_size()));
+        let constraint = data._eq(&BV::from_u64(jingle.ctx(), m.value as u64, data.get_size()));
         Ok(constraint)
     }
 }
@@ -145,32 +142,28 @@ pub fn gen_memory_constraint(
 pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
-) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
-+ 'static
-+ Send
-+ Sync
-+ Clone {
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + 'static + Send + Sync + Clone
+{
     move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
-        let constraint = data._eq(&BV::from_u64(jingle.z3, value, data.get_size()));
+        let constraint = data._eq(&BV::from_u64(jingle.ctx(), value, data.get_size()));
         Ok(constraint)
     }
 }
 
 /// Generates a constraint enforcing that the given varnode contains a pointer into the default
 /// code space, pointing to the provided string
-pub fn gen_register_pointer_constraint<'ctx>(
+pub fn gen_register_pointer_constraint(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraints>,
-) -> impl for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError> + 'ctx + Clone
-{
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Clone {
     move |jingle, state, _addr| {
         let m = m.clone();
         let mut bools = vec![];
         let pointer = state.read_varnode(&vn)?;
         for (i, byte) in value.as_bytes().iter().enumerate() {
-            let expected = BV::from_u64(jingle.z3, *byte as u64, 8);
+            let expected = BV::from_u64(jingle.ctx(), *byte as u64, 8);
             let char_ptr = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
                 // dumb but whatever
                 pointer_location: vn.clone(),
@@ -188,12 +181,12 @@ pub fn gen_register_pointer_constraint<'ctx>(
             access_size_bytes: value.len(),
             pointer,
         });
-        let mut constraint = Bool::and(jingle.z3, &bools);
+        let mut constraint = Bool::and(jingle.ctx(), &bools);
         if let Some(c) = m.and_then(|m| m.read) {
             let callback = gen_pointer_range_state_invariant(c);
             let cc = callback(jingle, &resolved, state)?;
             if let Some(b) = cc {
-                constraint = Bool::and(jingle.z3, &[constraint, b])
+                constraint = Bool::and(jingle.ctx(), &[constraint, b])
             }
         }
         Ok(constraint)
@@ -202,15 +195,10 @@ pub fn gen_register_pointer_constraint<'ctx>(
 
 /// Generates an invariant enforcing that the given varnode, read from a given state, is within
 /// the given range.
-pub fn gen_pointer_range_state_invariant<'ctx>(
+pub fn gen_pointer_range_state_invariant(
     m: Vec<PointerRange>,
-) -> impl for<'a> Fn(
-    &JingleContext<'a>,
-    &ResolvedVarnode<'a>,
-    &State<'a>,
-) -> Result<Option<Bool<'a>>, CrackersError>
-+ 'ctx
-+ Clone {
+) -> impl Fn(&JingleContext, &ResolvedVarnode, &State) -> Result<Option<Bool>, CrackersError> + Clone
+{
     move |jingle, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
@@ -222,21 +210,23 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
                         let bool = m
                             .iter()
                             .any(|mm| d.offset >= mm.min && (d.offset + d.size as u64) <= mm.max);
-                        Ok(Some(Bool::from_bool(jingle.z3, bool)))
+                        Ok(Some(Bool::from_bool(jingle.ctx(), bool)))
                     }
                 }
             }
             ResolvedVarnode::Indirect(vn) => {
                 let mut terms = vec![];
                 for mm in &m {
-                    let min = BV::from_u64(jingle.z3, mm.min, vn.pointer.get_size());
-                    let max = BV::from_u64(jingle.z3, mm.max, vn.pointer.get_size());
-                    let constraint =
-                        Bool::and(jingle.z3, &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
+                    let min = BV::from_u64(jingle.ctx(), mm.min, vn.pointer.get_size());
+                    let max = BV::from_u64(jingle.ctx(), mm.max, vn.pointer.get_size());
+                    let constraint = Bool::and(
+                        jingle.ctx(),
+                        &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)],
+                    );
                     terms.push(constraint);
                 }
 
-                Ok(Some(Bool::or(jingle.z3, terms.as_slice())))
+                Ok(Some(Bool::or(jingle.ctx(), terms.as_slice())))
             }
         }
     }
@@ -244,7 +234,7 @@ pub fn gen_pointer_range_state_invariant<'ctx>(
 
 pub fn gen_pointer_range_transition_invariant(
     m: PointerRangeConstraints,
-) -> impl for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+) -> impl Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
 + Send
 + Sync
 + Clone
@@ -267,6 +257,6 @@ pub fn gen_pointer_range_transition_invariant(
                 }
             }
         }
-        Ok(Some(Bool::and(jingle.z3, &bools)))
+        Ok(Some(Bool::and(jingle.ctx(), &bools)))
     }
 }

@@ -49,10 +49,7 @@ impl Gadget {
             .any(|i| i.ops.iter().any(|o| blacklist.contains(&o.opcode())))
     }
 
-    pub fn model<'ctx>(
-        &self,
-        jingle: &JingleContext<'ctx>,
-    ) -> Result<ModeledBlock<'ctx>, CrackersError> {
+    pub fn model(&self, jingle: &JingleContext) -> Result<ModeledBlock, CrackersError> {
         let blk = ModeledBlock::read(jingle, self.instructions.clone().into_iter())?;
         Ok(blk)
     }

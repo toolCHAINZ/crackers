@@ -30,10 +30,7 @@ impl Step {
         &self.instructions
     }
 
-    pub fn model<'ctx>(
-        &self,
-        ctx: &JingleContext<'ctx>,
-    ) -> Result<ModeledInstruction<'ctx>, CrackersConfigError> {
+    pub fn model(&self, ctx: &JingleContext) -> Result<ModeledInstruction, CrackersConfigError> {
         let i: Instruction = self.instructions.as_slice().try_into()?;
         ModeledInstruction::new(i, ctx).map_err(CrackersConfigError::from)
     }

@@ -40,10 +40,7 @@ impl SlotAssignments {
         self.choices.as_slice()
     }
 
-    pub fn create_from_model<'ctx>(
-        model: Model<'ctx>,
-        variables: &[Vec<Bool<'ctx>>],
-    ) -> Result<Self, CrackersError> {
+    pub fn create_from_model(model: Model, variables: &[Vec<Bool>]) -> Result<Self, CrackersError> {
         let mut choices = Vec::with_capacity(variables.len());
         for slot_choices in variables {
             let idx = slot_choices.iter().position(|v| {

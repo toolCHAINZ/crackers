@@ -27,12 +27,12 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_random_candidates_for_trace<'ctx, 'a: 'ctx>(
+    pub fn get_random_candidates_for_trace<'a>(
         &'a self,
-        jingle: &JingleContext<'ctx>,
-        trace: &[ModeledInstruction<'ctx>],
+        jingle: &JingleContext,
+        trace: &[ModeledInstruction],
         seed: i64,
-    ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> + 'ctx {
+    ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
         TraceCandidateIterator::new(jingle, r, trace.to_vec())

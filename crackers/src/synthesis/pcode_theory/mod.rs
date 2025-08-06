@@ -27,28 +27,28 @@ pub mod pcode_assignment;
 mod theory_constraint;
 pub mod theory_worker;
 
-pub struct PcodeTheory<'ctx, S: ModelingContext<'ctx>> {
-    j: JingleContext<'ctx>,
-    solver: Solver<'ctx>,
+pub struct PcodeTheory<S: ModelingContext> {
+    j: JingleContext,
+    solver: Solver,
     templates: Vec<S>,
     initial_memory: MemoryValuation,
-    gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
+    gadget_candidates: Vec<Vec<ModeledBlock>>,
     preconditions: Vec<Arc<StateConstraintGenerator>>,
     postconditions: Vec<Arc<StateConstraintGenerator>>,
     pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
 }
 
-impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
+impl<S: ModelingContext> PcodeTheory<S> {
     pub fn new(
-        j: JingleContext<'ctx>,
+        j: JingleContext,
         templates: Vec<S>,
         initial_memory: MemoryValuation,
-        gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>>,
+        gadget_candidates: Vec<Vec<ModeledBlock>>,
         preconditions: Vec<Arc<StateConstraintGenerator>>,
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
-        let solver = Solver::new_for_logic(j.z3, "QF_ABV").unwrap();
+        let solver = Solver::new_for_logic(j.ctx(), "QF_ABV").unwrap();
         Ok(Self {
             j,
             solver,
@@ -65,7 +65,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         slot_assignments: &SlotAssignments,
     ) -> Result<Option<ConflictClause>, CrackersError> {
         event!(Level::TRACE, "Resetting solver");
-        let gadgets: Vec<ModeledBlock<'ctx>> = slot_assignments
+        let gadgets: Vec<ModeledBlock> = slot_assignments
             .choices()
             .iter()
             .enumerate()
@@ -76,14 +76,14 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         event!(Level::TRACE, "Evaluating combined semantics");
         let final_state = self.j.fresh_state();
         self.solver
-            .assert(&assert_concat(self.j.z3, &self.templates)?);
+            .assert(&assert_concat(self.j.ctx(), &self.templates)?);
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         let mem_cnstr = self.initial_memory.to_constraint();
         self.solver
             .assert(&mem_cnstr(&self.j, self.templates[0].get_original_state())?);
         for (index, x) in gadgets.windows(2).enumerate() {
-            let branch = Bool::fresh_const(self.j.z3, "b");
-            let concat = Bool::fresh_const(self.j.z3, "m");
+            let branch = Bool::fresh_const(self.j.ctx(), "b");
+            let concat = Bool::fresh_const(self.j.ctx(), "m");
             self.solver
                 .assert_and_track(&x[0].assert_concat(&x[1])?, &concat);
 
@@ -112,7 +112,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             .next_back()
             .zip(slot_assignments.choices().last())
         {
-            let concat = Bool::fresh_const(self.j.z3, "m");
+            let concat = Bool::fresh_const(self.j.ctx(), "m");
             self.solver
                 .assert_and_track(&g.get_final_state()._eq(&final_state)?, &concat);
             assertions.push(ConjunctiveConstraint::new(
@@ -125,7 +125,7 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
             ))
         }
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
-            let sem = Bool::fresh_const(self.j.z3, "c");
+            let sem = Bool::fresh_const(self.j.ctx(), "c");
             self.solver.assert_and_track(
                 &assert_compatible_semantics(&self.j, spec, g, &self.pointer_invariants)?,
                 &sem,
@@ -143,8 +143,8 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         let last_addr = gadgets[gadgets.len() - 1].get_address();
         let pre = self.assert_preconditions(gadgets[0].get_original_state(), first_addr)?;
         let post = self.assert_postconditions(&final_state, last_addr)?;
-        let pre_bool = Bool::fresh_const(self.j.z3, "pre");
-        let post_bool = Bool::fresh_const(self.j.z3, "post");
+        let pre_bool = Bool::fresh_const(self.j.ctx(), "pre");
+        let post_bool = Bool::fresh_const(self.j.ctx(), "post");
         self.solver.assert_and_track(&pre, &pre_bool);
         self.solver.assert_and_track(&post, &post_bool);
         assertions.push(ConjunctiveConstraint::new(
@@ -166,25 +166,17 @@ impl<'ctx, S: ModelingContext<'ctx>> PcodeTheory<'ctx, S> {
         self.collect_conflicts(&assertions, slot_assignments)
     }
 
-    fn assert_preconditions(
-        &self,
-        state: &State<'ctx>,
-        addr: u64,
-    ) -> Result<Bool<'ctx>, CrackersError> {
+    fn assert_preconditions(&self, state: &State, addr: u64) -> Result<Bool, CrackersError> {
         assert_state_constraints(&self.j, &self.preconditions, state, addr)
     }
 
-    fn assert_postconditions(
-        &self,
-        state: &State<'ctx>,
-        addr: u64,
-    ) -> Result<Bool<'ctx>, CrackersError> {
+    fn assert_postconditions(&self, state: &State, addr: u64) -> Result<Bool, CrackersError> {
         assert_state_constraints(&self.j, &self.postconditions, state, addr)
     }
 
     fn collect_conflicts(
         &self,
-        assertions: &[ConjunctiveConstraint<'ctx>],
+        assertions: &[ConjunctiveConstraint],
         assignments: &SlotAssignments,
     ) -> Result<Option<ConflictClause>, CrackersError> {
         let mut constraints = Vec::new();
