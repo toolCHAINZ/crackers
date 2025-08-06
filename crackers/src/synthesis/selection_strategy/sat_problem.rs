@@ -3,11 +3,11 @@ use z3::{Context, SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::selection_strategy::AssignmentResult::{Failure, Success};
 use crate::synthesis::selection_strategy::{AssignmentResult, SelectionFailure, SelectionStrategy};
 use crate::synthesis::slot_assignments::SlotAssignments;
-use crate::synthesis::Decision;
 
 #[derive(Debug, Clone)]
 pub struct SatProblem {
@@ -55,7 +55,7 @@ impl SatProblem {
     }
 }
 impl SelectionStrategy for SatProblem {
-    fn initialize<T>(z3: & Context, gadgets: &[Vec<T>]) -> SatProblem {
+    fn initialize<T>(z3: &Context, gadgets: &[Vec<T>]) -> SatProblem {
         let mut prob = SatProblem {
             variables: Default::default(),
             z3: z3.clone(),
@@ -126,10 +126,10 @@ impl SelectionStrategy for SatProblem {
 mod tests {
     use z3::{Config, Context};
 
+    use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
     use crate::synthesis::selection_strategy::{AssignmentResult, SelectionStrategy};
-    use crate::synthesis::Decision;
 
     #[test]
     fn test_assignment() {

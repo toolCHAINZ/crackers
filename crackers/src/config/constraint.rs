@@ -1,17 +1,17 @@
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
-use jingle::JingleContext;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
-use tracing::{event, Level};
-use z3::ast::{Ast, Bool, BV};
+use tracing::{Level, event};
+use z3::ast::{Ast, BV, Bool};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
@@ -128,11 +128,8 @@ pub struct PointerRange {
 /// Generates a state constraint that a given varnode must be equal to a given value
 pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
-) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError>
-+ Send
-+ Sync
-+ Clone
-+ 'static {
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + Clone + 'static
+{
     move |jingle, state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data._eq(&BV::from_u64(jingle.ctx(), m.value as u64, data.get_size()));
@@ -145,11 +142,8 @@ pub fn gen_memory_constraint(
 pub fn gen_register_constraint(
     vn: VarNode,
     value: u64,
-) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError>
-+ 'static
-+ Send
-+ Sync
-+ Clone {
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + 'static + Send + Sync + Clone
+{
     move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
         let constraint = data._eq(&BV::from_u64(jingle.ctx(), value, data.get_size()));
@@ -163,8 +157,7 @@ pub fn gen_register_pointer_constraint(
     vn: VarNode,
     value: String,
     m: Option<PointerRangeConstraints>,
-) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Clone
-{
+) -> impl Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Clone {
     move |jingle, state, _addr| {
         let m = m.clone();
         let mut bools = vec![];
@@ -204,12 +197,8 @@ pub fn gen_register_pointer_constraint(
 /// the given range.
 pub fn gen_pointer_range_state_invariant(
     m: Vec<PointerRange>,
-) -> impl Fn(
-    &JingleContext,
-    &ResolvedVarnode,
-    &State,
-) -> Result<Option<Bool>, CrackersError>
-+ Clone {
+) -> impl Fn(&JingleContext, &ResolvedVarnode, &State) -> Result<Option<Bool>, CrackersError> + Clone
+{
     move |jingle, vn, state| {
         match vn {
             ResolvedVarnode::Direct(d) => {
@@ -230,8 +219,10 @@ pub fn gen_pointer_range_state_invariant(
                 for mm in &m {
                     let min = BV::from_u64(jingle.ctx(), mm.min, vn.pointer.get_size());
                     let max = BV::from_u64(jingle.ctx(), mm.max, vn.pointer.get_size());
-                    let constraint =
-                        Bool::and(jingle.ctx(), &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)]);
+                    let constraint = Bool::and(
+                        jingle.ctx(),
+                        &[vn.pointer.bvuge(&min), vn.pointer.bvule(&max)],
+                    );
                     terms.push(constraint);
                 }
 

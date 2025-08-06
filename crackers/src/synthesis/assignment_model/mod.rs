@@ -5,8 +5,8 @@ use std::fmt::{Display, Formatter};
 use jingle::modeling::{ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode};
 use jingle::varnode::ResolvedVarnode;
-use z3::ast::BV;
 use z3::Model;
+use z3::ast::BV;
 
 #[derive(Debug)]
 pub struct AssignmentModel<T: ModelingContext> {

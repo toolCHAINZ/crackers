@@ -1,12 +1,12 @@
+use jingle::JingleContext;
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode};
-use jingle::JingleContext;
 use tracing::trace;
-use z3::ast::Ast;
 use z3::Solver;
+use z3::ast::Ast;
 
-use crate::gadget::signature::GadgetSignature;
 use crate::gadget::Gadget;
+use crate::gadget::signature::GadgetSignature;
 
 pub struct TraceCandidateIterator<'a, T>
 where
@@ -22,11 +22,7 @@ impl<'a, T> TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(
-        jingle: &JingleContext,
-        gadgets: T,
-        trace: Vec<ModeledInstruction>,
-    ) -> Self {
+    pub(crate) fn new(jingle: &JingleContext, gadgets: T, trace: Vec<ModeledInstruction>) -> Self {
         let _solver = Solver::new(jingle.ctx());
         Self {
             jingle: jingle.clone(),

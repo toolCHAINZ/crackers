@@ -1,13 +1,13 @@
 use std::sync::mpsc::{Receiver, Sender};
 
 use jingle::modeling::ModeledInstruction;
-use tracing::{event, instrument, Level};
+use tracing::{Level, event, instrument};
 use z3::Context;
 
 use crate::error::CrackersError;
+use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
-use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub struct TheoryWorkerResponse {
@@ -25,7 +25,7 @@ pub struct TheoryWorker {
 
 impl TheoryWorker {
     pub fn new(
-        z3: & Context,
+        z3: &Context,
         id: usize,
         sender: Sender<TheoryWorkerResponse>,
         receiver: Receiver<SlotAssignments>,

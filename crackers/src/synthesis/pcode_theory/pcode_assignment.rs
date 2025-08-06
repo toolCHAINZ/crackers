@@ -1,5 +1,5 @@
-use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use jingle::JingleContext;
+use jingle::modeling::{ModeledBlock, ModeledInstruction, ModelingContext, State};
 use std::sync::Arc;
 use z3::ast::Bool;
 use z3::{Context, SatResult, Solver};
@@ -80,10 +80,7 @@ impl PcodeAssignment {
         }
     }
 }
-pub fn assert_concat<T: ModelingContext>(
-    z3: & Context,
-    items: &[T],
-) -> Result<Bool, CrackersError> {
+pub fn assert_concat<T: ModelingContext>(z3: &Context, items: &[T]) -> Result<Bool, CrackersError> {
     let mut bools = vec![];
     for x in items.windows(2) {
         bools.push(x[0].assert_concat(&x[1])?)

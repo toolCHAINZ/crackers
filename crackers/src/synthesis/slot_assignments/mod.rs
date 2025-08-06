@@ -1,15 +1,15 @@
 use std::fmt::{Display, Formatter};
 
-use z3::ast::Bool;
 use z3::Model;
+use z3::ast::Bool;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelParsingError;
-use crate::gadget::candidates::Candidates;
 use crate::gadget::Gadget;
+use crate::gadget::candidates::Candidates;
+use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
 use crate::synthesis::slot_assignments::display::SlotAssignmentConflictDisplay;
-use crate::synthesis::Decision;
 
 mod display;
 
@@ -40,10 +40,7 @@ impl SlotAssignments {
         self.choices.as_slice()
     }
 
-    pub fn create_from_model(
-        model: Model,
-        variables: &[Vec<Bool>],
-    ) -> Result<Self, CrackersError> {
+    pub fn create_from_model(model: Model, variables: &[Vec<Bool>]) -> Result<Self, CrackersError> {
         let mut choices = Vec::with_capacity(variables.len());
         for slot_choices in variables {
             let idx = slot_choices.iter().position(|v| {

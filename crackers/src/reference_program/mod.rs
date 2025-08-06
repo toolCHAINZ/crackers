@@ -8,20 +8,20 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
+use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, OpCode, VarNode};
 use jingle::varnode::ResolvedVarnode;
-use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, Bool, BV};
+use z3::ast::{Ast, BV, Bool};
 use z3::{Config, Context, SatResult, Solver};
 
 mod step;
@@ -30,9 +30,7 @@ mod step;
 pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 
 impl MemoryValuation {
-    pub fn to_constraint(
-        &self,
-    ) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
+    pub fn to_constraint(&self) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
         let map = self.0.clone();
         move |jingle, state| {
             let mut v = vec![];

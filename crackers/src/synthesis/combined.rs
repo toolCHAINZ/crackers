@@ -1,4 +1,4 @@
-use tracing::{event, Level};
+use tracing::{Level, event};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -107,6 +107,9 @@ impl CombinedAssignmentSynthesis {
         last.ok_or(CrackersError::EmptySpecification)
     }
     pub fn new(z3: &Context, base_config: SynthesisParams) -> Self {
-        Self { z3: z3.clone(), base_config }
+        Self {
+            z3: z3.clone(),
+            base_config,
+        }
     }
 }

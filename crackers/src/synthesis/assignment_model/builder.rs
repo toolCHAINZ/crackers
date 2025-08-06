@@ -1,13 +1,13 @@
 use crate::error::CrackersError;
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::Gadget;
+use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::{ArchInfoProvider, SpaceInfo, VarNode};
-use jingle::JingleContext;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use z3::{Context, Solver};
@@ -83,10 +83,7 @@ impl Debug for AssignmentModelBuilder {
 }
 
 impl AssignmentModelBuilder {
-    fn make_pcode_model(
-        &self,
-        jingle: &JingleContext,
-    ) -> Result<PcodeAssignment, CrackersError> {
+    fn make_pcode_model(&self, jingle: &JingleContext) -> Result<PcodeAssignment, CrackersError> {
         let modeled_spec: Result<Vec<ModeledInstruction>, _> = self
             .templates
             .steps()
@@ -110,10 +107,7 @@ impl AssignmentModelBuilder {
             self.pointer_invariants.clone(),
         ))
     }
-    pub fn build(
-        &self,
-        z3: & Context,
-    ) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
+    pub fn build(&self, z3: &Context) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
         let jingle = JingleContext::new(z3, &self.arch_info);
 
         let pcode_model = self.make_pcode_model(&jingle)?;
