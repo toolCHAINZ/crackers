@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.2.1...crackers-v0.3.0) - 2025-08-06
+
+### Other
+
+- [**breaking**] bump jingle and z3 ([#55](https://github.com/toolCHAINZ/crackers/pull/55))
+
 ## [0.2.1](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.2.0...crackers-v0.2.1) - 2025-07-16
 
 ### Fixed
