@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use derive_builder::Builder;
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
+use jingle::JingleContext;
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
-use z3::Context;
 use z3::ast::Bool;
+use z3::Context;
 
 use crate::error::CrackersError;
-use crate::gadget::library::GadgetLibrary;
 use crate::gadget::library::builder::GadgetLibraryConfig;
+use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
-use crate::synthesis::AssignmentSynthesis;
 use crate::synthesis::combined::CombinedAssignmentSynthesis;
+use crate::synthesis::AssignmentSynthesis;
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "pyo3", pyclass)]
@@ -25,11 +25,11 @@ pub enum SynthesisSelectionStrategy {
     OptimizeStrategy,
 }
 
-pub type StateConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &State<'a>, u64) -> Result<Bool<'a>, CrackersError>
+pub type StateConstraintGenerator = dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError>
     + Send
     + Sync
     + 'static;
-pub type TransitionConstraintGenerator = dyn for<'a> Fn(&JingleContext<'a>, &ModeledBlock<'a>) -> Result<Option<Bool<'a>>, CrackersError>
+pub type TransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
     + Send
     + Sync
     + 'static;
@@ -66,21 +66,21 @@ impl SynthesisParamsBuilder {
 }
 
 impl SynthesisParams {
-    pub fn build_single<'a>(
+    pub fn build_single(
         &self,
-        z3: &'a Context,
-    ) -> Result<AssignmentSynthesis<'a>, CrackersError> {
+        z3: &Context,
+    ) -> Result<AssignmentSynthesis, CrackersError> {
         let s = AssignmentSynthesis::new(z3, self)?;
         Ok(s)
     }
 
-    pub fn build_combined<'a>(
+    pub fn build_combined(
         &self,
-        z3: &'a Context,
-    ) -> Result<CombinedAssignmentSynthesis<'a>, CrackersError> {
+        z3: &Context,
+    ) -> Result<CombinedAssignmentSynthesis, CrackersError> {
         Ok(CombinedAssignmentSynthesis {
             base_config: self.clone(),
-            z3,
+            z3: z3.clone(),
         })
     }
 }

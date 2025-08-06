@@ -2,14 +2,14 @@ use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
 use jingle::{JingleContext, JingleError};
-use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use tracing::{Level, event};
+use rand::SeedableRng;
+use tracing::{event, Level};
 
-use crate::gadget::Gadget;
 use crate::gadget::another_iterator::TraceCandidateIterator;
 use crate::gadget::library::builder::GadgetLibraryConfig;
+use crate::gadget::Gadget;
 
 pub mod builder;
 pub mod image;
@@ -27,12 +27,12 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
-    pub fn get_random_candidates_for_trace<'ctx, 'a: 'ctx>(
+    pub fn get_random_candidates_for_trace<'a>(
         &'a self,
-        jingle: &JingleContext<'ctx>,
-        trace: &[ModeledInstruction<'ctx>],
+        jingle: &JingleContext,
+        trace: &[ModeledInstruction],
         seed: i64,
-    ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> + 'ctx {
+    ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
         TraceCandidateIterator::new(jingle, r, trace.to_vec())
@@ -119,8 +119,8 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::gadget::library::GadgetLibrary;
     use crate::gadget::library::builder::GadgetLibraryConfig;
+    use crate::gadget::library::GadgetLibrary;
     use jingle::sleigh::context::SleighContextBuilder;
     use object::File;
 

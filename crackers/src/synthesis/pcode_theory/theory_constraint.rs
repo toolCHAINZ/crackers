@@ -1,7 +1,7 @@
 use z3::ast::Bool;
 
-use crate::synthesis::Decision;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::Decision;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TheoryStage {
@@ -12,21 +12,21 @@ pub enum TheoryStage {
     Postcondition,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ConjunctiveConstraint<'ctx> {
+pub struct ConjunctiveConstraint {
     pub decisions: Vec<Decision>,
-    boolean: Bool<'ctx>,
+    boolean: Bool,
     constraint_type: TheoryStage,
 }
 
-impl<'ctx> ConjunctiveConstraint<'ctx> {
-    pub fn new(decisions: &[Decision], boolean: Bool<'ctx>, t: TheoryStage) -> Self {
+impl ConjunctiveConstraint {
+    pub fn new(decisions: &[Decision], boolean: Bool, t: TheoryStage) -> Self {
         Self {
             decisions: decisions.to_vec(),
             boolean,
             constraint_type: t,
         }
     }
-    pub fn get_bool(&self) -> &Bool<'ctx> {
+    pub fn get_bool(&self) -> &Bool {
         &self.boolean
     }
 

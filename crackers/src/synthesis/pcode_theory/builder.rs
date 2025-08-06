@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::JingleContext;
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -9,8 +9,8 @@ use crate::gadget::candidates::Candidates;
 use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
-use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
+use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 #[derive(Clone)]
@@ -40,7 +40,7 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
     pub fn build(
         self,
         z3: &Context,
-    ) -> Result<PcodeTheory<'_, ModeledInstruction<'_>>, CrackersError> {
+    ) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
         let jingle = JingleContext::new(z3, self.library);
         let modeled_templates = self.model_instructions(&jingle)?;
         let gadget_candidates = self.candidates.model(&jingle)?;
@@ -56,14 +56,14 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         Ok(t)
     }
 
-    pub fn build_assignment<'ctx>(
+    pub fn build_assignment(
         &self,
-        jingle: &JingleContext<'ctx>,
+        jingle: &JingleContext,
         slot_assignments: SlotAssignments,
-    ) -> Result<PcodeAssignment<'ctx>, CrackersError> {
-        let modeled_templates: Vec<ModeledInstruction<'ctx>> = self.model_instructions(jingle)?;
-        let gadget_candidates: Vec<Vec<ModeledBlock<'ctx>>> = self.candidates.model(jingle)?;
-        let selected_candidates: Vec<ModeledBlock<'ctx>> = slot_assignments
+    ) -> Result<PcodeAssignment, CrackersError> {
+        let modeled_templates: Vec<ModeledInstruction> = self.model_instructions(jingle)?;
+        let gadget_candidates: Vec<Vec<ModeledBlock>> = self.candidates.model(jingle)?;
+        let selected_candidates: Vec<ModeledBlock> = slot_assignments
             .choices()
             .iter()
             .enumerate()
@@ -107,10 +107,10 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         self
     }
 
-    fn model_instructions<'ctx>(
+    fn model_instructions(
         &self,
-        jingle: &JingleContext<'ctx>,
-    ) -> Result<Vec<ModeledInstruction<'ctx>>, CrackersError> {
+        jingle: &JingleContext,
+    ) -> Result<Vec<ModeledInstruction>, CrackersError> {
         let mut modeled_templates = vec![];
         for step in self.reference_program.steps() {
             modeled_templates.push(step.model(jingle)?);

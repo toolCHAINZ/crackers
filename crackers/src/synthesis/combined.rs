@@ -1,4 +1,4 @@
-use tracing::{Level, event};
+use tracing::{event, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
@@ -6,12 +6,12 @@ use crate::reference_program::ReferenceProgram;
 use crate::synthesis::builder::SynthesisParams;
 use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
-pub struct CombinedAssignmentSynthesis<'a> {
+pub struct CombinedAssignmentSynthesis {
     pub(crate) base_config: SynthesisParams,
-    pub(crate) z3: &'a Context,
+    pub(crate) z3: Context,
 }
 
-impl<'a> CombinedAssignmentSynthesis<'a> {
+impl CombinedAssignmentSynthesis {
     pub fn decide(&mut self) -> Result<DecisionResult, CrackersError> {
         let mut ordering: Vec<ReferenceProgram> =
             self.base_config.reference_program.partitions().collect();
@@ -33,7 +33,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
             );
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions.clone();
-            let synth = AssignmentSynthesis::new(self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide() {
@@ -78,7 +78,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
             // }
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions;
-            let synth = AssignmentSynthesis::new(self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide_single_threaded() {
@@ -106,7 +106,7 @@ impl<'a> CombinedAssignmentSynthesis<'a> {
         // Only an empty specification can possibly result in this being `None`
         last.ok_or(CrackersError::EmptySpecification)
     }
-    pub fn new(z3: &'a Context, base_config: SynthesisParams) -> Self {
-        Self { z3, base_config }
+    pub fn new(z3: &Context, base_config: SynthesisParams) -> Self {
+        Self { z3: z3.clone(), base_config }
     }
 }

@@ -4,22 +4,22 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use toml_edit::ser::to_string_pretty;
-use tracing::{Level, event};
+use tracing::{event, Level};
 use tracing_indicatif::IndicatifLayer;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 use z3::{Config, Context};
 
-use crackers::bench::{BenchCommand, bench};
-use crackers::config::CrackersConfig;
+use crackers::bench::{bench, BenchCommand};
 use crackers::config::constraint::{
     ConstraintConfig, MemoryEqualityConstraint, PointerRange, PointerRangeConstraints,
     StateEqualityConstraint,
 };
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
+use crackers::config::CrackersConfig;
 use crackers::synthesis::DecisionResult;
 
 #[derive(Parser, Debug)]
@@ -104,6 +104,7 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
 }
 
 fn synthesize(config: PathBuf) -> anyhow::Result<()> {
+    z3::set_global_param("parallel.enable", "true");
     let cfg = Config::new();
     let z3 = Context::new(&cfg);
     let cfg_bytes = fs::read(config)?;

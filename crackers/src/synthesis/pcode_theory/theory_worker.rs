@@ -1,13 +1,13 @@
 use std::sync::mpsc::{Receiver, Sender};
 
 use jingle::modeling::ModeledInstruction;
-use tracing::{Level, event, instrument};
+use tracing::{event, instrument, Level};
 use z3::Context;
 
 use crate::error::CrackersError;
-use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::pcode_theory::builder::PcodeTheoryBuilder;
 use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
+use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::slot_assignments::SlotAssignments;
 
 pub struct TheoryWorkerResponse {
@@ -16,20 +16,20 @@ pub struct TheoryWorkerResponse {
     pub theory_result: Result<Option<ConflictClause>, CrackersError>,
 }
 
-pub struct TheoryWorker<'ctx> {
+pub struct TheoryWorker {
     id: usize,
     sender: Sender<TheoryWorkerResponse>,
     receiver: Receiver<SlotAssignments>,
-    theory: PcodeTheory<'ctx, ModeledInstruction<'ctx>>,
+    theory: PcodeTheory<ModeledInstruction>,
 }
 
-impl<'ctx> TheoryWorker<'ctx> {
+impl TheoryWorker {
     pub fn new(
-        z3: &'ctx Context,
+        z3: & Context,
         id: usize,
         sender: Sender<TheoryWorkerResponse>,
         receiver: Receiver<SlotAssignments>,
-        builder: PcodeTheoryBuilder<'ctx>,
+        builder: PcodeTheoryBuilder,
     ) -> Result<Self, CrackersError> {
         Ok(Self {
             id,

@@ -1,5 +1,5 @@
-use jingle::JingleContext;
 use jingle::modeling::ModeledBlock;
+use jingle::JingleContext;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::UnsimulatedOperation;
@@ -58,10 +58,10 @@ pub struct Candidates {
 }
 
 impl Candidates {
-    pub fn model<'ctx>(
+    pub fn model(
         &self,
-        jingle: &JingleContext<'ctx>,
-    ) -> Result<Vec<Vec<ModeledBlock<'ctx>>>, CrackersError> {
+        jingle: &JingleContext,
+    ) -> Result<Vec<Vec<ModeledBlock>>, CrackersError> {
         let mut result = vec![];
         for x in &self.candidates {
             let mut v = vec![];

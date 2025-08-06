@@ -8,20 +8,20 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
-use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, OpCode, VarNode};
 use jingle::varnode::ResolvedVarnode;
+use jingle::JingleContext;
 use object::{File, Object, ObjectSymbol};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, BV, Bool};
+use z3::ast::{Ast, Bool, BV};
 use z3::{Config, Context, SatResult, Solver};
 
 mod step;
@@ -32,9 +32,9 @@ pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 impl MemoryValuation {
     pub fn to_constraint<'a>(
         &self,
-    ) -> impl Fn(&JingleContext<'a>, &State<'a>) -> Result<Bool<'a>, CrackersError> {
+    ) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
         let map = self.0.clone();
-        move |ctx, state| {
+        move |jingle, state| {
             let mut v = vec![];
             for (vn, value) in &map {
                 let mut temp_vn: VarNode = VarNode {
@@ -46,13 +46,13 @@ impl MemoryValuation {
                 for (index, offset) in r.enumerate() {
                     temp_vn.offset = offset;
                     v.push(state.read_varnode(&temp_vn)?._eq(&BV::from_u64(
-                        ctx.z3,
+                        jingle.ctx(),
                         value[index] as u64,
                         8,
                     )))
                 }
             }
-            Ok(Bool::and(ctx.z3, &v))
+            Ok(Bool::and(jingle.ctx(), &v))
         }
     }
 }
@@ -195,16 +195,16 @@ impl ReferenceProgram {
         })
     }
 
-    fn get_extended_constraints_from_indirect<'ctx>(
+    fn get_extended_constraints_from_indirect(
         &self,
-        ctx: JingleContext<'ctx>,
+        ctx: JingleContext,
     ) -> Result<VarNodeSet, CrackersError> {
         let i: Vec<_> = self.instructions().cloned().collect();
         let i: Instruction = i.as_slice().try_into().unwrap();
         let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
         let init_constraint = self.initial_memory.to_constraint();
         let constraint = init_constraint(&ctx, modeled_instr.get_original_state())?;
-        let solver = Solver::new(ctx.z3);
+        let solver = Solver::new(ctx.ctx());
         let mut vn_set = VarNodeSet::default();
         solver.assert(&constraint);
         match solver.check() {
