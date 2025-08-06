@@ -11,23 +11,23 @@ use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
 use jingle::sleigh::{SpaceType, VarNode, VarNodeDisplay};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
+use pyo3::{pyclass, pymethods, Py, PyAny, PyResult};
 use std::rc::Rc;
 use z3::ast::BV;
 
 #[pyclass(unsendable, name = "AssignmentModel")]
 #[derive(Clone)]
 pub struct PythonAssignmentModel {
-    pub inner: Rc<AssignmentModel<'static, ModeledBlock<'static>>>,
+    pub inner: Rc<AssignmentModel<ModeledBlock>>,
 }
 
 impl PythonAssignmentModel {
     fn eval_vn(
         &self,
-        state: &State<'static>,
+        state: &State,
         vn: PythonResolvedVarNode,
         completion: bool,
-    ) -> Option<(String, BV<'static>)> {
+    ) -> Option<(String, BV)> {
         match vn {
             PythonResolvedVarNode::Direct(a) => {
                 let bv = state.read_varnode(&VarNode::from(a.clone())).ok()?;
