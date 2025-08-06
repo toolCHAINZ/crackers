@@ -1,6 +1,6 @@
 [package]
 name = "crackers_python"
-version = "0.2.0"
+version = "0.2.1"
 license = "MIT"
 edition = "2024"
 description = "pyo3 bindings for crackers"
