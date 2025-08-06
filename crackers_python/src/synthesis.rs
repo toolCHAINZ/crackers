@@ -1,17 +1,17 @@
-use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::decision::PythonDecisionResult;
+use crate::decision::assignment_model::PythonAssignmentModel;
 use crackers::error::CrackersError;
+use crackers::synthesis::DecisionResult;
 use crackers::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, TransitionConstraintGenerator,
 };
-use crackers::synthesis::DecisionResult;
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::z3::ast::TryFromPythonZ3;
 use jingle::python::z3::get_python_z3;
-use jingle::JingleContext;
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
+use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use std::rc::Rc;
 use std::sync::Arc;
 use z3::ast::Bool;
@@ -93,15 +93,10 @@ impl PythonSynthesisParams {
     }
 }
 
-pub type PythonStateConstraintGenerator = dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError>
-    + Send
-    + Sync
-    + 'static;
+pub type PythonStateConstraintGenerator =
+    dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
 
-pub type PythonTransitionConstraintGenerator = dyn Fn(
-        &JingleContext,
-        &ModeledBlock,
-    ) -> Result<Option<Bool>, CrackersError>
+pub type PythonTransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
     + Send
     + Sync
     + 'static;
