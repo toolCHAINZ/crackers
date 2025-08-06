@@ -38,7 +38,7 @@ impl SatProblem {
                     }))
                 }
             }
-            return Bool::or(&self.z3, &decisions).not();
+            Bool::or(&self.z3, &decisions).not()
         })
     }
 

@@ -23,23 +23,23 @@ impl<T: ModelingContext> AssignmentModel<T> {
         &self.model
     }
 
-    pub fn initial_state<'a>(&'a self) -> Option<&'a State> {
+    pub fn initial_state(&self) -> Option<&State> {
         self.gadgets.first().map(|f| f.get_original_state())
     }
 
-    pub fn final_state<'a>(&'a self) -> Option<&'a State> {
+    pub fn final_state(&self) -> Option<&State> {
         self.gadgets.last().map(|f| f.get_final_state())
     }
 
-    pub fn read_original<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV> {
+    pub fn read_original(&self, vn: GeneralizedVarNode) -> Option<BV> {
         self.initial_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_output<'a>(&'a self, vn: GeneralizedVarNode) -> Option<BV> {
+    pub fn read_output(&self, vn: GeneralizedVarNode) -> Option<BV> {
         self.final_state().and_then(|f| f.read(vn).ok())
     }
 
-    pub fn read_resolved<'a>(&'a self, vn: &ResolvedVarnode) -> Option<BV> {
+    pub fn read_resolved(&self, vn: &ResolvedVarnode) -> Option<BV> {
         self.final_state().and_then(|f| f.read_resolved(vn).ok())
     }
 
@@ -53,7 +53,7 @@ impl<T: ModelingContext> AssignmentModel<T> {
         }
     }
 
-    pub fn initial_reg<'a>(&'a self, reg: &str) -> Option<BV> {
+    pub fn initial_reg(&self, reg: &str) -> Option<BV> {
         let r = self.final_state().unwrap().get_register(reg).unwrap();
         let val = self.gadgets[0]
             .get_original_state()

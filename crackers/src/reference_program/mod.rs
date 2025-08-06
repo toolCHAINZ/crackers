@@ -30,7 +30,7 @@ mod step;
 pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 
 impl MemoryValuation {
-    pub fn to_constraint<'a>(
+    pub fn to_constraint(
         &self,
     ) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
         let map = self.0.clone();

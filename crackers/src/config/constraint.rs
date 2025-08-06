@@ -152,7 +152,7 @@ pub fn gen_register_constraint(
 + Clone {
     move |jingle, state, _addr| {
         let data = state.read_varnode(&vn)?;
-        let constraint = data._eq(&BV::from_u64(&jingle.ctx(), value, data.get_size()));
+        let constraint = data._eq(&BV::from_u64(jingle.ctx(), value, data.get_size()));
         Ok(constraint)
     }
 }
