@@ -3,7 +3,7 @@ pub mod builder;
 use std::fmt::{Display, Formatter};
 
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode};
+use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, SleighArchInfo};
 use jingle::varnode::ResolvedVarnode;
 use z3::Model;
 use z3::ast::BV;
@@ -12,11 +12,16 @@ use z3::ast::BV;
 pub struct AssignmentModel<T: ModelingContext> {
     model: Model,
     pub gadgets: Vec<T>,
+    pub arch_info: SleighArchInfo,
 }
 
 impl<T: ModelingContext> AssignmentModel<T> {
-    pub fn new(model: Model, gadgets: Vec<T>) -> Self {
-        Self { model, gadgets }
+    pub fn new(model: Model, gadgets: Vec<T>, arch_info: SleighArchInfo) -> Self {
+        Self {
+            model,
+            gadgets,
+            arch_info,
+        }
     }
 
     pub fn model(&self) -> &Model {
@@ -60,6 +65,14 @@ impl<T: ModelingContext> AssignmentModel<T> {
             .read_varnode(r)
             .unwrap();
         self.model.eval(&val, false)
+    }
+
+    pub fn inputs(&self) -> impl Iterator<Item = ResolvedVarnode> {
+        self.gadgets.iter().flat_map(|gadget| gadget.get_inputs())
+    }
+
+    pub fn outputs(&self) -> impl Iterator<Item = ResolvedVarnode> {
+        self.gadgets.iter().flat_map(|gadget| gadget.get_outputs())
     }
 }
 

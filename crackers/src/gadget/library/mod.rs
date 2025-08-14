@@ -1,6 +1,6 @@
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{ArchInfoProvider, Instruction, SpaceInfo, VarNode};
+use jingle::sleigh::{ArchInfoProvider, Instruction, SleighArchInfo, SpaceInfo, VarNode};
 use jingle::{JingleContext, JingleError};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -27,6 +27,13 @@ impl GadgetLibrary {
         self.gadgets.len()
     }
 
+    pub(crate) fn arch_info(&self) -> SleighArchInfo {
+        SleighArchInfo::new(
+            self.get_registers(),
+            self.get_all_space_info(),
+            self.default_code_space_index,
+        )
+    }
     pub fn get_random_candidates_for_trace<'a>(
         &'a self,
         jingle: &JingleContext,
