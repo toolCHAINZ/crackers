@@ -75,7 +75,11 @@ impl PcodeAssignment {
                 let model = solver
                     .get_model()
                     .ok_or(CrackersError::ModelGenerationError)?;
-                Ok(AssignmentModel::new(model, self.eval_trace.to_vec()))
+                Ok(AssignmentModel::new(
+                    model,
+                    self.eval_trace.to_vec(),
+                    jingle.info.clone(),
+                ))
             }
         }
     }

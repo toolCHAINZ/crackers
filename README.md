@@ -8,12 +8,29 @@
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
-code-reuse attacks (e.g. ROP). `crackers` takes as input a specification computation, usually
+code-reuse attacks (e.g. ROP). `crackers` takes as input a "reference program", usually
 written in an assembly language, a binary (of the same architecture) in which to look
 for gadgets, and user-provided constraints to enforce on synthesized chains. It will always
 return an answer (though there is no strict bound to runtime), reporting either that the problem
 is UNSAT, or providing an assignment of gadgets that meet all constraints, and a model
-of the memory state of the PCODE virtual machine at every stage of the comptuation.
+of the memory state of the PCODE virtual machine at every stage of the computation.
+
+`crackers` will assume that _all_ system state is usable unless the user prohibits it by providing a constraint.
+This approach, while requiring more human guidance, allows it to minimize the assumptions it makes about the
+arrangement and roles of memory in an exploit.
+
+To validate chains, `crackers` builds a mathematical model of the trace through the gadgets. This model, along
+with user-provided constraints, is verified against a model of the "reference program". When this verification
+returns SAT, `crackers` returns the Z3 model of the memory state of the chain at every point of its execution. This
+memory model may be used to derive the contents of memory needed to invoke the chain, and transitively the input needed to
+provide to the program to realize it.
+
+Note that the provided CLI of crackers currently only prints the selected gadgets to the command line.
+To make use of the logical memory model it must be used through the programmatic API.
+
+There is also an experimental Python binding for `crackers`, allowing for basic configuration, execution, and model
+inspection from python. These bindings also feature cross-FFI support with the python z3 bindings, allowing
+constraints to be expressed as python functions or `lambda` expressions returning Python Z3 `BoolRef` instances.
 
 ### This software is still in alpha and may change at any time
 

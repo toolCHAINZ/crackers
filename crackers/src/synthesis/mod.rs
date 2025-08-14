@@ -10,7 +10,7 @@ use crate::error::CrackersError::EmptySpecification;
 use crate::gadget::candidates::{CandidateBuilder, Candidates};
 use crate::gadget::library::GadgetLibrary;
 use crate::reference_program::ReferenceProgram;
-use crate::synthesis::assignment_model::builder::{ArchInfo, AssignmentModelBuilder};
+use crate::synthesis::assignment_model::builder::AssignmentModelBuilder;
 use crate::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, SynthesisSelectionStrategy,
     TransitionConstraintGenerator,
@@ -112,7 +112,7 @@ impl AssignmentSynthesis {
             preconditions: self.preconditions.clone(),
             postconditions: self.postconditions.clone(),
             pointer_invariants: self.pointer_invariants.clone(),
-            arch_info: ArchInfo::from(self.library.as_ref()),
+            arch_info: self.library.arch_info(),
         }
     }
 
