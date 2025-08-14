@@ -4,14 +4,14 @@ use crate::decision::assignment_model::model_varnode_iterator::ModelVarNodeItera
 use crackers::synthesis::assignment_model::AssignmentModel;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::python::modeled_block::PythonModeledBlock;
-use jingle::python::resolved_varnode::PythonResolvedVarNode;
+use jingle::python::resolved_varnode::{PythonResolvedVarNode, PythonResolvedVarNodeInner};
 use jingle::python::state::PythonState;
 use jingle::python::varode_iterator::VarNodeIterator;
 use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
-use jingle::sleigh::{SpaceType, VarNode, VarNodeDisplay};
+use jingle::sleigh::{ArchInfoProvider, SpaceType};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
+use pyo3::{pyclass, pymethods, Py, PyAny, PyResult};
 use std::rc::Rc;
 use z3::ast::BV;
 
@@ -28,23 +28,29 @@ impl PythonAssignmentModel {
         vn: PythonResolvedVarNode,
         completion: bool,
     ) -> Option<(String, BV)> {
-        match vn {
-            PythonResolvedVarNode::Direct(a) => {
-                let bv = state.read_varnode(&VarNode::from(a.clone())).ok()?;
+        match vn.inner {
+            PythonResolvedVarNodeInner::Direct(a) => {
+                let bv = state.read_varnode(a.inner()).ok()?;
                 let val = self.inner.model().eval(&bv, completion)?;
                 Some((format!("{a}"), val))
             }
-            PythonResolvedVarNode::Indirect(i) => {
-                let pointer_value = self.inner.model().eval(&i.inner.pointer, completion)?;
-                let space_name = i.inner.pointer_space_info.name.clone();
-                let access_size = i.inner.access_size_bytes;
+            PythonResolvedVarNodeInner::Indirect(i) => {
+                let info = i.info();
+                let i = i.inner();
+                let pointer_value = self.inner.model().eval(&i.pointer, completion)?;
+                let space_name = info
+                    .get_space_info(i.pointer_space_idx)
+                    .unwrap()
+                    .name
+                    .clone();
+                let access_size = i.access_size_bytes;
                 let pointed_value = self.inner.model().eval(
                     &state
                         .read_resolved(&ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
-                            access_size_bytes: i.inner.access_size_bytes,
-                            pointer_location: i.inner.pointer_location,
-                            pointer: i.inner.pointer,
-                            pointer_space_idx: i.inner.pointer_space_info.index,
+                            access_size_bytes: i.access_size_bytes,
+                            pointer_location: i.pointer_location.clone(),
+                            pointer: i.pointer.clone(),
+                            pointer_space_idx: i.pointer_space_idx,
                         }))
                         .ok()?,
                     completion,
@@ -100,8 +106,15 @@ impl PythonAssignmentModel {
             .flat_map(|g| g.get_input_vns().ok())
             .flatten()
             .filter(|a| {
-                if let PythonResolvedVarNode::Direct(VarNodeDisplay::Raw(r)) = a {
-                    r.space_info._type == SpaceType::IPTR_PROCESSOR
+                if let PythonResolvedVarNode {
+                    inner: PythonResolvedVarNodeInner::Direct(a),
+                } = a
+                {
+                    a.info()
+                        .get_space_info(a.inner().space_index)
+                        .unwrap()
+                        ._type
+                        == SpaceType::IPTR_PROCESSOR
                 } else {
                     true
                 }
@@ -116,8 +129,15 @@ impl PythonAssignmentModel {
             .flat_map(|g| g.get_output_vns().ok())
             .flatten()
             .filter(|a| {
-                if let PythonResolvedVarNode::Direct(VarNodeDisplay::Raw(r)) = a {
-                    r.space_info._type == SpaceType::IPTR_PROCESSOR
+                if let PythonResolvedVarNode {
+                    inner: PythonResolvedVarNodeInner::Direct(a),
+                } = a
+                {
+                    a.info()
+                        .get_space_info(a.inner().space_index)
+                        .unwrap()
+                        ._type
+                        == SpaceType::IPTR_PROCESSOR
                 } else {
                     true
                 }
