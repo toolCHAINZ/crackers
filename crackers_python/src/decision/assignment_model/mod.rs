@@ -11,7 +11,7 @@ use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
 use jingle::sleigh::{ArchInfoProvider, SpaceType};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult};
+use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
 use std::rc::Rc;
 use z3::ast::BV;
 
