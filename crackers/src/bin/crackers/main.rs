@@ -10,7 +10,6 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use z3::{Config, Context};
 
 use crackers::bench::{BenchCommand, bench};
 use crackers::config::CrackersConfig;
