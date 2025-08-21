@@ -56,11 +56,11 @@ impl AssignmentModelBuilder {
             self.pointer_invariants.clone(),
         ))
     }
-    pub fn build(&self, z3: &Context) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
-        let jingle = JingleContext::new(z3, &self.arch_info);
+    pub fn build(&self) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
+        let jingle = JingleContext::new(&self.arch_info);
 
         let pcode_model = self.make_pcode_model(&jingle)?;
-        let s = Solver::new(jingle.ctx());
+        let s = Solver::new();
         pcode_model.check(&jingle, &s)
     }
 }

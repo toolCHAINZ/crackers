@@ -7,13 +7,15 @@ use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::resolved_varnode::{PythonResolvedVarNode, PythonResolvedVarNodeInner};
 use jingle::python::state::PythonState;
 use jingle::python::varode_iterator::VarNodeIterator;
-use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
+use jingle::python::z3::ast::{PythonAst, TryFromPythonZ3, TryIntoPythonZ3};
 use jingle::sleigh::{ArchInfoProvider, SpaceType};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyResult, pyclass, pymethods, PyErr};
 use std::rc::Rc;
+use jingle::python::z3::get_python_z3;
 use z3::ast::BV;
+use z3::Translate;
 
 #[pyclass(unsendable, name = "AssignmentModel")]
 #[derive(Clone)]
@@ -61,6 +63,18 @@ impl PythonAssignmentModel {
                 ))
             }
         }
+    }
+}
+
+impl TryFrom<AssignmentModel<ModeledBlock>> for PythonAssignmentModel {
+    type Error = PyErr;
+
+    fn try_from(value: AssignmentModel<ModeledBlock>) -> Result<Self, Self::Error> {
+        let z3 = get_python_z3()?;
+        let value = value.translate(&z3);
+        Ok(PythonAssignmentModel {
+            inner: Rc::new(value),
+        })
     }
 }
 

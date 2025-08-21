@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use jingle::modeling::{ModelingContext, State};
 use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, SleighArchInfo};
 use jingle::varnode::ResolvedVarnode;
-use z3::Model;
+use z3::{Context, Model, Translate};
 use z3::ast::BV;
 
 #[derive(Debug)]
@@ -83,5 +83,15 @@ impl<T: ModelingContext + Display> Display for AssignmentModel<T> {
             writeln!(f, "{block}\n")?;
         }
         Ok(())
+    }
+}
+
+unsafe impl<T: ModelingContext + Translate> Translate for AssignmentModel<T>{
+    fn translate(&self, dest: &Context) -> Self {
+        Self{
+            model: self.model.translate(dest),
+            gadgets: self.gadgets.iter().map(|g| g.translate(dest)).collect(),
+            arch_info: self.arch_info.clone(),
+        }
     }
 }

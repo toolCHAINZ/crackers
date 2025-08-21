@@ -9,7 +9,7 @@ use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
-use jingle::python::z3::ast::TryFromPythonZ3;
+use jingle::python::z3::ast::{PythonAst, TryFromPythonZ3};
 use jingle::python::z3::get_python_z3;
 use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use std::rc::Rc;
@@ -30,17 +30,16 @@ impl PythonSynthesisParams {
                 let z3 = get_python_z3()?;
 
                 match self.inner.combine_instructions {
-                    false => self.inner.build_single(z3)?.decide_single_threaded(),
-                    true => self.inner.build_combined(z3)?.decide_single_threaded(),
+                    false => self.inner.build_single()?.decide_single_threaded(),
+                    true => self.inner.build_combined()?.decide_single_threaded(),
                 }
             })
         })?;
         match res {
             DecisionResult::AssignmentFound(a) => {
-                let a = a.build(get_python_z3()?)?;
-                Ok(PythonDecisionResult::AssignmentFound(
-                    PythonAssignmentModel { inner: Rc::new(a) },
-                ))
+                let a = a.build()?;
+                let a = PythonAssignmentModel::try_from(a)?;
+                Ok(PythonDecisionResult::AssignmentFound(a))
             }
             DecisionResult::Unsat(u) => Ok(PythonDecisionResult::Unsat(u)),
         }

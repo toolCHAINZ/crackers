@@ -12,7 +12,6 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 #[derive(Debug, Clone)]
 pub struct SatProblem {
     variables: Vec<Vec<Bool>>,
-    z3: Context,
     solver: Solver,
     last_conflict: Option<ConflictClause>,
     last_assignment: Option<SlotAssignments>,
@@ -38,7 +37,7 @@ impl SatProblem {
                     }))
                 }
             }
-            Bool::or(&self.z3, &decisions).not()
+            Bool::or(&decisions).not()
         })
     }
 
@@ -55,11 +54,10 @@ impl SatProblem {
     }
 }
 impl SelectionStrategy for SatProblem {
-    fn initialize<T>(z3: &Context, gadgets: &[Vec<T>]) -> SatProblem {
+    fn initialize<T>(gadgets: &[Vec<T>]) -> SatProblem {
         let mut prob = SatProblem {
             variables: Default::default(),
-            z3: z3.clone(),
-            solver: Solver::new(z3),
+            solver: Solver::new(),
             last_conflict: None,
             last_assignment: None,
             index_bools: Vec::with_capacity(gadgets.len()),
@@ -67,15 +65,15 @@ impl SelectionStrategy for SatProblem {
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
             for (j, _) in slot.iter().enumerate() {
-                vars.push(Bool::new_const(&prob.z3, SatProblem::derive_var_name(i, j)))
+                vars.push(Bool::new_const(SatProblem::derive_var_name(i, j)))
             }
             prob.variables.push(vars);
         }
         for (i, slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            let b = Bool::fresh_const(z3, &format!("slot_{i}"));
+            let b = Bool::fresh_const( &format!("slot_{i}"));
             prob.index_bools.push(b.clone());
-            prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b);
+            prob.solver.assert_and_track(&Bool::pb_eq( &pbs, 1), &b);
         }
         prob
     }
@@ -103,7 +101,7 @@ impl SelectionStrategy for SatProblem {
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                self.solver.assert(&Bool::and(&self.z3, &decisions).not());
+                self.solver.assert(&Bool::and( &decisions).not());
 
                 Ok(Success(assignment))
             }
@@ -118,7 +116,7 @@ impl SelectionStrategy for SatProblem {
             .map(|b| self.get_decision_variable(b))
             .collect();
         self.solver
-            .assert(&Bool::and(&self.z3, choices.as_slice()).not().simplify());
+            .assert(&Bool::and( choices.as_slice()).not().simplify());
     }
 }
 
@@ -135,7 +133,7 @@ mod tests {
     fn test_assignment() {
         let z3 = Context::new(&Config::new());
         let thing = vec![vec![1, 2, 3], vec![2, 3, 4], vec![3, 4, 5]];
-        let mut prob = SatProblem::initialize(&z3, &thing);
+        let mut prob = SatProblem::initialize(&thing);
         let assignments = prob.get_assignments();
         // Verify that an unconstrained problem returns a model
         assert!(assignments.is_ok());

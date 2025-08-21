@@ -1,4 +1,4 @@
-use jingle::python::z3::ast::TryIntoPythonZ3;
+use jingle::python::z3::ast::{PythonAst, TryIntoPythonZ3};
 use pyo3::{Py, PyAny, PyRef, PyRefMut, pyclass, pymethods};
 use z3::ast::BV;
 

@@ -44,8 +44,8 @@ impl PcodeAssignment {
     ) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
         let mem_cnstr = self.initial_spec_memory.to_constraint();
         solver.assert(&mem_cnstr(jingle, self.spec_trace[0].get_original_state())?);
-        solver.assert(&assert_concat(jingle.ctx(), &self.spec_trace)?);
-        solver.assert(&assert_concat(jingle.ctx(), &self.eval_trace)?);
+        solver.assert(&assert_concat(&self.spec_trace)?);
+        solver.assert(&assert_concat(&self.eval_trace)?);
         for x in self.eval_trace.windows(2) {
             solver.assert(&x[0].can_branch_to_address(x[1].get_address())?);
         }
@@ -84,12 +84,12 @@ impl PcodeAssignment {
         }
     }
 }
-pub fn assert_concat<T: ModelingContext>(z3: &Context, items: &[T]) -> Result<Bool, CrackersError> {
+pub fn assert_concat<T: ModelingContext>(items: &[T]) -> Result<Bool, CrackersError> {
     let mut bools = vec![];
     for x in items.windows(2) {
         bools.push(x[0].assert_concat(&x[1])?)
     }
-    Ok(Bool::and(z3, &bools))
+    Ok(Bool::and(&bools))
 }
 
 #[expect(deprecated)]
@@ -115,7 +115,7 @@ pub fn assert_compatible_semantics<S: ModelingContext>(
             bools.push(b)
         }
     }
-    Ok(Bool::and(jingle.ctx(), &bools))
+    Ok(Bool::and(&bools))
 }
 
 pub fn assert_state_constraints(
@@ -129,5 +129,5 @@ pub fn assert_state_constraints(
         let assertion = x(jingle, state, addr)?;
         bools.push(assertion);
     }
-    Ok(Bool::and(jingle.ctx(), &bools))
+    Ok(Bool::and(&bools))
 }

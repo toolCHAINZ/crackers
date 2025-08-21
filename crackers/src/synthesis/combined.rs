@@ -8,7 +8,6 @@ use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
 pub struct CombinedAssignmentSynthesis {
     pub(crate) base_config: SynthesisParams,
-    pub(crate) z3: Context,
 }
 
 impl CombinedAssignmentSynthesis {
@@ -33,7 +32,7 @@ impl CombinedAssignmentSynthesis {
             );
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions.clone();
-            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide() {
@@ -78,7 +77,7 @@ impl CombinedAssignmentSynthesis {
             // }
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions;
-            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide_single_threaded() {
@@ -108,7 +107,6 @@ impl CombinedAssignmentSynthesis {
     }
     pub fn new(z3: &Context, base_config: SynthesisParams) -> Self {
         Self {
-            z3: z3.clone(),
             base_config,
         }
     }

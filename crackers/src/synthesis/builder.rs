@@ -64,18 +64,16 @@ impl SynthesisParamsBuilder {
 }
 
 impl SynthesisParams {
-    pub fn build_single(&self, z3: &Context) -> Result<AssignmentSynthesis, CrackersError> {
-        let s = AssignmentSynthesis::new(z3, self)?;
+    pub fn build_single(&self) -> Result<AssignmentSynthesis, CrackersError> {
+        let s = AssignmentSynthesis::new(self)?;
         Ok(s)
     }
 
     pub fn build_combined(
         &self,
-        z3: &Context,
     ) -> Result<CombinedAssignmentSynthesis, CrackersError> {
         Ok(CombinedAssignmentSynthesis {
             base_config: self.clone(),
-            z3: z3.clone(),
         })
     }
 }

@@ -51,7 +51,6 @@ pub enum DecisionResult {
 }
 
 pub struct AssignmentSynthesis {
-    z3: Context,
     outer_problem: OuterProblem,
     library: Arc<GadgetLibrary>,
     candidates: Candidates,
@@ -64,12 +63,12 @@ pub struct AssignmentSynthesis {
 }
 
 impl AssignmentSynthesis {
-    pub fn new(z3: &Context, builder: &SynthesisParams) -> Result<Self, CrackersError> {
+    pub fn new(builder: &SynthesisParams) -> Result<Self, CrackersError> {
         let instrs = &builder.reference_program;
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
-        let jingle = JingleContext::new(z3, builder.gadget_library.as_ref());
+        let jingle = JingleContext::new(builder.gadget_library.as_ref());
         let modeled_instrs: Vec<ModeledInstruction> = instrs
             .steps()
             .iter()
@@ -85,14 +84,13 @@ impl AssignmentSynthesis {
             ))?;
         let outer_problem = match builder.selection_strategy {
             SynthesisSelectionStrategy::SatStrategy => {
-                SatProb(SatProblem::initialize(z3, &candidates.candidates))
+                SatProb(SatProblem::initialize(&candidates.candidates))
             }
             SynthesisSelectionStrategy::OptimizeStrategy => {
-                OptimizeProb(OptimizationProblem::initialize(z3, &candidates.candidates))
+                OptimizeProb(OptimizationProblem::initialize(&candidates.candidates))
             }
         };
         Ok(AssignmentSynthesis {
-            z3: z3.clone(),
             outer_problem,
             candidates,
             library: builder.gadget_library.clone(),
@@ -127,7 +125,7 @@ impl AssignmentSynthesis {
 
     pub fn decide_single_threaded(&mut self) -> Result<DecisionResult, CrackersError> {
         let theory_builder = self.make_pcode_theory_builder();
-        let theory = theory_builder.build(&self.z3)?;
+        let theory = theory_builder.build()?;
         loop {
             let assignment = self.outer_problem.get_assignments()?;
             match assignment {
@@ -176,7 +174,7 @@ impl AssignmentSynthesis {
                                 handle.interrupt();
                             }
                         });
-                        let worker = TheoryWorker::new(&z3, idx, r, req_receiver, t).unwrap();
+                        let worker = TheoryWorker::new(idx, r, req_receiver, t).unwrap();
                         event!(Level::TRACE, "Created worker {}", idx);
                         worker.run();
                         drop(worker);

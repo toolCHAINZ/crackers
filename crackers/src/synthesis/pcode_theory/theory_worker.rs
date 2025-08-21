@@ -25,7 +25,6 @@ pub struct TheoryWorker {
 
 impl TheoryWorker {
     pub fn new(
-        z3: &Context,
         id: usize,
         sender: Sender<TheoryWorkerResponse>,
         receiver: Receiver<SlotAssignments>,
@@ -35,7 +34,7 @@ impl TheoryWorker {
             id,
             sender,
             receiver,
-            theory: builder.build(z3)?,
+            theory: builder.build()?,
         })
     }
 
