@@ -123,14 +123,14 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .init();
     let params = p.resolve()?;
     let result = match params.combine_instructions {
-        true => params.build_combined(&z3).and_then(|mut c| c.decide()),
-        false => params.build_single(&z3).and_then(|mut c| c.decide()),
+        true => params.build_combined().and_then(|mut c| c.decide()),
+        false => params.build_single().and_then(|mut c| c.decide()),
     };
     match result {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
                 let z3 = Context::new(&Config::new());
-                let a = a.build(&z3)?;
+                let a = a.build()?;
                 event!(Level::INFO, "Synthesis successful :)");
                 event!(Level::INFO, "{}", a)
             }

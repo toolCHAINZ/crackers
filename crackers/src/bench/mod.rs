@@ -41,7 +41,7 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
-    match params.build_single(&z3) {
+    match params.build_single() {
         Ok(mut a) => match a.decide() {
             Ok(a) => match a {
                 DecisionResult::AssignmentFound(_) => {
