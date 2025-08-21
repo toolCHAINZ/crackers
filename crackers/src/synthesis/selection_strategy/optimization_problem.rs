@@ -1,5 +1,5 @@
 use z3::ast::{Ast, Bool};
-use z3::{Context, Optimize, SatResult};
+use z3::{Optimize, SatResult};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
@@ -14,7 +14,6 @@ use crate::synthesis::slot_assignments::SlotAssignments;
 #[derive(Debug)]
 pub struct OptimizationProblem {
     variables: Vec<Vec<Bool>>,
-    z3: Context,
     solver: Optimize,
     index_bools: Vec<Bool>,
 }
@@ -38,17 +37,16 @@ impl OptimizationProblem {
 }
 
 impl SelectionStrategy for OptimizationProblem {
-    fn initialize<T: InstrLen>(z3: &Context, gadgets: &[Vec<T>]) -> Self {
+    fn initialize<T: InstrLen>(gadgets: &[Vec<T>]) -> Self {
         let mut prob = Self {
             variables: Default::default(),
-            z3: z3.clone(),
-            solver: Optimize::new(z3),
+            solver: Optimize::new(),
             index_bools: Vec::with_capacity(gadgets.len()),
         };
         for (i, slot) in gadgets.iter().enumerate() {
             let mut vars = vec![];
             for (j, _) in slot.iter().enumerate() {
-                let var = Bool::new_const(&prob.z3, Self::derive_var_name(i, j));
+                let var = Bool::new_const(Self::derive_var_name(i, j));
                 prob.solver
                     .assert_soft(&var.not(), gadgets[i][j].instr_len(), None);
                 vars.push(var)
@@ -57,9 +55,9 @@ impl SelectionStrategy for OptimizationProblem {
         }
         for (i, slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            let b = Bool::fresh_const(z3, &format!("slot_{i}"));
+            let b = Bool::fresh_const(&format!("slot_{i}"));
             prob.index_bools.push(b.clone());
-            prob.solver.assert_and_track(&Bool::pb_eq(z3, &pbs, 1), &b)
+            prob.solver.assert_and_track(&Bool::pb_eq(&pbs, 1), &b)
         }
         prob
     }
@@ -78,7 +76,7 @@ impl SelectionStrategy for OptimizationProblem {
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                self.solver.assert(&Bool::and(&self.z3, &decisions).not());
+                self.solver.assert(&Bool::and(&decisions).not());
 
                 Ok(Success(assignment))
             }
@@ -92,6 +90,6 @@ impl SelectionStrategy for OptimizationProblem {
             .map(|b| self.get_decision_variable(b))
             .collect();
         self.solver
-            .assert(&Bool::and(&self.z3, choices.as_slice()).not().simplify());
+            .assert(&Bool::and(choices.as_slice()).not().simplify());
     }
 }

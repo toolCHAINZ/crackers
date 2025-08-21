@@ -48,7 +48,7 @@ impl<S: ModelingContext> PcodeTheory<S> {
         postconditions: Vec<Arc<StateConstraintGenerator>>,
         pointer_invariants: Vec<Arc<TransitionConstraintGenerator>>,
     ) -> Result<Self, CrackersError> {
-        let solver = Solver::new_for_logic(j.ctx(), "QF_ABV").unwrap();
+        let solver = Solver::new_for_logic("QF_ABV").unwrap();
         Ok(Self {
             j,
             solver,
@@ -75,15 +75,14 @@ impl<S: ModelingContext> PcodeTheory<S> {
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
         let final_state = self.j.fresh_state();
-        self.solver
-            .assert(&assert_concat(self.j.ctx(), &self.templates)?);
+        self.solver.assert(&assert_concat(&self.templates)?);
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         let mem_cnstr = self.initial_memory.to_constraint();
         self.solver
-            .assert(&mem_cnstr(&self.j, self.templates[0].get_original_state())?);
+            .assert(&mem_cnstr(self.templates[0].get_original_state())?);
         for (index, x) in gadgets.windows(2).enumerate() {
-            let branch = Bool::fresh_const(self.j.ctx(), "b");
-            let concat = Bool::fresh_const(self.j.ctx(), "m");
+            let branch = Bool::fresh_const("b");
+            let concat = Bool::fresh_const("m");
             self.solver
                 .assert_and_track(&x[0].assert_concat(&x[1])?, &concat);
 
@@ -112,7 +111,7 @@ impl<S: ModelingContext> PcodeTheory<S> {
             .next_back()
             .zip(slot_assignments.choices().last())
         {
-            let concat = Bool::fresh_const(self.j.ctx(), "m");
+            let concat = Bool::fresh_const("m");
             self.solver
                 .assert_and_track(&g.get_final_state()._eq(&final_state)?, &concat);
             assertions.push(ConjunctiveConstraint::new(
@@ -125,9 +124,9 @@ impl<S: ModelingContext> PcodeTheory<S> {
             ))
         }
         for (index, (spec, g)) in self.templates.iter().zip(&gadgets).enumerate() {
-            let sem = Bool::fresh_const(self.j.ctx(), "c");
+            let sem = Bool::fresh_const("c");
             self.solver.assert_and_track(
-                &assert_compatible_semantics(&self.j, spec, g, &self.pointer_invariants)?,
+                &assert_compatible_semantics(spec, g, &self.pointer_invariants)?,
                 &sem,
             );
             assertions.push(ConjunctiveConstraint::new(
@@ -143,8 +142,8 @@ impl<S: ModelingContext> PcodeTheory<S> {
         let last_addr = gadgets[gadgets.len() - 1].get_address();
         let pre = self.assert_preconditions(gadgets[0].get_original_state(), first_addr)?;
         let post = self.assert_postconditions(&final_state, last_addr)?;
-        let pre_bool = Bool::fresh_const(self.j.ctx(), "pre");
-        let post_bool = Bool::fresh_const(self.j.ctx(), "post");
+        let pre_bool = Bool::fresh_const("pre");
+        let post_bool = Bool::fresh_const("post");
         self.solver.assert_and_track(&pre, &pre_bool);
         self.solver.assert_and_track(&post, &post_bool);
         assertions.push(ConjunctiveConstraint::new(
@@ -167,11 +166,11 @@ impl<S: ModelingContext> PcodeTheory<S> {
     }
 
     fn assert_preconditions(&self, state: &State, addr: u64) -> Result<Bool, CrackersError> {
-        assert_state_constraints(&self.j, &self.preconditions, state, addr)
+        assert_state_constraints(&self.preconditions, state, addr)
     }
 
     fn assert_postconditions(&self, state: &State, addr: u64) -> Result<Bool, CrackersError> {
-        assert_state_constraints(&self.j, &self.postconditions, state, addr)
+        assert_state_constraints(&self.postconditions, state, addr)
     }
 
     fn collect_conflicts(

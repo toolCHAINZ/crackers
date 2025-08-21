@@ -1,5 +1,4 @@
 use tracing::{Level, event};
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::reference_program::ReferenceProgram;
@@ -8,7 +7,6 @@ use crate::synthesis::{AssignmentSynthesis, DecisionResult};
 
 pub struct CombinedAssignmentSynthesis {
     pub(crate) base_config: SynthesisParams,
-    pub(crate) z3: Context,
 }
 
 impl CombinedAssignmentSynthesis {
@@ -33,7 +31,7 @@ impl CombinedAssignmentSynthesis {
             );
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions.clone();
-            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide() {
@@ -78,7 +76,7 @@ impl CombinedAssignmentSynthesis {
             // }
             let mut new_config = self.base_config.clone();
             new_config.reference_program = instructions;
-            let synth = AssignmentSynthesis::new(&self.z3, &new_config);
+            let synth = AssignmentSynthesis::new(&new_config);
             if let Ok(mut synth) = synth {
                 // this one constructed, let's try it
                 match synth.decide_single_threaded() {
@@ -106,10 +104,7 @@ impl CombinedAssignmentSynthesis {
         // Only an empty specification can possibly result in this being `None`
         last.ok_or(CrackersError::EmptySpecification)
     }
-    pub fn new(z3: &Context, base_config: SynthesisParams) -> Self {
-        Self {
-            z3: z3.clone(),
-            base_config,
-        }
+    pub fn new(base_config: SynthesisParams) -> Self {
+        Self { base_config }
     }
 }

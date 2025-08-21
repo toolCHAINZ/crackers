@@ -10,7 +10,6 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use z3::{Config, Context};
 
 use crackers::bench::{BenchCommand, bench};
 use crackers::config::CrackersConfig;
@@ -104,8 +103,6 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
 }
 
 fn synthesize(config: PathBuf) -> anyhow::Result<()> {
-    let cfg = Config::new();
-    let z3 = Context::new(&cfg);
     let cfg_bytes = fs::read(config)?;
     let s = String::from_utf8(cfg_bytes)?;
     let p: CrackersConfig = toml_edit::de::from_str(&s)?;
@@ -123,14 +120,13 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
         .init();
     let params = p.resolve()?;
     let result = match params.combine_instructions {
-        true => params.build_combined(&z3).and_then(|mut c| c.decide()),
-        false => params.build_single(&z3).and_then(|mut c| c.decide()),
+        true => params.build_combined().and_then(|mut c| c.decide()),
+        false => params.build_single().and_then(|mut c| c.decide()),
     };
     match result {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
-                let z3 = Context::new(&Config::new());
-                let a = a.build(&z3)?;
+                let a = a.build()?;
                 event!(Level::INFO, "Synthesis successful :)");
                 event!(Level::INFO, "{}", a)
             }

@@ -9,7 +9,7 @@ use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::SleighArchInfo;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use z3::{Context, Solver};
+use z3::Solver;
 
 #[derive(Clone)]
 pub struct AssignmentModelBuilder {
@@ -56,11 +56,12 @@ impl AssignmentModelBuilder {
             self.pointer_invariants.clone(),
         ))
     }
-    pub fn build(&self, z3: &Context) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
-        let jingle = JingleContext::new(z3, &self.arch_info);
+    pub fn build(&self) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
+        // todo: remove this structure in jingle
+        let jingle = JingleContext::new(&self.arch_info);
 
         let pcode_model = self.make_pcode_model(&jingle)?;
-        let s = Solver::new(jingle.ctx());
-        pcode_model.check(&jingle, &s)
+        let s = Solver::new();
+        pcode_model.check(&self.arch_info, &s)
     }
 }

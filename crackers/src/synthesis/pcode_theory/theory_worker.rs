@@ -2,7 +2,6 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use jingle::modeling::ModeledInstruction;
 use tracing::{Level, event, instrument};
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::synthesis::pcode_theory::PcodeTheory;
@@ -25,7 +24,6 @@ pub struct TheoryWorker {
 
 impl TheoryWorker {
     pub fn new(
-        z3: &Context,
         id: usize,
         sender: Sender<TheoryWorkerResponse>,
         receiver: Receiver<SlotAssignments>,
@@ -35,7 +33,7 @@ impl TheoryWorker {
             id,
             sender,
             receiver,
-            theory: builder.build(z3)?,
+            theory: builder.build()?,
         })
     }
 

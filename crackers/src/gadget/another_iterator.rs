@@ -23,7 +23,7 @@ where
     T: Iterator<Item = &'a Gadget>,
 {
     pub(crate) fn new(jingle: &JingleContext, gadgets: T, trace: Vec<ModeledInstruction>) -> Self {
-        let _solver = Solver::new(jingle.ctx());
+        let _solver = Solver::new();
         Self {
             jingle: jingle.clone(),
             _solver,

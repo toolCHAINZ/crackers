@@ -8,7 +8,6 @@ use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
 use crate::synthesis::DecisionResult;
@@ -20,8 +19,6 @@ pub struct BenchCommand {
     spec_instructions: usize,
 }
 pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
-    let z3_cfg = Config::new();
-    let z3 = Context::new(&z3_cfg);
     let cfg_bytes = fs::read(config.crackers_config)?;
     let s = String::from_utf8(cfg_bytes)?;
     let mut p: CrackersConfig = toml_edit::de::from_str(&s)?;
@@ -41,7 +38,7 @@ pub fn bench(config: BenchCommand) -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(writer))
         .init();
     let params = p.resolve()?;
-    match params.build_single(&z3) {
+    match params.build_single() {
         Ok(mut a) => match a.decide() {
             Ok(a) => match a {
                 DecisionResult::AssignmentFound(_) => {

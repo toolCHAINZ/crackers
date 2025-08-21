@@ -2,16 +2,16 @@ mod model_varnode_iterator;
 
 use crate::decision::assignment_model::model_varnode_iterator::ModelVarNodeIterator;
 use crackers::synthesis::assignment_model::AssignmentModel;
+use jingle::display::{JingleDisplay, JingleDisplayable};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
 use jingle::python::modeled_block::PythonModeledBlock;
-use jingle::python::resolved_varnode::{PythonResolvedVarNode, PythonResolvedVarNodeInner};
 use jingle::python::state::PythonState;
 use jingle::python::varode_iterator::VarNodeIterator;
-use jingle::python::z3::ast::{TryFromPythonZ3, TryIntoPythonZ3};
+use jingle::python::z3::ast::PythonAst;
 use jingle::sleigh::{ArchInfoProvider, SpaceType};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{Py, PyAny, PyResult, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyErr, PyResult, pyclass, pymethods};
 use std::rc::Rc;
 use z3::ast::BV;
 
@@ -25,18 +25,18 @@ impl PythonAssignmentModel {
     fn eval_vn(
         &self,
         state: &State,
-        vn: PythonResolvedVarNode,
+        vn: JingleDisplay<ResolvedVarnode>,
         completion: bool,
     ) -> Option<(String, BV)> {
-        match vn.inner {
-            PythonResolvedVarNodeInner::Direct(a) => {
-                let bv = state.read_varnode(a.inner()).ok()?;
+        let info = vn.info();
+        match vn.inner() {
+            ResolvedVarnode::Direct(a) => {
+                let bv = state.read_varnode(a).ok()?;
                 let val = self.inner.model().eval(&bv, completion)?;
+                let a = a.display(info);
                 Some((format!("{a}"), val))
             }
-            PythonResolvedVarNodeInner::Indirect(i) => {
-                let info = i.info();
-                let i = i.inner();
+            ResolvedVarnode::Indirect(i) => {
                 let pointer_value = self.inner.model().eval(&i.pointer, completion)?;
                 let space_name = info
                     .get_space_info(i.pointer_space_idx)
@@ -61,6 +61,16 @@ impl PythonAssignmentModel {
                 ))
             }
         }
+    }
+}
+
+impl TryFrom<AssignmentModel<ModeledBlock>> for PythonAssignmentModel {
+    type Error = PyErr;
+
+    fn try_from(value: AssignmentModel<ModeledBlock>) -> Result<Self, Self::Error> {
+        Ok(PythonAssignmentModel {
+            inner: Rc::new(value),
+        })
     }
 }
 
@@ -106,14 +116,8 @@ impl PythonAssignmentModel {
             .flat_map(|g| g.get_input_vns().ok())
             .flatten()
             .filter(|a| {
-                if let PythonResolvedVarNode {
-                    inner: PythonResolvedVarNodeInner::Direct(a),
-                } = a
-                {
-                    a.info()
-                        .get_space_info(a.inner().space_index)
-                        .unwrap()
-                        ._type
+                if let ResolvedVarnode::Direct(b) = a.inner.inner() {
+                    a.inner.info().get_space_info(b.space_index).unwrap()._type
                         == SpaceType::IPTR_PROCESSOR
                 } else {
                     true
@@ -129,14 +133,8 @@ impl PythonAssignmentModel {
             .flat_map(|g| g.get_output_vns().ok())
             .flatten()
             .filter(|a| {
-                if let PythonResolvedVarNode {
-                    inner: PythonResolvedVarNodeInner::Direct(a),
-                } = a
-                {
-                    a.info()
-                        .get_space_info(a.inner().space_index)
-                        .unwrap()
-                        ._type
+                if let ResolvedVarnode::Direct(b) = a.inner.inner() {
+                    a.inner.info().get_space_info(b.space_index).unwrap()._type
                         == SpaceType::IPTR_PROCESSOR
                 } else {
                     true
@@ -150,7 +148,7 @@ impl PythonAssignmentModel {
         let initial = initial.state();
         let iter: Vec<_> = self
             .inputs()?
-            .flat_map(|p| self.eval_vn(initial, p, model_completion))
+            .flat_map(|p| self.eval_vn(initial, p.inner, model_completion))
             .collect();
         Some(ModelVarNodeIterator::new(iter.into_iter()))
     }
@@ -160,7 +158,7 @@ impl PythonAssignmentModel {
         let initial = initial.state();
         let iter: Vec<_> = self
             .outputs()?
-            .flat_map(|p| self.eval_vn(initial, p, model_completion))
+            .flat_map(|p| self.eval_vn(initial, p.inner, model_completion))
             .collect();
         Some(ModelVarNodeIterator::new(iter.into_iter()))
     }

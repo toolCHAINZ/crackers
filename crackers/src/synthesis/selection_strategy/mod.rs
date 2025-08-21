@@ -1,7 +1,6 @@
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::Gadget;
@@ -58,7 +57,7 @@ pub struct SelectionFailure {
     pub indices: Vec<usize>,
 }
 pub trait SelectionStrategy {
-    fn initialize<T: InstrLen>(z3: &Context, choices: &[Vec<T>]) -> Self;
+    fn initialize<T: InstrLen>(choices: &[Vec<T>]) -> Self;
 
     fn get_assignments(&mut self) -> Result<AssignmentResult, CrackersError>;
 

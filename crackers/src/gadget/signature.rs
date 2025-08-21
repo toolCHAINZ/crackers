@@ -1,10 +1,10 @@
-use std::cmp::Ordering;
-
 use crate::gadget::Gadget;
+use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{
-    ArchInfoProvider, GeneralizedVarNode, IndirectVarNode, Instruction, SpaceType, VarNode,
+    ArchInfoProvider, GeneralizedVarNode, IndirectVarNode, Instruction, SpaceType,
 };
+use std::cmp::Ordering;
 use tracing::trace;
 
 #[derive(Clone, Debug)]
@@ -108,13 +108,7 @@ impl From<&Gadget> for GadgetSignature {
 }
 
 fn varnode_set_covers(our_set: &[GeneralizedVarNode], other_set: &[GeneralizedVarNode]) -> bool {
-    let self_direct: Vec<&VarNode> = our_set
-        .iter()
-        .filter_map(|i| match i {
-            GeneralizedVarNode::Direct(d) => Some(d),
-            GeneralizedVarNode::Indirect(_) => None,
-        })
-        .collect();
+    let mut self_dir_sig = VarNodeSet::default();
     let self_indirect: Vec<&IndirectVarNode> = our_set
         .iter()
         .filter_map(|i| match i {
@@ -122,10 +116,16 @@ fn varnode_set_covers(our_set: &[GeneralizedVarNode], other_set: &[GeneralizedVa
             GeneralizedVarNode::Direct(_) => None,
         })
         .collect();
+    our_set.iter().for_each(|i| {
+        if let GeneralizedVarNode::Direct(d) = i {
+            self_dir_sig.insert(d)
+        }
+    });
+
     for other_output in other_set {
         match other_output {
             GeneralizedVarNode::Direct(d) => {
-                if !self_direct.iter().any(|dd| dd.covers(d)) {
+                if !self_dir_sig.covers(d) {
                     return false;
                 }
             }
@@ -143,8 +143,9 @@ fn varnode_set_covers(our_set: &[GeneralizedVarNode], other_set: &[GeneralizedVa
 }
 #[cfg(test)]
 mod tests {
+    use jingle::analysis::varnode::VarNodeSet;
     use jingle::sleigh::GeneralizedVarNode::Direct;
-    use jingle::sleigh::VarNode;
+    use jingle::sleigh::{GeneralizedVarNode, VarNode};
 
     use crate::gadget::signature::GadgetSignature;
 
@@ -245,6 +246,26 @@ mod tests {
                 }),
             ],
         };
+        let mut set = VarNodeSet::default();
+        o2.outputs
+            .iter()
+            .flat_map(|s| match s {
+                Direct(a) => Some(a),
+                GeneralizedVarNode::Indirect(_) => None,
+            })
+            .for_each(|o| {
+                set.insert(o);
+            });
+        let mut set2 = VarNodeSet::default();
+        o1.outputs
+            .iter()
+            .flat_map(|s| match s {
+                Direct(a) => Some(a),
+                GeneralizedVarNode::Indirect(_) => None,
+            })
+            .for_each(|o| {
+                set2.insert(o);
+            });
         assert!(o2.covers(&o1));
         assert!(!o1.covers(&o2));
     }
