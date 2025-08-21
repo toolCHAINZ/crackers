@@ -116,9 +116,10 @@ fn varnode_set_covers(our_set: &[GeneralizedVarNode], other_set: &[GeneralizedVa
             GeneralizedVarNode::Direct(_) => None,
         })
         .collect();
-    our_set.iter().for_each(|i| match i {
-        GeneralizedVarNode::Direct(d) => self_dir_sig.insert(d),
-        _ => {}
+    our_set.iter().for_each(|i| {
+        if let GeneralizedVarNode::Direct(d) = i {
+            self_dir_sig.insert(d)
+        }
     });
 
     for other_output in other_set {
