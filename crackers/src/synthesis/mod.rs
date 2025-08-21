@@ -3,7 +3,7 @@ use jingle::modeling::ModeledInstruction;
 use std::cmp::Ordering;
 use std::sync::Arc;
 use tracing::{Level, event, instrument};
-use z3::{Config, Context};
+use z3::Context;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::EmptySpecification;
@@ -166,7 +166,7 @@ impl AssignmentSynthesis {
                 kill_senders.push(kill_sender);
                 req_channels.push(req_sender);
                 s.spawn(move || {
-                    let z3 = Context::new(&Config::new());
+                    let z3 = Context::thread_local();
                     std::thread::scope(|inner| {
                         let handle = z3.handle();
                         inner.spawn(move || {

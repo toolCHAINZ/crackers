@@ -104,8 +104,6 @@ fn new(path: PathBuf) -> anyhow::Result<()> {
 }
 
 fn synthesize(config: PathBuf) -> anyhow::Result<()> {
-    let cfg = Config::new();
-    let z3 = Context::new(&cfg);
     let cfg_bytes = fs::read(config)?;
     let s = String::from_utf8(cfg_bytes)?;
     let p: CrackersConfig = toml_edit::de::from_str(&s)?;
@@ -129,7 +127,6 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     match result {
         Ok(res) => match res {
             DecisionResult::AssignmentFound(a) => {
-                let z3 = Context::new(&Config::new());
                 let a = a.build()?;
                 event!(Level::INFO, "Synthesis successful :)");
                 event!(Level::INFO, "{}", a)

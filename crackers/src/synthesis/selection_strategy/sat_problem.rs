@@ -131,7 +131,6 @@ mod tests {
 
     #[test]
     fn test_assignment() {
-        let z3 = Context::new(&Config::new());
         let thing = vec![vec![1, 2, 3], vec![2, 3, 4], vec![3, 4, 5]];
         let mut prob = SatProblem::initialize(&thing);
         let assignments = prob.get_assignments();
