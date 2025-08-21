@@ -9,10 +9,8 @@ use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
-use jingle::python::z3::ast::{PythonAst, TryFromPythonZ3};
-use jingle::python::z3::get_python_z3;
+use jingle::python::z3::ast::PythonAst;
 use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
-use std::rc::Rc;
 use std::sync::Arc;
 use z3::ast::Bool;
 
@@ -26,13 +24,9 @@ pub struct PythonSynthesisParams {
 impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
         let res = Python::with_gil(|py| {
-            py.allow_threads(|| {
-                let z3 = get_python_z3()?;
-
-                match self.inner.combine_instructions {
-                    false => self.inner.build_single()?.decide_single_threaded(),
-                    true => self.inner.build_combined()?.decide_single_threaded(),
-                }
+            py.allow_threads(|| match self.inner.combine_instructions {
+                false => self.inner.build_single()?.decide(),
+                true => self.inner.build_combined()?.decide(),
             })
         })?;
         match res {

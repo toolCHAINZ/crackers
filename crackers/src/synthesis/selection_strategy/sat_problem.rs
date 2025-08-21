@@ -1,5 +1,5 @@
 use z3::ast::{Ast, Bool};
-use z3::{Context, SatResult, Solver};
+use z3::{SatResult, Solver};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
@@ -71,9 +71,9 @@ impl SelectionStrategy for SatProblem {
         }
         for (i, slot) in prob.variables.iter().enumerate() {
             let pbs: Vec<(&Bool, i32)> = slot.iter().map(|b| (b, 1)).collect();
-            let b = Bool::fresh_const( &format!("slot_{i}"));
+            let b = Bool::fresh_const(&format!("slot_{i}"));
             prob.index_bools.push(b.clone());
-            prob.solver.assert_and_track(&Bool::pb_eq( &pbs, 1), &b);
+            prob.solver.assert_and_track(Bool::pb_eq(&pbs, 1), &b);
         }
         prob
     }
@@ -101,7 +101,7 @@ impl SelectionStrategy for SatProblem {
                     .iter()
                     .map(|d| self.get_decision_variable(d))
                     .collect();
-                self.solver.assert(&Bool::and( &decisions).not());
+                self.solver.assert(Bool::and(&decisions).not());
 
                 Ok(Success(assignment))
             }
@@ -116,7 +116,7 @@ impl SelectionStrategy for SatProblem {
             .map(|b| self.get_decision_variable(b))
             .collect();
         self.solver
-            .assert(&Bool::and( choices.as_slice()).not().simplify());
+            .assert(Bool::and(choices.as_slice()).not().simplify());
     }
 }
 

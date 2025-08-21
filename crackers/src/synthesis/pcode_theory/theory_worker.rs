@@ -2,7 +2,6 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use jingle::modeling::ModeledInstruction;
 use tracing::{Level, event, instrument};
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::synthesis::pcode_theory::PcodeTheory;

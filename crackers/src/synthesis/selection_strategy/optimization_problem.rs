@@ -1,5 +1,5 @@
 use z3::ast::{Ast, Bool};
-use z3::{Context, Optimize, SatResult};
+use z3::{Optimize, SatResult};
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;

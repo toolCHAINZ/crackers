@@ -1,5 +1,4 @@
 use tracing::{Level, event};
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::reference_program::ReferenceProgram;
@@ -105,9 +104,7 @@ impl CombinedAssignmentSynthesis {
         // Only an empty specification can possibly result in this being `None`
         last.ok_or(CrackersError::EmptySpecification)
     }
-    pub fn new(z3: &Context, base_config: SynthesisParams) -> Self {
-        Self {
-            base_config,
-        }
+    pub fn new(base_config: SynthesisParams) -> Self {
+        Self { base_config }
     }
 }

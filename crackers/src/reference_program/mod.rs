@@ -21,8 +21,8 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, BV, Bool};
-use z3::{Config, Context, SatResult, Solver};
+use z3::ast::{Ast, Bool};
+use z3::{SatResult, Solver};
 
 mod step;
 
@@ -30,9 +30,9 @@ mod step;
 pub struct MemoryValuation(HashMap<VarNode, Vec<u8>>);
 
 impl MemoryValuation {
-    pub fn to_constraint(&self) -> impl Fn(&JingleContext, &State) -> Result<Bool, CrackersError> {
+    pub fn to_constraint(&self) -> impl Fn(&State) -> Result<Bool, CrackersError> {
         let map = self.0.clone();
-        move |jingle, state| {
+        move |state| {
             let mut v = vec![];
             for (vn, value) in &map {
                 let mut temp_vn: VarNode = VarNode {
@@ -165,7 +165,6 @@ impl ReferenceProgram {
         }
 
         self.initialize_valuation(&covering_set, &image);
-        let z3 = Context::new(&Config::new());
         let jingle_ctx = JingleContext::new(&image);
         let extended_constraints = self
             .get_extended_constraints_from_indirect(jingle_ctx)
@@ -202,7 +201,7 @@ impl ReferenceProgram {
         let i: Instruction = i.as_slice().try_into().unwrap();
         let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
         let init_constraint = self.initial_memory.to_constraint();
-        let constraint = init_constraint(&ctx, modeled_instr.get_original_state())?;
+        let constraint = init_constraint(modeled_instr.get_original_state())?;
         let solver = Solver::new();
         let mut vn_set = VarNodeSet::default();
         solver.assert(&constraint);

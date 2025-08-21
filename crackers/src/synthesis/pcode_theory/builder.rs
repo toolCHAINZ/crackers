@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use z3::Context;
 
 use crate::error::CrackersError;
 use crate::gadget::candidates::Candidates;

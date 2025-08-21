@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use derive_builder::Builder;
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
-use z3::Context;
 use z3::ast::Bool;
 
 use crate::error::CrackersError;
@@ -26,11 +24,9 @@ pub enum SynthesisSelectionStrategy {
 }
 
 pub type StateConstraintGenerator =
-    dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
-pub type TransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
+    dyn Fn(&State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
+pub type TransitionConstraintGenerator =
+    dyn Fn(&ModeledBlock) -> Result<Option<Bool>, CrackersError> + Send + Sync + 'static;
 
 #[derive(Clone, Debug)]
 pub enum Library {
@@ -69,9 +65,7 @@ impl SynthesisParams {
         Ok(s)
     }
 
-    pub fn build_combined(
-        &self,
-    ) -> Result<CombinedAssignmentSynthesis, CrackersError> {
+    pub fn build_combined(&self) -> Result<CombinedAssignmentSynthesis, CrackersError> {
         Ok(CombinedAssignmentSynthesis {
             base_config: self.clone(),
         })
