@@ -122,8 +122,6 @@ impl SelectionStrategy for SatProblem {
 
 #[cfg(test)]
 mod tests {
-    use z3::{Config, Context};
-
     use crate::synthesis::Decision;
     use crate::synthesis::pcode_theory::conflict_clause::ConflictClause;
     use crate::synthesis::selection_strategy::sat_problem::SatProblem;
