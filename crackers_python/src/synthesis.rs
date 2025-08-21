@@ -1,16 +1,16 @@
-use crate::decision::PythonDecisionResult;
 use crate::decision::assignment_model::PythonAssignmentModel;
+use crate::decision::PythonDecisionResult;
 use crackers::error::CrackersError;
-use crackers::synthesis::DecisionResult;
 use crackers::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, TransitionConstraintGenerator,
 };
-use jingle::JingleContext;
+use crackers::synthesis::DecisionResult;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::z3::ast::PythonAst;
-use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
+use jingle::JingleContext;
+use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
 use std::sync::Arc;
 use z3::ast::Bool;
 
@@ -25,8 +25,8 @@ impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
         let res = Python::with_gil(|py| {
             py.allow_threads(|| match self.inner.combine_instructions {
-                false => self.inner.build_single()?.decide(),
-                true => self.inner.build_combined()?.decide(),
+                false => self.inner.build_single()?.decide_single_threaded(),
+                true => self.inner.build_combined()?.decide_single_threaded(),
             })
         })?;
         match res {
