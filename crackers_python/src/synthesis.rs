@@ -1,16 +1,16 @@
-use crate::decision::assignment_model::PythonAssignmentModel;
 use crate::decision::PythonDecisionResult;
+use crate::decision::assignment_model::PythonAssignmentModel;
 use crackers::error::CrackersError;
+use crackers::synthesis::DecisionResult;
 use crackers::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, TransitionConstraintGenerator,
 };
-use crackers::synthesis::DecisionResult;
+use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::z3::ast::PythonAst;
-use jingle::JingleContext;
-use pyo3::{pyclass, pymethods, Py, PyAny, PyResult, Python};
+use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use std::sync::Arc;
 use z3::ast::Bool;
 
