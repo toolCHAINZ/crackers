@@ -25,8 +25,8 @@ impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
         let res = Python::with_gil(|py| {
             py.allow_threads(|| match self.inner.combine_instructions {
-                false => self.inner.build_single()?.decide(),
-                true => self.inner.build_combined()?.decide(),
+                false => self.inner.build_single()?.decide_single_threaded(),
+                true => self.inner.build_combined()?.decide_single_threaded(),
             })
         })?;
         match res {
