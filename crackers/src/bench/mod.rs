@@ -8,7 +8,6 @@ use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use z3::{Config, Context};
 
 use crate::config::CrackersConfig;
 use crate::synthesis::DecisionResult;
