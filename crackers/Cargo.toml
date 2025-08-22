@@ -1,6 +1,6 @@
 [package]
 name = "crackers"
-version = "0.5.0"
+version = "0.5.1"
 readme = "../README.md"
 authors = ["toolCHAINZ"]
 license = "MIT"
