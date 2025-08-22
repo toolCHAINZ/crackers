@@ -5,14 +5,18 @@ use crackers::synthesis::DecisionResult;
 use crackers::synthesis::builder::{
     StateConstraintGenerator, SynthesisParams, TransitionConstraintGenerator,
 };
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, State};
 use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::z3::ast::PythonAst;
+use lazy_static::lazy_static;
 use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use z3::ast::Bool;
+
+lazy_static! {
+    static ref MUTEX: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+}
 
 #[pyclass(name = "SynthesisParams")]
 #[derive(Clone)]
@@ -25,8 +29,8 @@ impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
         let res = Python::with_gil(|py| {
             py.allow_threads(|| match self.inner.combine_instructions {
-                false => self.inner.build_single()?.decide_single_threaded(),
-                true => self.inner.build_combined()?.decide_single_threaded(),
+                false => self.inner.build_single()?.decide(),
+                true => self.inner.build_combined()?.decide(),
             })
         })?;
         match res {
@@ -40,56 +44,61 @@ impl PythonSynthesisParams {
     }
 
     pub fn add_precondition(&mut self, obj: Py<PyAny>) {
-        let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |_, s, a| {
-            let state = PythonState::from(s.clone());
-            Python::with_gil(|py| {
+        let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |s, a| {
+            let g = MUTEX.lock().unwrap();
+            let r = Python::with_gil(|py| {
+                let state = PythonState::from(s.clone());
                 let res = obj.call(py, (state, a), None)?;
-                let bool = Bool::try_from_python(res).map_err(CrackersError::PythonError)?;
+                let bool = Bool::try_from_python(res, py).map_err(CrackersError::PythonError)?;
                 Ok(bool)
-            })
+            });
+            drop(g);
+            r
         });
-        let transmuted_closure: Arc<StateConstraintGenerator> =
-            unsafe { std::mem::transmute(closure) };
+        let transmuted_closure: Arc<StateConstraintGenerator> = closure;
         self.inner.preconditions.push(transmuted_closure);
     }
 
     pub fn add_postcondition(&mut self, obj: Py<PyAny>) {
-        let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |_, s, a| {
-            let state = PythonState::from(s.clone());
-            Python::with_gil(|py| {
+        let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |s, a| {
+            let g = MUTEX.lock().unwrap();
+            let r = Python::with_gil(|py| {
+                let state = PythonState::from(s.clone());
                 let res = obj.call(py, (state, a), None)?;
-                let bool = Bool::try_from_python(res).map_err(CrackersError::PythonError)?;
+                let bool = Bool::try_from_python(res, py).map_err(CrackersError::PythonError)?;
                 Ok(bool)
-            })
+            });
+            drop(g);
+            r
         });
-        let transmuted_closure: Arc<StateConstraintGenerator> =
-            unsafe { std::mem::transmute(closure) };
+        let transmuted_closure: Arc<StateConstraintGenerator> = closure;
         self.inner.postconditions.push(transmuted_closure);
     }
 
     pub fn add_transition_constraint(&mut self, obj: Py<PyAny>) {
-        let closure: Arc<PythonTransitionConstraintGenerator> = Arc::new(move |_, b| {
-            let block = PythonModeledBlock { instr: b.clone() };
-            Python::with_gil(|py| {
+        let closure: Arc<PythonTransitionConstraintGenerator> = Arc::new(move |b| {
+            let g = MUTEX.lock().unwrap();
+            let r = Python::with_gil(|py| {
+                let block = PythonModeledBlock { instr: b.clone() };
                 let res = obj.call(py, (block,), None)?;
                 if res.is_none(py) {
                     Ok(None)
                 } else {
-                    let bool = Bool::try_from_python(res).map_err(CrackersError::PythonError)?;
+                    let bool =
+                        Bool::try_from_python(res, py).map_err(CrackersError::PythonError)?;
                     Ok(Some(bool))
                 }
-            })
+            });
+            drop(g);
+            r
         });
-        let transmuted_closure: Arc<TransitionConstraintGenerator> =
-            unsafe { std::mem::transmute(closure) };
+        let transmuted_closure: Arc<TransitionConstraintGenerator> = closure;
         self.inner.pointer_invariants.push(transmuted_closure);
     }
 }
 
 pub type PythonStateConstraintGenerator =
-    dyn Fn(&JingleContext, &State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
+    dyn Fn(&State, u64) -> Result<Bool, CrackersError> + Send + Sync + 'static;
 
-pub type PythonTransitionConstraintGenerator = dyn Fn(&JingleContext, &ModeledBlock) -> Result<Option<Bool>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
+pub type PythonTransitionConstraintGenerator =
+    dyn Fn(&ModeledBlock) -> Result<Option<Bool>, CrackersError> + Send + Sync + 'static;
