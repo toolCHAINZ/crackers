@@ -1,5 +1,5 @@
 use jingle::python::z3::ast::PythonAst;
-use pyo3::{Py, PyAny, PyRef, PyRefMut, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyRef, PyRefMut, Python, pyclass, pymethods};
 use z3::ast::BV;
 
 #[pyclass(unsendable)]
@@ -20,10 +20,12 @@ impl ModelVarNodeIterator {
     }
 
     pub fn __next__(mut slf: PyRefMut<Self>) -> Option<(String, Py<PyAny>)> {
-        let (name, bv) = slf.vn.next()?;
-        match bv.try_into_python() {
-            Ok(bv) => Some((name, bv)),
-            _ => None,
-        }
+        Python::with_gil(|py| {
+            let (name, bv) = slf.vn.next()?;
+            match bv.try_into_python(py) {
+                Ok(bv) => Some((name, bv)),
+                _ => None,
+            }
+        })
     }
 }

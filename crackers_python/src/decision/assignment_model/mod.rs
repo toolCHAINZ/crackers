@@ -11,7 +11,7 @@ use jingle::python::z3::ast::PythonAst;
 use jingle::sleigh::{ArchInfoProvider, SpaceType};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::{Py, PyAny, PyErr, PyResult, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 use std::rc::Rc;
 use z3::ast::BV;
 
@@ -77,13 +77,15 @@ impl TryFrom<AssignmentModel<ModeledBlock>> for PythonAssignmentModel {
 #[pymethods]
 impl PythonAssignmentModel {
     fn eval_bv(&self, bv: Py<PyAny>, model_completion: bool) -> PyResult<Py<PyAny>> {
-        let bv = BV::try_from_python(bv)?;
-        let val = self
-            .inner
-            .model()
-            .eval(&bv, model_completion)
-            .ok_or(PyRuntimeError::new_err("Could not eval model"))?;
-        val.try_into_python()
+        Python::with_gil(|py| {
+            let bv = BV::try_from_python(bv, py)?;
+            let val = self
+                .inner
+                .model()
+                .eval(&bv, model_completion)
+                .ok_or(PyRuntimeError::new_err("Could not eval model"))?;
+            val.try_into_python(py)
+        })
     }
 
     pub fn initial_state(&self) -> Option<PythonState> {
