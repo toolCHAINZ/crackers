@@ -184,7 +184,7 @@ impl<S: ModelingContext> PcodeTheory<S> {
                 let unsat_core = self.solver.get_unsat_core();
                 event!(Level::DEBUG, "Unsat core: {:?}", unsat_core);
                 for b in &unsat_core {
-                    if let Some(m) = assertions.iter().find(|p| p.get_bool().eq(b)) {
+                    if let Some(m) = assertions.iter().find(|p| p.get_bool() == b) {
                         event!(Level::DEBUG, "{:?}: {:?}", b, m.decisions);
                         constraints.push(m)
                     } else {

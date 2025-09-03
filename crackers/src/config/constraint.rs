@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
 use tracing::{Level, event};
-use z3::ast::{Ast, BV, Bool};
+use z3::ast::{BV, Bool};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
@@ -130,7 +130,7 @@ pub fn gen_memory_constraint(
 ) -> impl Fn(&State, u64) -> Result<Bool, CrackersError> + Send + Sync + Clone + 'static {
     move |state, _addr| {
         let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
-        let constraint = data._eq(BV::from_u64(m.value as u64, data.get_size()));
+        let constraint = data.eq(BV::from_u64(m.value as u64, data.get_size()));
         Ok(constraint)
     }
 }
@@ -143,7 +143,7 @@ pub fn gen_register_constraint(
 ) -> impl Fn(&State, u64) -> Result<Bool, CrackersError> + 'static + Send + Sync + Clone {
     move |state, _addr| {
         let data = state.read_varnode(&vn)?;
-        let constraint = data._eq(BV::from_u64(value, data.get_size()));
+        let constraint = data.eq(BV::from_u64(value, data.get_size()));
         Ok(constraint)
     }
 }
@@ -169,7 +169,7 @@ pub fn gen_register_pointer_constraint(
                 pointer_space_idx: state.get_code_space_idx(),
             });
             let actual = state.read_resolved(&char_ptr)?;
-            bools.push(actual._eq(&expected))
+            bools.push(actual.eq(&expected))
         }
         let pointer = state.read_varnode(&vn)?;
         let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
