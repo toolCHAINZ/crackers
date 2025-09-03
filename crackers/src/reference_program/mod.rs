@@ -21,7 +21,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::ops::Range;
-use z3::ast::{Ast, Bool};
+use z3::ast::Bool;
 use z3::{SatResult, Solver};
 
 mod step;
@@ -43,7 +43,7 @@ impl MemoryValuation {
                 let r: Range<u64> = vn.into();
                 for (index, offset) in r.enumerate() {
                     temp_vn.offset = offset;
-                    v.push(state.read_varnode(&temp_vn)?._eq(value[index]))
+                    v.push(state.read_varnode(&temp_vn)?.eq(value[index]))
                 }
             }
             Ok(Bool::and(&v))
