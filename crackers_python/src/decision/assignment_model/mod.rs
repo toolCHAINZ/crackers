@@ -77,7 +77,7 @@ impl TryFrom<AssignmentModel<ModeledBlock>> for PythonAssignmentModel {
 #[pymethods]
 impl PythonAssignmentModel {
     fn eval_bv(&self, bv: Py<PyAny>, model_completion: bool) -> PyResult<Py<PyAny>> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let bv = BV::try_from_python(bv, py)?;
             let val = self
                 .inner

@@ -20,7 +20,7 @@ impl ModelVarNodeIterator {
     }
 
     pub fn __next__(mut slf: PyRefMut<Self>) -> Option<(String, Py<PyAny>)> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let (name, bv) = slf.vn.next()?;
             match bv.try_into_python(py) {
                 Ok(bv) => Some((name, bv)),
