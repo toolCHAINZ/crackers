@@ -78,6 +78,7 @@ jobs:
       - name: "Initialize python environment"
         run: |
           powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+          $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
           uv.exe venv --python ${{matrix.python}}
           . .venv\Scripts\Activate.ps1
           uv.exe sync --no-install-project --project crackers_python --active
