@@ -76,6 +76,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Local\uv\cache
+            C:\ProgramData\chocolatey\lib\z3
+          key: windows-uv-${{ matrix.python }}-${{ hashFiles('crackers_python/pyproject.toml') }}
+          restore-keys: |
+            windows-uv-${{ matrix.python }}-
       - name: Install Z3 using Chocolatey
         run: |
           choco install z3
