@@ -71,6 +71,7 @@ jobs:
         platform:
           - runner: windows-latest
             target: x64
+        python: [ '3.11', '3.12', '3.13' ]
     steps:
       - uses: actions/checkout@v4
         with:
