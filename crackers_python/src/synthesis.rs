@@ -27,8 +27,8 @@ pub struct PythonSynthesisParams {
 #[pymethods]
 impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
-        let res = Python::with_gil(|py| {
-            py.allow_threads(|| match self.inner.combine_instructions {
+        let res = Python::attach(|py| {
+            py.detach(|| match self.inner.combine_instructions {
                 false => self.inner.build_single()?.decide(),
                 true => self.inner.build_combined()?.decide(),
             })
@@ -46,7 +46,7 @@ impl PythonSynthesisParams {
     pub fn add_precondition(&mut self, obj: Py<PyAny>) {
         let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |s, a| {
             let g = MUTEX.lock().unwrap();
-            let r = Python::with_gil(|py| {
+            let r = Python::attach(|py| {
                 let state = PythonState::from(s.clone());
                 let res = obj.call(py, (state, a), None)?;
                 let bool = Bool::try_from_python(res, py).map_err(CrackersError::PythonError)?;
@@ -62,7 +62,7 @@ impl PythonSynthesisParams {
     pub fn add_postcondition(&mut self, obj: Py<PyAny>) {
         let closure: Arc<PythonStateConstraintGenerator> = Arc::new(move |s, a| {
             let g = MUTEX.lock().unwrap();
-            let r = Python::with_gil(|py| {
+            let r = Python::attach(|py| {
                 let state = PythonState::from(s.clone());
                 let res = obj.call(py, (state, a), None)?;
                 let bool = Bool::try_from_python(res, py).map_err(CrackersError::PythonError)?;
@@ -78,7 +78,7 @@ impl PythonSynthesisParams {
     pub fn add_transition_constraint(&mut self, obj: Py<PyAny>) {
         let closure: Arc<PythonTransitionConstraintGenerator> = Arc::new(move |b| {
             let g = MUTEX.lock().unwrap();
-            let r = Python::with_gil(|py| {
+            let r = Python::attach(|py| {
                 let block = PythonModeledBlock { instr: b.clone() };
                 let res = obj.call(py, (block,), None)?;
                 if res.is_none(py) {

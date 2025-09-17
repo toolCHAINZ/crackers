@@ -26,7 +26,7 @@ impl TryFrom<CrackersConfig> for PythonCrackersConfig {
     type Error = PyErr;
 
     fn try_from(value: CrackersConfig) -> Result<Self, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let constraint: PythonConstraintConfig = value
                 .constraint
                 .ok_or(PyRuntimeError::new_err("Bad constraint"))?
@@ -47,7 +47,7 @@ impl TryFrom<&PythonCrackersConfig> for CrackersConfig {
     type Error = PyErr;
 
     fn try_from(value: &PythonCrackersConfig) -> Result<Self, Self::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             Ok(CrackersConfig {
                 meta: value.meta.borrow(py).clone(),
                 specification: value.spec.borrow(py).clone(),
