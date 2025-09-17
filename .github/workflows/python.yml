@@ -94,7 +94,7 @@ jobs:
           . .venv\Scripts\Activate.ps1
           uv.exe sync --no-install-project --project crackers_python --active
           $env:Z3_SYS_Z3_HEADER = "$(python crackers_python/find_venv_library_path.py)\z3\include\z3.h"
-          $env:Z3_LIBRARY_PATH_OVERRIDE = "$(python crackers_python/find_venv_library_path.py)\z3\lib"
+          $env:Z3_LIBRARY_PATH_OVERRIDE = "C:\ProgramData\chocolatey\lib\z3\tools\bin\bin"
           uv.exe build --project crackers_python --wheel --out-dir dist
       - name: Upload wheels
         uses: actions/upload-artifact@v4
