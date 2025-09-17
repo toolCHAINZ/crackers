@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.5.3...crackers-v0.5.4) - 2025-09-17
+
+### Other
+
+- bump rand and toml_edit ([#70](https://github.com/toolCHAINZ/crackers/pull/70))
+
 ## [0.5.3](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.5.2...crackers-v0.5.3) - 2025-09-14
 
 ### Other
