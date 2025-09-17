@@ -31,10 +31,10 @@ thiserror = "2.0"
 tracing = "0.1"
 colored = "3.0"
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter"] }
-toml_edit = { version = "0.22", optional = true, features = ["serde"] }
+toml_edit = { version = "0.23.5", optional = true, features = ["serde"] }
 object = "0.37.2"
 clap = { version = "4.0", optional = true , features = ["derive"]}
-rand = "0.8"
+rand = "0.9.2"
 derive_builder = "0.20"
 anyhow = { version = "1.0", optional = true }
 tracing-indicatif = { version = "0.3", optional = true }
