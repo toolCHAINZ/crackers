@@ -64,42 +64,49 @@ jobs:
           name: wheels-linux-${{ matrix.platform.target }}
           path: crackers_python/dist
 
-  #  windows:
-  #    runs-on: ${{ matrix.platform.runner }}
-  #    strategy:
-  #      matrix:
-  #        platform:
-  #          - runner: windows-latest
-  #            target: x64
-  #    steps:
-  #      - uses: actions/checkout@v4
-  #        with:
-  #          submodules: true
-  #      - name: Install Z3 using Chocolatey
-  #        run: |
-  #          choco install z3
-  #      - name: Set Z3 environment variables
-  #        run: |
-  #          echo ::set-env name=Z3_INCLUDE_PATH::C:\tools\z3\include
-  #          echo ::set-env name=Z3_LIB_PATH::C:\tools\z3\lib
-  #      - uses: actions/setup-python@v5
-  #        with:
-  #          python-version: 3.x
-  #          architecture: ${{ matrix.platform.target }}
-  #      - name: Build wheels
-  #        uses: PyO3/maturin-action@v1
-  #        with:
-  #          target: ${{ matrix.platform.target }}
-  #          args: --release --out dist --find-interpreter
-  #          working-directory: crackers_python
-  #          # sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
-  #        env:
-  #          Z3_SYS_Z3_PATH: "C:/Program Files/Z3/include"
-  #      - name: Upload wheels
-  #        uses: actions/upload-artifact@v4
-  #        with:
-  #          name: wheels-windows-${{ matrix.platform.target }}
-  #          path: crackers_python/dist
+  windows:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+        python: [ '3.11', '3.12', '3.13' ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Local\uv\cache
+            C:\ProgramData\chocolatey\lib\z3
+          key: windows-uv-${{ matrix.python }}-${{ hashFiles('crackers_python/pyproject.toml') }}
+          restore-keys: |
+            windows-uv-${{ matrix.python }}-
+      - name: Install Z3 using Chocolatey
+        run: |
+          choco install z3
+      - name: Set Z3 environment variables
+        run: |
+          # echo ::set-env name=Z3_SYS_Z3_HEADER::C:\ProgramData\chocolatey\lib\z3\tools\bin\include
+          # echo ::set-env name=Z3_LIBRARY_PATH_OVERRIDE::C:\ProgramData\chocolatey\lib\z3\tools\bin
+      - name: "Initialize python environment"
+        run: |
+          powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+          $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
+          uv.exe venv --python ${{matrix.python}}
+          . .venv\Scripts\Activate.ps1
+          uv.exe sync --no-install-project --project crackers_python --active
+          $env:Z3_SYS_Z3_HEADER = "$(python crackers_python/find_venv_library_path.py)\z3\include\z3.h"
+          $env:Z3_LIBRARY_PATH_OVERRIDE = "C:\ProgramData\chocolatey\lib\z3\tools\bin\bin"
+          uv.exe build --project crackers_python --wheel --out-dir dist
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.platform.target }}-${{matrix.python}}
+          path: dist
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
@@ -128,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}-$${{matrix.python}}
-          path: dist
+          path: dist/*.whl
 
   sdist:
     runs-on: ubuntu-latest
