@@ -76,6 +76,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install Z3 using Chocolatey
+        run: |
+          choco install z3
+          ls C:\ProgramData\chocolatey\lib\z3\tools
+          ls C:\ProgramData\chocolatey\lib\z3\tools\bin
+      - name: Set Z3 environment variables
+        run: |
+          # echo ::set-env name=Z3_SYS_Z3_HEADER::C:\ProgramData\chocolatey\lib\z3\tools\bin\include
+          # echo ::set-env name=Z3_LIBRARY_PATH_OVERRIDE::C:\ProgramData\chocolatey\lib\z3\tools\bin
+          ls C:\ProgramData\chocolatey\lib\z3\tools\bin\bin
       - name: "Initialize python environment"
         run: |
           powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
@@ -84,8 +94,6 @@ jobs:
           . .venv\Scripts\Activate.ps1
           uv.exe sync --no-install-project --project crackers_python --active
           $env:Z3_SYS_Z3_HEADER = "$(python crackers_python/find_venv_library_path.py)\z3\include\z3.h"
-          ls "$(python crackers_python/find_venv_library_path.py)\z3"
-          ls "$(python crackers_python/find_venv_library_path.py)\z3\lib"
           $env:Z3_LIBRARY_PATH_OVERRIDE = "$(python crackers_python/find_venv_library_path.py)\z3\lib"
           uv.exe build --project crackers_python --wheel --out-dir dist
       - name: Upload wheels
