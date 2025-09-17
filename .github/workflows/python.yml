@@ -82,7 +82,7 @@ jobs:
         run: |
           ls C:\ProgramData\chocolatey\lib\z3\tools\bin\include
           ls C:\ProgramData\chocolatey\lib\z3\tools\bin\bin
-          echo ::set-env name=Z3_SYS_Z3_HEADER::C:\ProgramData\chocolatey\lib\z3\tools\bin\include\z3.h
+          echo ::set-env name=Z3_SYS_Z3_HEADER::C:\ProgramData\chocolatey\lib\z3\tools\bin\include
           echo ::set-env name=Z3_LIBRARY_PATH_OVERRIDE::C:\ProgramData\chocolatey\lib\z3\tools\bin\bin
       - uses: actions/setup-python@v5
         with:
