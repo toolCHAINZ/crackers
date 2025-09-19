@@ -1,10 +1,10 @@
+use std::borrow::Borrow;
 use crate::error::CrackersError;
 use crate::gadget::Gadget;
 use crate::reference_program::ReferenceProgram;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::SleighArchInfo;
 use std::fmt::{Debug, Formatter};
@@ -32,7 +32,8 @@ impl Debug for AssignmentModelBuilder {
 }
 
 impl AssignmentModelBuilder {
-    fn make_pcode_model(&self, jingle: &JingleContext) -> Result<PcodeAssignment, CrackersError> {
+    fn make_pcode_model<T: Borrow<SleighArchInfo>>(&self, jingle: T) -> Result<PcodeAssignment, CrackersError> {
+        let jingle = jingle.borrow();
         let modeled_spec: Result<Vec<ModeledInstruction>, _> = self
             .templates
             .steps()
@@ -58,9 +59,8 @@ impl AssignmentModelBuilder {
     }
     pub fn build(&self) -> Result<AssignmentModel<ModeledBlock>, CrackersError> {
         // todo: remove this structure in jingle
-        let jingle = JingleContext::new(&self.arch_info);
 
-        let pcode_model = self.make_pcode_model(&jingle)?;
+        let pcode_model = self.make_pcode_model(&self.arch_info)?;
         let s = Solver::new();
         pcode_model.check(&self.arch_info, &s)
     }

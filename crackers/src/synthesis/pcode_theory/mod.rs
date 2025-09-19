@@ -1,7 +1,8 @@
+use std::borrow::Borrow;
 use std::sync::Arc;
 
-use jingle::JingleContext;
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
+use jingle::sleigh::SleighArchInfo;
 use tracing::{Level, event};
 use z3::ast::Bool;
 use z3::{SatResult, Solver};
@@ -28,7 +29,7 @@ mod theory_constraint;
 pub mod theory_worker;
 
 pub struct PcodeTheory<S: ModelingContext> {
-    j: JingleContext,
+    info: SleighArchInfo,
     solver: Solver,
     templates: Vec<S>,
     initial_memory: MemoryValuation,
@@ -39,8 +40,8 @@ pub struct PcodeTheory<S: ModelingContext> {
 }
 
 impl<S: ModelingContext> PcodeTheory<S> {
-    pub fn new(
-        j: JingleContext,
+    pub fn new<R: Borrow<SleighArchInfo>>(
+        info: R,
         templates: Vec<S>,
         initial_memory: MemoryValuation,
         gadget_candidates: Vec<Vec<ModeledBlock>>,
@@ -50,7 +51,7 @@ impl<S: ModelingContext> PcodeTheory<S> {
     ) -> Result<Self, CrackersError> {
         let solver = Solver::new_for_logic("QF_ABV").unwrap();
         Ok(Self {
-            j,
+            info: info.borrow().clone(),
             solver,
             templates,
             initial_memory,
@@ -74,7 +75,7 @@ impl<S: ModelingContext> PcodeTheory<S> {
 
         self.solver.reset();
         event!(Level::TRACE, "Evaluating combined semantics");
-        let final_state = self.j.fresh_state();
+        let final_state = State::new(&self.info);
         self.solver.assert(&assert_concat(&self.templates)?);
         let mut assertions: Vec<ConjunctiveConstraint> = Vec::new();
         let mem_cnstr = self.initial_memory.to_constraint();

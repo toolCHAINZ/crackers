@@ -3,7 +3,7 @@ pub mod builder;
 use std::fmt::{Display, Formatter};
 
 use jingle::modeling::{ModelingContext, State};
-use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, SleighArchInfo};
+use jingle::sleigh::{GeneralizedVarNode, SleighArchInfo};
 use jingle::varnode::ResolvedVarnode;
 use z3::ast::BV;
 use z3::{Context, Model, Translate};
@@ -49,7 +49,7 @@ impl<T: ModelingContext> AssignmentModel<T> {
     }
 
     pub fn print_trace_of_reg(&self, reg: &str) {
-        let r = self.final_state().unwrap().get_register(reg).unwrap();
+        let r = self.final_state().unwrap().arch_info().register(reg).unwrap();
         for gadget in &self.gadgets {
             let val = gadget.get_original_state().read_varnode(r).unwrap();
             println!("{} Before: {:?}", reg, self.model.eval(&val, false));
@@ -59,7 +59,7 @@ impl<T: ModelingContext> AssignmentModel<T> {
     }
 
     pub fn initial_reg(&self, reg: &str) -> Option<BV> {
-        let r = self.final_state().unwrap().get_register(reg).unwrap();
+        let r = self.final_state().unwrap().arch_info().register(reg).unwrap();
         let val = self.gadgets[0]
             .get_original_state()
             .read_varnode(r)

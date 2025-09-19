@@ -8,7 +8,7 @@ use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::varode_iterator::VarNodeIterator;
 use jingle::python::z3::ast::PythonAst;
-use jingle::sleigh::{ArchInfoProvider, SpaceType};
+use jingle::sleigh::SpaceType;
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
@@ -38,11 +38,7 @@ impl PythonAssignmentModel {
             }
             ResolvedVarnode::Indirect(i) => {
                 let pointer_value = self.inner.model().eval(&i.pointer, completion)?;
-                let space_name = info
-                    .get_space_info(i.pointer_space_idx)
-                    .unwrap()
-                    .name
-                    .clone();
+                let space_name = info.get_space(i.pointer_space_idx).unwrap().name.clone();
                 let access_size = i.access_size_bytes;
                 let pointed_value = self.inner.model().eval(
                     &state
@@ -119,7 +115,7 @@ impl PythonAssignmentModel {
             .flatten()
             .filter(|a| {
                 if let ResolvedVarnode::Direct(b) = a.inner.inner() {
-                    a.inner.info().get_space_info(b.space_index).unwrap()._type
+                    a.inner.info().get_space(b.space_index).unwrap()._type
                         == SpaceType::IPTR_PROCESSOR
                 } else {
                     true
@@ -136,7 +132,7 @@ impl PythonAssignmentModel {
             .flatten()
             .filter(|a| {
                 if let ResolvedVarnode::Direct(b) = a.inner.inner() {
-                    a.inner.info().get_space_info(b.space_index).unwrap()._type
+                    a.inner.info().get_space(b.space_index).unwrap()._type
                         == SpaceType::IPTR_PROCESSOR
                 } else {
                     true

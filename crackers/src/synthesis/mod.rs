@@ -1,4 +1,3 @@
-use jingle::JingleContext;
 use jingle::modeling::ModeledInstruction;
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -68,17 +67,17 @@ impl AssignmentSynthesis {
         if instrs.is_empty() {
             return Err(EmptySpecification);
         }
-        let jingle = JingleContext::new(builder.gadget_library.as_ref());
+        let arch_info = &builder.gadget_library.arch_info();
         let modeled_instrs: Vec<ModeledInstruction> = instrs
             .steps()
             .iter()
-            .map(|i| i.model(&jingle).unwrap())
+            .map(|i| i.model(arch_info).unwrap())
             .collect();
 
         let candidates = CandidateBuilder::default()
             .with_random_sample_size(builder.candidates_per_slot)
             .build(builder.gadget_library.get_random_candidates_for_trace(
-                &jingle,
+                arch_info,
                 modeled_instrs.as_slice(),
                 builder.seed,
             ))?;

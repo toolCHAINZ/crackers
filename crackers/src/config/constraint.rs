@@ -1,11 +1,12 @@
 use crate::error::CrackersError;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use jingle::modeling::{ModeledBlock, ModelingContext, State};
-use jingle::sleigh::{ArchInfoProvider, VarNode};
+use jingle::sleigh::{SleighArchInfo, VarNode};
 use jingle::varnode::{ResolvedIndirectVarNode, ResolvedVarnode};
 #[cfg(feature = "pyo3")]
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
@@ -21,22 +22,23 @@ pub struct ConstraintConfig {
 }
 
 impl ConstraintConfig {
-    pub fn get_preconditions<'a, T: ArchInfoProvider>(
-        &'a self,
-        sleigh: &'a T,
-    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
+    pub fn get_preconditions<T: Borrow<SleighArchInfo>>(
+        &self,
+        sleigh: T,
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> {
+        let sleigh = sleigh.borrow().clone();
         self.precondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(move |c| c.constraints(sleigh.clone(), self.pointer.clone()))
     }
 
-    pub fn get_postconditions<'a, T: ArchInfoProvider>(
-        &'a self,
-        sleigh: &'a T,
-    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
+    pub fn get_postconditions<T: Borrow<SleighArchInfo>>(
+        &self,
+        sleigh: T,
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> {
         self.postcondition
             .iter()
-            .flat_map(|c| c.constraints(sleigh, self.pointer.clone()))
+            .flat_map(move |c| c.constraints(sleigh.borrow().clone(), self.pointer.clone()))
     }
 
     pub fn get_pointer_constraints(
@@ -55,14 +57,17 @@ pub struct StateEqualityConstraint {
 }
 
 impl StateEqualityConstraint {
-    pub fn constraints<'a, T: ArchInfoProvider>(
-        &'a self,
-        sleigh: &'a T,
+    pub fn constraints<T: Borrow<SleighArchInfo>>(
+        &self,
+        info: T,
         c: Option<PointerRangeConstraints>,
-    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> + 'a {
-        let register_iterator = self.register.iter().flat_map(|map| {
-            map.iter().filter_map(|(name, value)| {
-                if let Some(vn) = sleigh.get_register(name) {
+    ) -> impl Iterator<Item = Arc<StateConstraintGenerator>> {
+        let info = info.borrow().clone();
+        let info2 = info.clone();
+        let register_iterator = self.register.iter().flat_map(move |map| {
+            let info = info.clone();
+            map.iter().filter_map(move |(name, value)| {
+                if let Some(vn) = info.register(name) {
                     Some(Arc::new(gen_register_constraint(vn.clone(), *value as u64))
                         as Arc<StateConstraintGenerator>)
                 } else {
@@ -75,10 +80,12 @@ impl StateEqualityConstraint {
             .memory
             .iter()
             .map(|c| Arc::new(gen_memory_constraint(c.clone())) as Arc<StateConstraintGenerator>);
+        let info = info2;
         let pointer_iterator = self.pointer.iter().flat_map(move |map| {
             let c1 = c.clone();
+            let info = info.clone();
             map.iter().filter_map(move |(name, value)| {
-                if let Some(vn) = sleigh.get_register(name) {
+                if let Some(vn) = info.register(name) {
                     Some(Arc::new(gen_register_pointer_constraint(
                         vn.clone(),
                         value.clone(),
@@ -129,7 +136,7 @@ pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
 ) -> impl Fn(&State, u64) -> Result<Bool, CrackersError> + Send + Sync + Clone + 'static {
     move |state, _addr| {
-        let data = state.read_varnode(&state.varnode(&m.space, m.address, m.size).unwrap())?;
+        let data = state.read_varnode(&state.arch_info().varnode(&m.space, m.address, m.size).unwrap())?;
         let constraint = data.eq(BV::from_u64(m.value as u64, data.get_size()));
         Ok(constraint)
     }
@@ -166,7 +173,7 @@ pub fn gen_register_pointer_constraint(
                 pointer_location: vn.clone(),
                 pointer: pointer.clone().add(i as u64),
                 access_size_bytes: 1,
-                pointer_space_idx: state.get_code_space_idx(),
+                pointer_space_idx: state.get_default_code_space_info().index,
             });
             let actual = state.read_resolved(&char_ptr)?;
             bools.push(actual.eq(&expected))
@@ -174,7 +181,7 @@ pub fn gen_register_pointer_constraint(
         let pointer = state.read_varnode(&vn)?;
         let resolved = ResolvedVarnode::Indirect(ResolvedIndirectVarNode {
             pointer_location: vn.clone(),
-            pointer_space_idx: state.get_code_space_idx(),
+            pointer_space_idx: state.get_default_code_space_info().index,
             access_size_bytes: value.len(),
             pointer,
         });
@@ -199,7 +206,7 @@ pub fn gen_pointer_range_state_invariant(
         match vn {
             ResolvedVarnode::Direct(d) => {
                 // todo: this is gross
-                let should_constrain = state.get_code_space_idx() == d.space_index;
+                let should_constrain = state.arch_info().default_code_space_index() == d.space_index;
                 match should_constrain {
                     false => Ok(None),
                     true => {

@@ -37,8 +37,8 @@ impl CrackersConfig {
         let library = self.library.build(&self.sleigh)?;
         let mut b = SynthesisParamsBuilder::default();
         if let Some(c) = &self.constraint {
-            b.preconditions(c.get_preconditions(&library).collect());
-            b.postconditions(c.get_postconditions(&library).collect());
+            b.preconditions(c.get_preconditions(&library.arch_info()).collect());
+            b.postconditions(c.get_postconditions(&library.arch_info()).collect());
             b.pointer_invariants(c.get_pointer_constraints().collect());
         }
         b.gadget_library(library)

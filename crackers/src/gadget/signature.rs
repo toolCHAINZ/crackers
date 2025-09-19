@@ -1,9 +1,8 @@
+use std::borrow::Borrow;
 use crate::gadget::Gadget;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{
-    ArchInfoProvider, GeneralizedVarNode, IndirectVarNode, Instruction, SpaceType,
-};
+use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, SleighArchInfo, SpaceType};
 use std::cmp::Ordering;
 use tracing::trace;
 
@@ -47,7 +46,8 @@ impl PartialOrd<GadgetSignature> for GadgetSignature {
     }
 }
 impl GadgetSignature {
-    pub(crate) fn from_instr<T: ArchInfoProvider>(value: &Instruction, t: &T) -> Self {
+    pub(crate) fn from_instr<T: Borrow<SleighArchInfo>>(value: &Instruction, t: T) -> Self {
+        let t = t.borrow();
         let mut outputs = Vec::new();
 
         for op in &value.ops {
@@ -55,7 +55,7 @@ impl GadgetSignature {
                 if let GeneralizedVarNode::Direct(v) = &op {
                     // todo: fix this once the new syntax is in stable
                     #[allow(clippy::collapsible_if)]
-                    if let Some(h) = t.get_space_info(v.space_index) {
+                    if let Some(h) = t.get_space(v.space_index) {
                         if h._type == SpaceType::IPTR_PROCESSOR {
                             outputs.push(op);
                         }

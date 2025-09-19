@@ -1,6 +1,6 @@
-use jingle::JingleContext;
+use std::borrow::Borrow;
 use jingle::modeling::ModeledBlock;
-use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SpaceInfo};
+use jingle::sleigh::{Instruction, OpCode, PcodeOperation, SleighArchInfo, SpaceInfo};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
@@ -49,7 +49,7 @@ impl Gadget {
             .any(|i| i.ops.iter().any(|o| blacklist.contains(&o.opcode())))
     }
 
-    pub fn model(&self, jingle: &JingleContext) -> Result<ModeledBlock, CrackersError> {
+    pub fn model<I: Borrow<SleighArchInfo>>(&self, jingle: I) -> Result<ModeledBlock, CrackersError> {
         let blk = ModeledBlock::read(jingle, self.instructions.clone().into_iter())?;
         Ok(blk)
     }

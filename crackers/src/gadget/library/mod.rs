@@ -1,10 +1,11 @@
+use jingle::JingleError;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{ArchInfoProvider, Instruction, SleighArchInfo, SpaceInfo, VarNode};
-use jingle::{JingleContext, JingleError};
+use jingle::sleigh::{Instruction, SleighArchInfo};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
+use std::borrow::Borrow;
 use tracing::{Level, event};
 
 use crate::gadget::Gadget;
@@ -17,9 +18,13 @@ pub mod image;
 #[derive(Clone, Debug)]
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
-    spaces: Vec<SpaceInfo>,
-    default_code_space_index: usize,
-    registers: Vec<(VarNode, String)>,
+    arch_info: SleighArchInfo,
+}
+
+impl AsRef<SleighArchInfo> for GadgetLibrary {
+    fn as_ref(&self) -> &SleighArchInfo {
+        &self.arch_info
+    }
 }
 
 impl GadgetLibrary {
@@ -28,40 +33,25 @@ impl GadgetLibrary {
     }
 
     pub(crate) fn arch_info(&self) -> SleighArchInfo {
-        SleighArchInfo::new(
-            self.get_registers(),
-            self.get_all_space_info(),
-            self.default_code_space_index,
-        )
+        self.arch_info.clone()
     }
-    pub fn get_random_candidates_for_trace<'a>(
+    pub fn get_random_candidates_for_trace<'a, S: Borrow<SleighArchInfo>>(
         &'a self,
-        jingle: &JingleContext,
+        info: S,
         trace: &[ModeledInstruction],
         seed: i64,
     ) -> impl Iterator<Item = Vec<Option<&'a Gadget>>> {
         let mut rng = StdRng::seed_from_u64(seed as u64);
         let r = self.gadgets.choose_multiple(&mut rng, self.gadgets.len());
-        TraceCandidateIterator::new(jingle, r, trace.to_vec())
+        TraceCandidateIterator::new(info, r, trace.to_vec())
     }
     pub(super) fn build_from_image(
         sleigh: LoadedSleighContext,
         builder: &GadgetLibraryConfig,
     ) -> Result<Self, JingleError> {
-        let spaces: Vec<_> = sleigh.get_all_space_info().cloned().collect();
-        let mut registers = vec![];
-        let default_code_space_index = sleigh.get_code_space_idx();
-        for (varnode, register) in sleigh.get_registers() {
-            registers.push((varnode.clone(), register));
-        }
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            spaces,
-            default_code_space_index,
-            registers: registers
-                .iter()
-                .map(|(varnode, register)| (varnode.clone(), register.to_string()))
-                .collect(),
+            arch_info: sleigh.arch_info().clone().into(),
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.get_sections().filter(|s| s.perms.exec) {
@@ -74,8 +64,8 @@ impl GadgetLibrary {
                     sleigh.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     let gadget = Gadget {
-                        code_space_idx: sleigh.get_code_space_idx(),
-                        spaces: sleigh.get_all_space_info().cloned().collect(),
+                        code_space_idx: sleigh.arch_info().default_code_space_index(),
+                        spaces: sleigh.arch_info().spaces().to_vec(),
                         instructions: instrs[0..=i].to_vec(),
                     };
                     if !gadget.has_blacklisted_op(&builder.operation_blacklist) {
@@ -87,37 +77,6 @@ impl GadgetLibrary {
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
         Ok(lib)
-    }
-}
-
-impl ArchInfoProvider for GadgetLibrary {
-    fn get_space_info(&self, idx: usize) -> Option<&SpaceInfo> {
-        self.spaces.get(idx)
-    }
-    fn get_all_space_info(&self) -> impl Iterator<Item = &SpaceInfo> {
-        self.spaces.iter()
-    }
-
-    fn get_code_space_idx(&self) -> usize {
-        self.default_code_space_index
-    }
-
-    fn get_register(&self, name: &str) -> Option<&VarNode> {
-        self.registers
-            .iter()
-            .find(|(_, reg_name)| reg_name.as_str() == name)
-            .map(|(vn, _)| vn)
-    }
-
-    fn get_register_name(&self, location: &VarNode) -> Option<&str> {
-        self.registers
-            .iter()
-            .find(|(vn, _)| vn == location)
-            .map(|(_, name)| name.as_str())
-    }
-
-    fn get_registers(&self) -> impl Iterator<Item = (&VarNode, &str)> {
-        self.registers.iter().map(|(vn, name)| (vn, name.as_str()))
     }
 }
 
