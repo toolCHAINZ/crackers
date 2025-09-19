@@ -2,15 +2,14 @@ from typing import Optional, Iterable, List
 
 from z3 import z3  # type: ignore
 
-
 class Instruction:
     """
     Represents a Python wrapper for a Ghidra instruction.
     """
+
     disassembly: str
 
     def pcode(self) -> List[PcodeOperation]: ...
-
 
 class ModeledBlock:
     instructions: list[Instruction]
@@ -18,21 +17,16 @@ class ModeledBlock:
     final_state: State
 
     def get_input_vns(self) -> Iterable[ResolvedVarNode]: ...
-
     def get_output_vns(self) -> Iterable[ResolvedVarNode]: ...
-
 
 class ModeledInstruction:
     original_state: State
     final_state: State
 
     def get_input_vns(self) -> Iterable[ResolvedVarNode]: ...
-
     def get_output_vns(self) -> Iterable[ResolvedVarNode]: ...
 
-
 class PcodeOperation: ...
-
 
 class SleighContext:
     base_address: int
@@ -41,27 +35,19 @@ class SleighContext:
     """
 
     def __init__(self, binary_path: str, ghidra: str) -> None: ...
-
     def instruction_at(self, offset: int) -> Optional[Instruction]: ...
-
     def model_instruction_at(self, offset: int) -> Optional[ModeledInstruction]: ...
-
     def model_block_at(self, offset: int, max_instrs: int) -> ModeledBlock: ...
-
 
 class State:
     def __init__(self, jingle: SleighContext) -> None: ...
-
     def direct_varnode(self, space: str, offset: int, size: int) -> ResolvedVarNode: ...
-
-    def indirect_varnode(self, space: str, pointer: ResolvedVarNode, access_size: int) -> ResolvedVarNode: ...
-
+    def indirect_varnode(
+        self, space: str, pointer: ResolvedVarNode, access_size: int
+    ) -> ResolvedVarNode: ...
     def read_varnode(self, varnode: ResolvedVarNode) -> z3.BitVecRef: ...
-
     def read_register(self, name: str) -> z3.BitVecRef: ...
-
     def read_ram(self, offset: int, length: int) -> z3.BitVecRef: ...
-
 
 class ResolvedVarNode:
     def __str__(self): ...

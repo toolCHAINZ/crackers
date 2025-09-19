@@ -21,7 +21,7 @@ __all__ = [
     "SynthesisSelectionStrategy",
     "DecisionResultType",
     "StateConstraintGenerator",
-    "TransitionConstraintGenerator"
+    "TransitionConstraintGenerator",
 ]
 
 class AssignmentModel:
@@ -31,16 +31,15 @@ class AssignmentModel:
     def gadgets(self) -> list[ModeledBlock]: ...
     def inputs(self) -> Iterable[ResolvedVarNode]: ...
     def outputs(self) -> Iterable[ResolvedVarNode]: ...
-    def input_summary(self, model_completion: bool): Iterable[tuple[str, z3.BitVecRef]]
-    def output_summary(self, model_completion: bool): Iterable[tuple[str, z3.BitVecRef]]
-
-
+    def input_summary(self, model_completion: bool):
+        Iterable[tuple[str, z3.BitVecRef]]
+    def output_summary(self, model_completion: bool):
+        Iterable[tuple[str, z3.BitVecRef]]
 
 class ConstraintConfig:
     precondition: Optional[StateEqualityConstraint]
     postcondition: Optional[StateEqualityConstraint]
     pointer: Optional[PointerRangeConstraints]
-
 
 class CrackersConfig:
     meta: MetaConfig
@@ -54,10 +53,8 @@ class CrackersConfig:
     def from_toml_file(cls, path: str) -> CrackersConfig: ...
     @classmethod
     def from_json(cls, j: str) -> CrackersConfig: ...
-
     def resolve_config(self) -> SynthesisParams: ...
     def to_json(self) -> str: ...
-
 
 class CrackersLogLevel:
     Debug: int
@@ -66,14 +63,11 @@ class CrackersLogLevel:
     Trace: int
     Warn: int
 
-
-
 class GadgetLibraryConfig:
     max_gadget_length: int
     path: str
     sample_size: Optional[int]
     base_address: Optional[int]
-
 
 class MemoryEqualityConstraint:
     space: str
@@ -81,11 +75,9 @@ class MemoryEqualityConstraint:
     size: int
     value: int
 
-
 class MetaConfig:
     seed: int
     log_level: CrackersLogLevel
-
 
 class PointerRange:
     min: int
@@ -97,12 +89,10 @@ class PointerRangeConstraints:
 class SleighConfig:
     ghidra_path: str
 
-
 class SpecificationConfig:
     path: str
     max_instructions: int
     base_address: Optional[int]
-
 
 class StateEqualityConstraint:
     register: Optional[dict[str, int]]
@@ -121,8 +111,7 @@ class SynthesisConfig:
 
 class PythonDecisionResult_AssignmentFound(DecisionResult):
     _0: AssignmentModel
-    __match_args__ = ('_0',)
-
+    __match_args__ = ("_0",)
 
 class SelectionFailure:
     indices: list[int]
@@ -132,11 +121,12 @@ class PythonDecisionResult_Unsat(DecisionResult):
     pass
 
 class DecisionResult:
-    AssignmentFound : PythonDecisionResult_AssignmentFound
-    Unsat : PythonDecisionResult_Unsat
+    AssignmentFound: PythonDecisionResult_AssignmentFound
+    Unsat: PythonDecisionResult_Unsat
 
-
-DecisionResultType = Union["PythonDecisionResult_AssignmentFound", "PythonDecisionResult_Unsat"]
+DecisionResultType = Union[
+    "PythonDecisionResult_AssignmentFound", "PythonDecisionResult_Unsat"
+]
 
 StateConstraintGenerator = Callable[[State, int], z3.BitVecRef]
 TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BitVecRef]

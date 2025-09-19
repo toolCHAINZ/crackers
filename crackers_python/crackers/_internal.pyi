@@ -1,14 +1,30 @@
 from .crackers_types import (
-    AssignmentModel, ConstraintConfig, CrackersConfig, CrackersLogLevel, DecisionResult,
-    GadgetLibraryConfig, MemoryEqualityConstraint, MetaConfig, PointerRange, PointerRangeConstraints,
-    SleighConfig, SpecificationConfig, StateEqualityConstraint, SynthesisConfig, SynthesisParams,
-    SynthesisSelectionStrategy
+    AssignmentModel,
+    ConstraintConfig,
+    CrackersConfig,
+    CrackersLogLevel,
+    DecisionResult,
+    GadgetLibraryConfig,
+    MemoryEqualityConstraint,
+    MetaConfig,
+    PointerRange,
+    PointerRangeConstraints,
+    SleighConfig,
+    SpecificationConfig,
+    StateEqualityConstraint,
+    SynthesisConfig,
+    SynthesisParams,
+    SynthesisSelectionStrategy,
 )
 from .jingle_types import (
-    Instruction, ModeledBlock, ModeledInstruction, PcodeOperation,
-    SleighContext, State, ResolvedVarNode
+    Instruction,
+    ModeledBlock,
+    ModeledInstruction,
+    PcodeOperation,
+    SleighContext,
+    State,
+    ResolvedVarNode,
 )
-
 
 class crackers:
     AssignmentModel: AssignmentModel
@@ -27,7 +43,6 @@ class crackers:
     SynthesisConfig: SynthesisConfig
     SynthesisParams: SynthesisParams
     SynthesisSelectionStrategy: SynthesisSelectionStrategy
-
 
 class jingle:
     ResolvedVarNode: ResolvedVarNode
