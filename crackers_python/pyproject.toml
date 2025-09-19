@@ -16,6 +16,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "pydantic>=2.10.6",
     "z3-solver==4.15.3.0",
 ]
 [tool.maturin]
