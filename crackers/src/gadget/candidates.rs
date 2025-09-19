@@ -1,9 +1,9 @@
-use jingle::JingleContext;
-use jingle::modeling::ModeledBlock;
-
 use crate::error::CrackersError;
 use crate::error::CrackersError::UnsimulatedOperation;
 use crate::gadget::Gadget;
+use jingle::modeling::ModeledBlock;
+use jingle::sleigh::SleighArchInfo;
+use std::borrow::Borrow;
 
 #[derive(Clone, Debug, Default)]
 pub struct CandidateBuilder {
@@ -58,12 +58,16 @@ pub struct Candidates {
 }
 
 impl Candidates {
-    pub fn model(&self, jingle: &JingleContext) -> Result<Vec<Vec<ModeledBlock>>, CrackersError> {
+    pub fn model<T: Borrow<SleighArchInfo>>(
+        &self,
+        info: T,
+    ) -> Result<Vec<Vec<ModeledBlock>>, CrackersError> {
+        let info = info.borrow();
         let mut result = vec![];
         for x in &self.candidates {
             let mut v = vec![];
             for g in x {
-                v.push(g.model(jingle)?);
+                v.push(g.model(info)?);
             }
             result.push(v)
         }

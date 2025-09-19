@@ -8,14 +8,14 @@ use crate::error::CrackersError;
 use crate::error::CrackersError::ModelGenerationError;
 use crate::reference_program::step::Step;
 use crate::synthesis::partition_iterator::Partition;
-use jingle::JingleContext;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::{ModeledInstruction, ModelingContext, State};
 use jingle::sleigh::context::image::gimli::map_gimli_architecture;
 use jingle::sleigh::context::loaded::LoadedSleighContext;
-use jingle::sleigh::{ArchInfoProvider, GeneralizedVarNode, Instruction, OpCode, VarNode};
+use jingle::sleigh::{GeneralizedVarNode, Instruction, OpCode, SleighArchInfo, VarNode};
 use jingle::varnode::ResolvedVarnode;
 use object::{File, Object, ObjectSymbol};
+use std::borrow::Borrow;
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -136,15 +136,17 @@ impl ReferenceProgram {
                 for vn in x.inputs() {
                     if let GeneralizedVarNode::Indirect(vn) = vn {
                         if covering_set.covers(&vn.pointer_location) {
-                            let pointer_offset_bytes_le =
-                                if image.spaces()[image.get_code_space_idx()].isBigEndian() {
-                                    image.read_bytes(&vn.pointer_location).map(|mut f| {
-                                        f.reverse();
-                                        f
-                                    })
-                                } else {
-                                    image.read_bytes(&vn.pointer_location)
-                                };
+                            let pointer_offset_bytes_le = if image.spaces()
+                                [image.arch_info().default_code_space_index()]
+                            .isBigEndian()
+                            {
+                                image.read_bytes(&vn.pointer_location).map(|mut f| {
+                                    f.reverse();
+                                    f
+                                })
+                            } else {
+                                image.read_bytes(&vn.pointer_location)
+                            };
                             if let Some(pointer_offset_bytes_le) = pointer_offset_bytes_le {
                                 let mut buffer: [u8; 8] = [0; 8];
                                 let max = min(buffer.len(), pointer_offset_bytes_le.len());
@@ -165,9 +167,8 @@ impl ReferenceProgram {
         }
 
         self.initialize_valuation(&covering_set, &image);
-        let jingle_ctx = JingleContext::new(&image);
         let extended_constraints = self
-            .get_extended_constraints_from_indirect(jingle_ctx)
+            .get_extended_constraints_from_indirect(image.arch_info())
             .unwrap();
         self.initialize_valuation(&extended_constraints, &image);
     }
@@ -193,13 +194,13 @@ impl ReferenceProgram {
         })
     }
 
-    fn get_extended_constraints_from_indirect(
+    fn get_extended_constraints_from_indirect<T: Borrow<SleighArchInfo>>(
         &self,
-        ctx: JingleContext,
+        ctx: T,
     ) -> Result<VarNodeSet, CrackersError> {
         let i: Vec<_> = self.instructions().cloned().collect();
         let i: Instruction = i.as_slice().try_into().unwrap();
-        let modeled_instr = ModeledInstruction::new(i, &ctx).unwrap();
+        let modeled_instr = ModeledInstruction::new(i, ctx)?;
         let init_constraint = self.initial_memory.to_constraint();
         let constraint = init_constraint(modeled_instr.get_original_state())?;
         let solver = Solver::new();

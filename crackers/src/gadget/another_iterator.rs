@@ -1,6 +1,6 @@
-use jingle::JingleContext;
 use jingle::modeling::{ModeledInstruction, ModelingContext};
-use jingle::sleigh::{Instruction, OpCode};
+use jingle::sleigh::{Instruction, OpCode, SleighArchInfo};
+use std::borrow::Borrow;
 use tracing::trace;
 use z3::Solver;
 use z3::ast::Ast;
@@ -12,7 +12,7 @@ pub struct TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    jingle: JingleContext,
+    info: SleighArchInfo,
     _solver: Solver,
     gadgets: T,
     trace: Vec<ModeledInstruction>,
@@ -22,10 +22,14 @@ impl<'a, T> TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new(jingle: &JingleContext, gadgets: T, trace: Vec<ModeledInstruction>) -> Self {
+    pub(crate) fn new<S: Borrow<SleighArchInfo>>(
+        jingle: S,
+        gadgets: T,
+        trace: Vec<ModeledInstruction>,
+    ) -> Self {
         let _solver = Solver::new();
         Self {
-            jingle: jingle.clone(),
+            info: jingle.borrow().clone(),
             _solver,
             gadgets,
             trace,
@@ -53,12 +57,13 @@ where
                         i.instr.disassembly, gadget
                     );
 
-                    gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i))
+                    gadget_signature
+                        .covers(&GadgetSignature::from_instr(&i.instr, i.get_arch_info()))
                         && has_compatible_control_flow(&i.instr, gadget)
                 })
                 .collect();
             if is_candidate.iter().any(|b| *b) {
-                let model = gadget.model(&self.jingle);
+                let model = gadget.model(&self.info);
                 if let Ok(model) = &model {
                     is_candidate.iter().enumerate().for_each(|(i, c)| {
                         if *c {

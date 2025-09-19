@@ -1,7 +1,5 @@
+use std::borrow::Borrow;
 use std::sync::Arc;
-
-use jingle::JingleContext;
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
 
 use crate::error::CrackersError;
 use crate::gadget::candidates::Candidates;
@@ -11,6 +9,8 @@ use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGe
 use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::slot_assignments::SlotAssignments;
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::sleigh::SleighArchInfo;
 
 #[derive(Clone)]
 pub struct PcodeTheoryBuilder<'lib> {
@@ -37,11 +37,10 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         }
     }
     pub fn build(self) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
-        let jingle = JingleContext::new(self.library);
-        let modeled_templates = self.model_instructions(&jingle)?;
-        let gadget_candidates = self.candidates.model(&jingle)?;
+        let modeled_templates = self.model_instructions(self.library.arch_info())?;
+        let gadget_candidates = self.candidates.model(self.library.arch_info())?;
         let t = PcodeTheory::new(
-            jingle,
+            self.library.arch_info(),
             modeled_templates,
             self.reference_program.initial_memory().clone(),
             gadget_candidates,
@@ -52,13 +51,14 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         Ok(t)
     }
 
-    pub fn build_assignment(
+    pub fn build_assignment<T: Borrow<SleighArchInfo>>(
         &self,
-        jingle: &JingleContext,
+        info: T,
         slot_assignments: SlotAssignments,
     ) -> Result<PcodeAssignment, CrackersError> {
-        let modeled_templates: Vec<ModeledInstruction> = self.model_instructions(jingle)?;
-        let gadget_candidates: Vec<Vec<ModeledBlock>> = self.candidates.model(jingle)?;
+        let info = info.borrow();
+        let modeled_templates: Vec<ModeledInstruction> = self.model_instructions(info)?;
+        let gadget_candidates: Vec<Vec<ModeledBlock>> = self.candidates.model(info)?;
         let selected_candidates: Vec<ModeledBlock> = slot_assignments
             .choices()
             .iter()
@@ -103,13 +103,14 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         self
     }
 
-    fn model_instructions(
+    fn model_instructions<T: Borrow<SleighArchInfo>>(
         &self,
-        jingle: &JingleContext,
+        info: T,
     ) -> Result<Vec<ModeledInstruction>, CrackersError> {
+        let info = info.borrow();
         let mut modeled_templates = vec![];
         for step in self.reference_program.steps() {
-            modeled_templates.push(step.model(jingle)?);
+            modeled_templates.push(step.model(info)?);
         }
         Ok(modeled_templates)
     }
