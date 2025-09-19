@@ -28,5 +28,6 @@ dev = [
     "ruff",
     "mypy",
     "nox",
-    "z3-solver"
+    "z3-solver",
+    "pydantic>=2.10.6"
 ]

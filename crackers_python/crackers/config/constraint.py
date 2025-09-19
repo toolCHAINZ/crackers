@@ -46,7 +46,7 @@ class StateEqualityConstraintWrapper(BaseModel):
         if self.reg is not None:
             j["register"] = {a.name: a.value for a in self.reg}
         if self.pointer is not None:
-            j["pointer"] = {b.reg: b.value for b in self.pointer}
+            j["pointer"] = {b.reg: int(b.value) for b in self.pointer}
         if self.memory is not None:
             j["memory"] = self.memory.model_dump_json()
         print(j)
