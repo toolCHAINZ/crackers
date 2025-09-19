@@ -33,4 +33,4 @@ jobs:
       - name: Run nox session
         run: |
           cd crackers_python
-          uv pip run nox -s ${{ matrix.session }}
+          uv run nox -s ${{ matrix.session }}
