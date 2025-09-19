@@ -10,9 +10,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  ruff:
-    name: Ruff Lint
+  lint:
+    name: ${{ matrix.session }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        session: [ruff, mypy]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,29 +30,7 @@ jobs:
       - name: Install dev dependencies
         run: |
           uv pip install -e ./crackers_python[dev]
-      - name: Run ruff
+      - name: Run nox session
         run: |
           cd crackers_python
-          ruff .
-
-  mypy:
-    name: Mypy Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Create uv virtual environment
-        run: |
-          uv venv
-      - name: Install dev dependencies
-        run: |
-          uv pip install -e ./crackers_python[dev]
-      - name: Run mypy
-        run: |
-          cd crackers_python
-          mypy .
+          uv pip run nox -s ${{ matrix.session }}
