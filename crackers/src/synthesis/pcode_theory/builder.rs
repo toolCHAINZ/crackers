@@ -1,8 +1,6 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 
-use jingle::modeling::{ModeledBlock, ModeledInstruction};
-use jingle::sleigh::SleighArchInfo;
 use crate::error::CrackersError;
 use crate::gadget::candidates::Candidates;
 use crate::gadget::library::GadgetLibrary;
@@ -11,6 +9,8 @@ use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGe
 use crate::synthesis::pcode_theory::PcodeTheory;
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use crate::synthesis::slot_assignments::SlotAssignments;
+use jingle::modeling::{ModeledBlock, ModeledInstruction};
+use jingle::sleigh::SleighArchInfo;
 
 #[derive(Clone)]
 pub struct PcodeTheoryBuilder<'lib> {

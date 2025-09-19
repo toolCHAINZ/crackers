@@ -1,6 +1,6 @@
-use std::borrow::Borrow;
 use jingle::modeling::{ModeledInstruction, ModelingContext};
 use jingle::sleigh::{Instruction, OpCode, SleighArchInfo};
+use std::borrow::Borrow;
 use tracing::trace;
 use z3::Solver;
 use z3::ast::Ast;
@@ -22,7 +22,11 @@ impl<'a, T> TraceCandidateIterator<'a, T>
 where
     T: Iterator<Item = &'a Gadget>,
 {
-    pub(crate) fn new<S: Borrow<SleighArchInfo>>(jingle: S, gadgets: T, trace: Vec<ModeledInstruction>) -> Self {
+    pub(crate) fn new<S: Borrow<SleighArchInfo>>(
+        jingle: S,
+        gadgets: T,
+        trace: Vec<ModeledInstruction>,
+    ) -> Self {
         let _solver = Solver::new();
         Self {
             info: jingle.borrow().clone(),
@@ -53,7 +57,8 @@ where
                         i.instr.disassembly, gadget
                     );
 
-                    gadget_signature.covers(&GadgetSignature::from_instr(&i.instr, i.get_arch_info()))
+                    gadget_signature
+                        .covers(&GadgetSignature::from_instr(&i.instr, i.get_arch_info()))
                         && has_compatible_control_flow(&i.instr, gadget)
                 })
                 .collect();

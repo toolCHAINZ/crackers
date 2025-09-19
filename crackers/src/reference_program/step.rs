@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
 use crate::config::error::CrackersConfigError;
 use jingle::modeling::ModeledInstruction;
 use jingle::sleigh::{Instruction, SleighArchInfo};
+use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default)]
@@ -30,7 +30,10 @@ impl Step {
         &self.instructions
     }
 
-    pub fn model<T: Borrow<SleighArchInfo>>(&self, ctx: T) -> Result<ModeledInstruction, CrackersConfigError> {
+    pub fn model<T: Borrow<SleighArchInfo>>(
+        &self,
+        ctx: T,
+    ) -> Result<ModeledInstruction, CrackersConfigError> {
         let i: Instruction = self.instructions.as_slice().try_into()?;
         ModeledInstruction::new(i, ctx).map_err(CrackersConfigError::from)
     }

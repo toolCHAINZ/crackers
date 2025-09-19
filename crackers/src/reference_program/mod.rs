@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use crate::config::error::CrackersConfigError;
 use crate::config::error::CrackersConfigError::{
     SpecMissingStartSymbol, SpecMissingTextSection, UnrecognizedArchitecture,
@@ -16,6 +15,7 @@ use jingle::sleigh::context::loaded::LoadedSleighContext;
 use jingle::sleigh::{GeneralizedVarNode, Instruction, OpCode, SleighArchInfo, VarNode};
 use jingle::varnode::ResolvedVarnode;
 use object::{File, Object, ObjectSymbol};
+use std::borrow::Borrow;
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -136,15 +136,17 @@ impl ReferenceProgram {
                 for vn in x.inputs() {
                     if let GeneralizedVarNode::Indirect(vn) = vn {
                         if covering_set.covers(&vn.pointer_location) {
-                            let pointer_offset_bytes_le =
-                                if image.spaces()[image.arch_info().default_code_space_index()].isBigEndian() {
-                                    image.read_bytes(&vn.pointer_location).map(|mut f| {
-                                        f.reverse();
-                                        f
-                                    })
-                                } else {
-                                    image.read_bytes(&vn.pointer_location)
-                                };
+                            let pointer_offset_bytes_le = if image.spaces()
+                                [image.arch_info().default_code_space_index()]
+                            .isBigEndian()
+                            {
+                                image.read_bytes(&vn.pointer_location).map(|mut f| {
+                                    f.reverse();
+                                    f
+                                })
+                            } else {
+                                image.read_bytes(&vn.pointer_location)
+                            };
                             if let Some(pointer_offset_bytes_le) = pointer_offset_bytes_le {
                                 let mut buffer: [u8; 8] = [0; 8];
                                 let max = min(buffer.len(), pointer_offset_bytes_le.len());

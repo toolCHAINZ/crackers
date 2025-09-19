@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use crate::error::CrackersError;
 use crate::gadget::Gadget;
 use crate::reference_program::ReferenceProgram;
@@ -7,6 +6,7 @@ use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGe
 use crate::synthesis::pcode_theory::pcode_assignment::PcodeAssignment;
 use jingle::modeling::{ModeledBlock, ModeledInstruction};
 use jingle::sleigh::SleighArchInfo;
+use std::borrow::Borrow;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use z3::Solver;
@@ -32,7 +32,10 @@ impl Debug for AssignmentModelBuilder {
 }
 
 impl AssignmentModelBuilder {
-    fn make_pcode_model<T: Borrow<SleighArchInfo>>(&self, jingle: T) -> Result<PcodeAssignment, CrackersError> {
+    fn make_pcode_model<T: Borrow<SleighArchInfo>>(
+        &self,
+        jingle: T,
+    ) -> Result<PcodeAssignment, CrackersError> {
         let jingle = jingle.borrow();
         let modeled_spec: Result<Vec<ModeledInstruction>, _> = self
             .templates

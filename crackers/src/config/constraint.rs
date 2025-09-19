@@ -136,7 +136,12 @@ pub fn gen_memory_constraint(
     m: MemoryEqualityConstraint,
 ) -> impl Fn(&State, u64) -> Result<Bool, CrackersError> + Send + Sync + Clone + 'static {
     move |state, _addr| {
-        let data = state.read_varnode(&state.arch_info().varnode(&m.space, m.address, m.size).unwrap())?;
+        let data = state.read_varnode(
+            &state
+                .arch_info()
+                .varnode(&m.space, m.address, m.size)
+                .unwrap(),
+        )?;
         let constraint = data.eq(BV::from_u64(m.value as u64, data.get_size()));
         Ok(constraint)
     }
@@ -206,7 +211,8 @@ pub fn gen_pointer_range_state_invariant(
         match vn {
             ResolvedVarnode::Direct(d) => {
                 // todo: this is gross
-                let should_constrain = state.arch_info().default_code_space_index() == d.space_index;
+                let should_constrain =
+                    state.arch_info().default_code_space_index() == d.space_index;
                 match should_constrain {
                     false => Ok(None),
                     true => {

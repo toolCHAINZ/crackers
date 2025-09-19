@@ -1,8 +1,8 @@
-use std::borrow::Borrow;
 use crate::gadget::Gadget;
 use jingle::analysis::varnode::VarNodeSet;
 use jingle::modeling::ModeledBlock;
 use jingle::sleigh::{GeneralizedVarNode, IndirectVarNode, Instruction, SleighArchInfo, SpaceType};
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use tracing::trace;
 

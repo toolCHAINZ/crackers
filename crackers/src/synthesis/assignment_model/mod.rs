@@ -49,7 +49,12 @@ impl<T: ModelingContext> AssignmentModel<T> {
     }
 
     pub fn print_trace_of_reg(&self, reg: &str) {
-        let r = self.final_state().unwrap().arch_info().register(reg).unwrap();
+        let r = self
+            .final_state()
+            .unwrap()
+            .arch_info()
+            .register(reg)
+            .unwrap();
         for gadget in &self.gadgets {
             let val = gadget.get_original_state().read_varnode(r).unwrap();
             println!("{} Before: {:?}", reg, self.model.eval(&val, false));
@@ -59,7 +64,12 @@ impl<T: ModelingContext> AssignmentModel<T> {
     }
 
     pub fn initial_reg(&self, reg: &str) -> Option<BV> {
-        let r = self.final_state().unwrap().arch_info().register(reg).unwrap();
+        let r = self
+            .final_state()
+            .unwrap()
+            .arch_info()
+            .register(reg)
+            .unwrap();
         let val = self.gadgets[0]
             .get_original_state()
             .read_varnode(r)
