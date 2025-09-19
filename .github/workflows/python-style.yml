@@ -32,4 +32,5 @@ jobs:
           uv sync --project crackers_python --dev --active
       - name: Run nox session
         run: |
-          uv run --project crackers_python nox -s ${{ matrix.session }}
+          cd crackers_python
+          uv run nox -s ${{ matrix.session }}
