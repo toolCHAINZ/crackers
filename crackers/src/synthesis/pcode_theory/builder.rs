@@ -37,8 +37,8 @@ impl<'lib> PcodeTheoryBuilder<'lib> {
         }
     }
     pub fn build(self) -> Result<PcodeTheory<ModeledInstruction>, CrackersError> {
-        let modeled_templates = self.model_instructions(&self.library.arch_info())?;
-        let gadget_candidates = self.candidates.model(&self.library.arch_info())?;
+        let modeled_templates = self.model_instructions(self.library.arch_info())?;
+        let gadget_candidates = self.candidates.model(self.library.arch_info())?;
         let t = PcodeTheory::new(
             self.library.arch_info(),
             modeled_templates,

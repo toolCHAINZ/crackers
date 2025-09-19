@@ -51,7 +51,7 @@ impl GadgetLibrary {
     ) -> Result<Self, JingleError> {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            arch_info: sleigh.arch_info().clone().into(),
+            arch_info: sleigh.arch_info().clone(),
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.get_sections().filter(|s| s.perms.exec) {
