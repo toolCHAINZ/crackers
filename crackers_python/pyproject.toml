@@ -26,5 +26,6 @@ module-name = "crackers._internal"
 dev = [
     "ruff",
     "mypy",
-    "nox"
+    "nox",
+    "z3-solver"
 ]

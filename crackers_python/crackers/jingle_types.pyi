@@ -1,6 +1,6 @@
 from typing import Optional, Iterable, List
 
-from z3 import z3
+from z3 import z3  # type: ignore
 
 
 class Instruction:
@@ -40,7 +40,7 @@ class SleighContext:
     Represents a Sleigh context in python.
     """
 
-    def __init__(self, binary_path: str, ghidra: str) -> SleighContext: ...
+    def __init__(self, binary_path: str, ghidra: str) -> None: ...
 
     def instruction_at(self, offset: int) -> Optional[Instruction]: ...
 
@@ -50,7 +50,7 @@ class SleighContext:
 
 
 class State:
-    def __init__(self, jingle: SleighContext) -> State: ...
+    def __init__(self, jingle: SleighContext) -> None: ...
 
     def direct_varnode(self, space: str, offset: int, size: int) -> ResolvedVarNode: ...
 

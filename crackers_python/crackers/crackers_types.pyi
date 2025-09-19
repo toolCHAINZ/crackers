@@ -1,10 +1,28 @@
 from typing import Optional, Union, Callable, Iterable
-
-from z3 import z3
-
 from .jingle_types import State, ModeledBlock, ResolvedVarNode
-from ._internal.crackers import CrackersLogLevel
-from ._internal.crackers import SynthesisSelectionStrategy
+from z3 import z3  # type: ignore
+
+__all__ = [
+    "AssignmentModel",
+    "ConstraintConfig",
+    "CrackersConfig",
+    "CrackersLogLevel",
+    "DecisionResult",
+    "GadgetLibraryConfig",
+    "MemoryEqualityConstraint",
+    "MetaConfig",
+    "PointerRange",
+    "PointerRangeConstraints",
+    "SleighConfig",
+    "SpecificationConfig",
+    "StateEqualityConstraint",
+    "SynthesisConfig",
+    "SynthesisParams",
+    "SynthesisSelectionStrategy",
+    "DecisionResultType",
+    "StateConstraintGenerator",
+    "TransitionConstraintGenerator"
+]
 
 class AssignmentModel:
     def eval_bv(self, bv: z3.BitVecRef, model_completion: bool) -> z3.BitVecRef: ...
@@ -42,11 +60,11 @@ class CrackersConfig:
 
 
 class CrackersLogLevel:
-    Debug = CrackersLogLevel.Debug
-    Error = CrackersLogLevel.Error
-    Info = CrackersLogLevel.Info
-    Trace = CrackersLogLevel.Trace
-    Warn = CrackersLogLevel.Warn
+    Debug: int
+    Error: int
+    Info: int
+    Trace: int
+    Warn: int
 
 
 
@@ -92,8 +110,8 @@ class StateEqualityConstraint:
     memory: Optional[MemoryEqualityConstraint]
 
 class SynthesisSelectionStrategy:
-    SatStrategy = SynthesisSelectionStrategy.SatStrategy
-    OptimizeStrategy = SynthesisSelectionStrategy.OptimizeStrategy
+    SatStrategy: int
+    OptimizeStrategy: int
 
 class SynthesisConfig:
     strategy: SynthesisSelectionStrategy
@@ -118,13 +136,13 @@ class DecisionResult:
     Unsat : PythonDecisionResult_Unsat
 
 
-DecisionResultType = Union[DecisionResult.AssignmentFound, DecisionResult.Unsat]
+DecisionResultType = Union["PythonDecisionResult_AssignmentFound", "PythonDecisionResult_Unsat"]
 
 StateConstraintGenerator = Callable[[State, int], z3.BitVecRef]
 TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BitVecRef]
 
 class SynthesisParams:
-    def run(self) -> DecisionResultType: ...
+    def run(self) -> "DecisionResultType": ...
     def add_precondition(self, fn: StateConstraintGenerator): ...
     def add_postcondition(self, fn: StateConstraintGenerator): ...
     def add_transition_constraint(self, fn: TransitionConstraintGenerator): ...
