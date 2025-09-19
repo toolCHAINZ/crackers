@@ -6,7 +6,7 @@ from .crackers_types import (
 )
 from .jingle_types import (
     Instruction, ModeledBlock, ModeledInstruction, PcodeOperation,
-    SleighContext, State
+    SleighContext, State, ResolvedVarNode
 )
 
 
@@ -30,6 +30,7 @@ class crackers:
 
 
 class jingle:
+    ResolvedVarNode: ResolvedVarNode
     Instruction: Instruction
     ModeledBlock: ModeledBlock
     ModeledInstruction: ModeledInstruction
