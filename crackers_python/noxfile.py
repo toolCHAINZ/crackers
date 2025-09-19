@@ -11,5 +11,5 @@ def ruff(session):
 @nox.session
 def mypy(session):
     """Run mypy type checker."""
-    session.install("mypy")
+    session.install("mypy", "pydantic")
     session.run("mypy", "crackers")
