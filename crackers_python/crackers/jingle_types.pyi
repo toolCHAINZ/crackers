@@ -1,22 +1,52 @@
+from typing import Optional, Iterable, List
+
 from z3 import z3
 
 
-class IndirectVarNode: ...
+class Instruction:
+    """
+    Represents a Python wrapper for a Ghidra instruction.
+    """
+    disassembly: str
+
+    def pcode(self) -> List[PcodeOperation]: ...
 
 
-class Instruction: ...
+class ModeledBlock:
+    instructions: list[Instruction]
+    original_state: State
+    final_state: State
+
+    def get_input_vns(self) -> Iterable[ResolvedVarNode]: ...
+
+    def get_output_vns(self) -> Iterable[ResolvedVarNode]: ...
 
 
-class ModeledBlock: ...
+class ModeledInstruction:
+    original_state: State
+    final_state: State
 
+    def get_input_vns(self) -> Iterable[ResolvedVarNode]: ...
 
-class ModeledInstruction: ...
+    def get_output_vns(self) -> Iterable[ResolvedVarNode]: ...
 
 
 class PcodeOperation: ...
 
 
-class SleighContext: ...
+class SleighContext:
+    base_address: int
+    """
+    Represents a Sleigh context in python.
+    """
+
+    def __init__(self, binary_path: str, ghidra: str) -> SleighContext: ...
+
+    def instruction_at(self, offset: int) -> Optional[Instruction]: ...
+
+    def model_instruction_at(self, offset: int) -> Optional[ModeledInstruction]: ...
+
+    def model_block_at(self, offset: int, max_instrs: int) -> ModeledBlock: ...
 
 
 class State:
