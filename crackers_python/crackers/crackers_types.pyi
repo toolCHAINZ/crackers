@@ -2,8 +2,9 @@ from typing import Optional, Union, Callable, Iterable
 
 from z3 import z3
 
-from crackers_python.crackers.jingle_types import State, ModeledBlock, ResolvedVarNode
-
+from .jingle_types import State, ModeledBlock, ResolvedVarNode
+from ._internal.crackers import CrackersLogLevel
+from ._internal.crackers import SynthesisSelectionStrategy
 
 class AssignmentModel:
     def eval_bv(self, bv: z3.BitVecRef, model_completion: bool) -> z3.BitVecRef: ...
@@ -119,8 +120,8 @@ class DecisionResult:
 
 DecisionResultType = Union[DecisionResult.AssignmentFound, DecisionResult.Unsat]
 
-type StateConstraintGenerator = Callable[[State, int], z3.BitVecRef]
-type TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BitVecRef]
+StateConstraintGenerator = Callable[[State, int], z3.BitVecRef]
+TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BitVecRef]
 
 class SynthesisParams:
     def run(self) -> DecisionResultType: ...
