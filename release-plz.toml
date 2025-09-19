@@ -5,8 +5,6 @@ pr_labels = ["release"] # add the `release` label to the release Pull Request
 [[package]] # the double square brackets define a TOML table array
 name = "crackers_python"
 publish = false # disable `cargo publish` for `package_a`
-git_release_enable = false
-git_tag_enable = false
 version_group = "crackers"
 
 [[package]]
