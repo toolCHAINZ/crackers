@@ -26,11 +26,10 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Create uv virtual environment
         run: |
-          uv venv
+          uv venv --project crackers_python
       - name: Install dev dependencies
         run: |
-          uv pip install -e ./crackers_python[dev]
+          uv sync --locked --project crackers_python --dev --active
       - name: Run nox session
         run: |
-          cd crackers_python
-          uv run nox -s ${{ matrix.session }}
+          uv run --project crackers_python nox -s ${{ matrix.session }}
