@@ -5,9 +5,10 @@ from .crackers_types import (
     SynthesisSelectionStrategy
 )
 from .jingle_types import (
-    IndirectVarNode, Instruction, ModeledBlock, ModeledInstruction, PcodeOperation,
-    SleighContext, State, ResolvedVarNode
+    Instruction, ModeledBlock, ModeledInstruction, PcodeOperation,
+    SleighContext, State
 )
+
 
 class crackers:
     AssignmentModel: AssignmentModel
@@ -27,12 +28,11 @@ class crackers:
     SynthesisParams: SynthesisParams
     SynthesisSelectionStrategy: SynthesisSelectionStrategy
 
+
 class jingle:
-    IndirectVarNode: IndirectVarNode
     Instruction: Instruction
     ModeledBlock: ModeledBlock
     ModeledInstruction: ModeledInstruction
     PcodeOperation: PcodeOperation
     SleighContext: SleighContext
     State: State
-    VarNode: VarNode
