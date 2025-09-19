@@ -29,7 +29,7 @@ jobs:
           uv venv --project crackers_python
       - name: Install dev dependencies
         run: |
-          uv sync --project crackers_python --dev --active
+          uv pip install -e ./crackers_python[dev]
       - name: Run nox session
         run: |
           cd crackers_python
