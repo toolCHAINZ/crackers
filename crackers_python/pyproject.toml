@@ -20,3 +20,4 @@ dependencies = [
 ]
 [tool.maturin]
 features = ["pyo3/extension-module"]
+module-name = "crackers._internal"

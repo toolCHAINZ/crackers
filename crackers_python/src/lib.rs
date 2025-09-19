@@ -37,12 +37,9 @@ fn jingle(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PythonModeledBlock>()?;
     Ok(())
 }
-/// A Python module implemented in Rust.
+
 #[pymodule]
 fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    let j = PyModule::new(m.py(), "jingle")?;
-    jingle(&j)?;
-    m.add_submodule(&j)?;
     m.add_class::<PythonCrackersConfig>()?;
     m.add_class::<PythonDecisionResult>()?;
     m.add_class::<PythonSynthesisParams>()?;
@@ -59,5 +56,17 @@ fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PointerRangeConstraints>()?;
     m.add_class::<StateEqualityConstraint>()?;
     m.add_class::<ConstraintConfig>()?;
+    Ok(())
+}
+
+/// A Python module implemented in Rust.
+#[pymodule]
+fn _internal(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    let j = PyModule::new(m.py(), "jingle")?;
+    jingle(&j)?;
+    m.add_submodule(&j)?;
+    let c = PyModule::new(m.py(), "crackers")?;
+    crackers(&c)?;
+    m.add_submodule(&c)?;
     Ok(())
 }
