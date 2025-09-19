@@ -21,6 +21,9 @@ jobs:
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Create uv virtual environment
+        run: |
+          uv venv
       - name: Install dev dependencies
         run: |
           uv pip install -e ./crackers_python[dev]
@@ -40,6 +43,9 @@ jobs:
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Create uv virtual environment
+        run: |
+          uv venv
       - name: Install dev dependencies
         run: |
           uv pip install -e ./crackers_python[dev]
@@ -47,4 +53,3 @@ jobs:
         run: |
           cd crackers_python
           mypy .
-
