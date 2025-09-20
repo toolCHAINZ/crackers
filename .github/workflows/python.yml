@@ -14,7 +14,7 @@ on:
       - main
   workflow_dispatch:
   release:
-    types: [published]
+    types: [ published ]
 
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
           submodules: true
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: '>=3.11 <3.14'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
