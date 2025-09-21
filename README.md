@@ -7,56 +7,15 @@
 
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
-<table>
-  <tr>
-    <td>
-      <a href="https://github.com/toolCHAINZ/crackers/actions">
-        <img src="https://github.com/toolCHAINZ/crackers/workflows/CI/badge.svg" alt="Build Status"/>
-      </a>
-    </td>
-    <td>Build Status</td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://crates.io/crates/crackers">
-        <img src="https://img.shields.io/crates/v/crackers.svg" alt="Crates.io"/>
-      </a>
-    </td>
-    <td>Latest Version on crates.io</td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://pypi.org/project/crackers/">
-        <img src="https://img.shields.io/pypi/v/crackers" alt="PyPI"/>
-      </a>
-    </td>
-    <td>Latest Version on PyPI</td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://docs.rs/crackers">
-        <img src="https://docs.rs/crackers/badge.svg" alt="docs.rs"/>
-      </a>
-    </td>
-    <td>Documentation (docs.rs)</td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://github.com/toolCHAINZ/crackers/blob/main/LICENSE">
-        <img src="https://img.shields.io/github/license/toolCHAINZ/crackers.svg" alt="License"/>
-      </a>
-    </td>
-    <td>License</td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://github.com/toolCHAINZ/crackers/issues">
-        <img src="https://img.shields.io/github/issues/toolCHAINZ/crackers.svg" alt="Issues"/>
-      </a>
-    </td>
-    <td>Open Issues</td>
-  </tr>
-</table>
+|-------|-------------|
+| [![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml) | Build Status |
+| [![Crates.io](https://img.shields.io/crates/v/crackers.svg)](https://crates.io/crates/crackers) | Latest Version on crates.io |
+| [![docs.rs](https://docs.rs/crackers/badge.svg)](https://docs.rs/crackers) | Documentation (docs.rs) |
+| [![License](https://img.shields.io/github/license/toolCHAINZ/crackers.svg)](https://github.com/toolCHAINZ/crackers/blob/main/LICENSE) | License |
+| [![Issues](https://img.shields.io/github/issues/toolCHAINZ/crackers.svg)](https://github.com/toolCHAINZ/crackers/issues) | Open Issues |
+| [![PyPI](https://pypi.org/project/crackers/)](https://img.shields.io/pypi/v/crackers) | Latest Version on PyPI |
+
+[![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml)
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
 code-reuse attacks (e.g. ROP) build around the Z3 SMT Solver and Ghidra's SLEIGH code translator.
