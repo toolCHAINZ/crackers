@@ -43,9 +43,21 @@ provide to the program to realize it.
 
 You have three options:
 
+### Python Package Usage
+
+[![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
+
+The easiest way to use crackers `crackers` is through the [pypi](https://pypi.org/project/crackers/) package. For every release, we provide wheels for `[MacOS, Windows, Linux] x [3.10, 3.11, 3.12, 3.13]`.
+
+A simple usage looks like the following:
+
+```python
+# todo: add python example
+```
+
 ### Rust CLI Interface
 
-The simplest way to use it is through its CLI interface. You can install it from `crates.io` by running:
+You can install the `crackers` CLI from `crates.io` by running:
 
 ```sh
 cargo install --all-features crackers
@@ -160,13 +172,6 @@ cargo add crackers
 API documentation can be found on [docs.rs](https://docs.rs/crackers/latest/crackers/).
 
 ** The API is unstable and largely undocumented at this time. **
-
-### Python Package Usage
-
-[![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
-
-`crackers` is on [pypi](https://pypi.org/project/crackers/)! For every release, we provide wheels for \[MacOS, Windows, Linux\] x \[3.10, 3.11, 3.12, 3.13\].
-
 
 # Research Paper
 
