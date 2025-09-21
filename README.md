@@ -7,15 +7,14 @@
 
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
+| Badge | Description |
 |-------|-------------|
 | [![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml) | Build Status |
 | [![Crates.io](https://img.shields.io/crates/v/crackers.svg)](https://crates.io/crates/crackers) | Latest Version on crates.io |
 | [![docs.rs](https://docs.rs/crackers/badge.svg)](https://docs.rs/crackers) | Documentation (docs.rs) |
-| [![License](https://img.shields.io/github/license/toolCHAINZ/crackers.svg)](https://github.com/toolCHAINZ/crackers/blob/main/LICENSE) | License |
 | [![Issues](https://img.shields.io/github/issues/toolCHAINZ/crackers.svg)](https://github.com/toolCHAINZ/crackers/issues) | Open Issues |
-| [![PyPI](https://pypi.org/project/crackers/)](https://img.shields.io/pypi/v/crackers) | Latest Version on PyPI |
+| [![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/) | Latest Version on PyPI |
 
-[![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml)
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
 code-reuse attacks (e.g. ROP) build around the Z3 SMT Solver and Ghidra's SLEIGH code translator.
