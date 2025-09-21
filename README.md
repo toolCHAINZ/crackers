@@ -7,13 +7,8 @@
 
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
-| Badge | Description |
-|-------|-------------|
-| [![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml) | Build Status |
-| [![Crates.io](https://img.shields.io/crates/v/crackers.svg)](https://crates.io/crates/crackers) | Latest Version on crates.io |
-| [![docs.rs](https://docs.rs/crackers/badge.svg)](https://docs.rs/crackers) | Documentation (docs.rs) |
-| [![Issues](https://img.shields.io/github/issues/toolCHAINZ/crackers.svg)](https://github.com/toolCHAINZ/crackers/issues) | Open Issues |
-| [![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/) | Latest Version on PyPI |
+[![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml)
+[![docs.rs](https://docs.rs/crackers/badge.svg)](https://docs.rs/crackers)
 
 
 This repo contains the source code of `crackers`, a procedure for synthesizing
@@ -154,6 +149,8 @@ but not the memory model found in synthesis.
 
 ### Rust Crate Usage
 
+[![Crates.io](https://img.shields.io/crates/v/crackers.svg)](https://crates.io/crates/crackers)
+
 `crackers` is on `crates.io` and can be added to your project with:
 
 ```sh
@@ -165,6 +162,8 @@ API documentation can be found on [docs.rs](https://docs.rs/crackers/latest/crac
 ** The API is unstable and largely undocumented at this time. **
 
 ### Python Package Usage
+
+[![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
 
 `crackers` is on [pypi](https://pypi.org/project/crackers/)! For every release, we provide wheels for \[MacOS, Windows, Linux\] x \[3.10, 3.11, 3.12, 3.13\].
 
