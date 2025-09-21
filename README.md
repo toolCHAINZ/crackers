@@ -7,45 +7,115 @@
 
 # `crackers`: A Tool for Synthesizing Code-Reuse Attacks from `p-code` Programs
 
+<table>
+  <tr>
+    <td>
+      <a href="https://github.com/toolCHAINZ/crackers/actions">
+        <img src="https://github.com/toolCHAINZ/crackers/workflows/CI/badge.svg" alt="Build Status"/>
+      </a>
+    </td>
+    <td>Build Status</td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://crates.io/crates/crackers">
+        <img src="https://img.shields.io/crates/v/crackers.svg" alt="Crates.io"/>
+      </a>
+    </td>
+    <td>Latest Version on crates.io</td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://pypi.org/project/crackers/">
+        <img src="https://img.shields.io/pypi/v/crackers" alt="PyPI"/>
+      </a>
+    </td>
+    <td>Latest Version on PyPI</td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://docs.rs/crackers">
+        <img src="https://docs.rs/crackers/badge.svg" alt="docs.rs"/>
+      </a>
+    </td>
+    <td>Documentation (docs.rs)</td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/toolCHAINZ/crackers/blob/main/LICENSE">
+        <img src="https://img.shields.io/github/license/toolCHAINZ/crackers.svg" alt="License"/>
+      </a>
+    </td>
+    <td>License</td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/toolCHAINZ/crackers/issues">
+        <img src="https://img.shields.io/github/issues/toolCHAINZ/crackers.svg" alt="Issues"/>
+      </a>
+    </td>
+    <td>Open Issues</td>
+  </tr>
+</table>
+
 This repo contains the source code of `crackers`, a procedure for synthesizing
-code-reuse attacks (e.g. ROP). `crackers` takes as input a "reference program", usually
+code-reuse attacks (e.g. ROP) build around the Z3 SMT Solver and Ghidra's SLEIGH code translator.
+
+## How does it work?
+
+`crackers` takes as input a "reference program", usually
 written in an assembly language, a binary (of the same architecture) in which to look
 for gadgets, and user-provided constraints to enforce on synthesized chains. It will always
 return an answer (though there is no strict bound to runtime), reporting either that the problem
 is UNSAT, or providing an assignment of gadgets that meet all constraints, and a model
-of the memory state of the PCODE virtual machine at every stage of the computation.
+of the memory state of the PCODE virtual machine at every step in the chain. This memory model can
+then be used to derive the inputs necessary to realize the ROP chain.
 
-`crackers` will assume that _all_ system state is usable unless the user prohibits it by providing a constraint.
-This approach, while requiring more human guidance, allows it to minimize the assumptions it makes about the
-arrangement and roles of memory in an exploit.
+`crackers` itself makes _no_ assumptions about the layout of memory in the target program, nor the extent of an attacker's
+control over it: it assumes that _all_ system state is usable unless explicitly prohibited through a constraint.
+This approach allows for using it with more practical vulnerablities, with the drawback of requiring more human-guided
+configuration that many other ROP tools.
 
-To validate chains, `crackers` builds a mathematical model of the trace through the gadgets. This model, along
-with user-provided constraints, is verified against a model of the "reference program". When this verification
+To validate chains, `crackers` builds a mathematical model of the execution of a candidate chain and makes assertions on it
+against a model generated from a specification (itself expressed as a sequence of PCODE operations). When this verification
 returns SAT, `crackers` returns the Z3 model of the memory state of the chain at every point of its execution. This
 memory model may be used to derive the contents of memory needed to invoke the chain, and transitively the input needed to
 provide to the program to realize it.
 
-Note that the provided CLI of crackers currently only prints the selected gadgets to the command line.
-To make use of the logical memory model it must be used through the programmatic API.
-
-There is also an experimental Python binding for `crackers`, allowing for basic configuration, execution, and model
-inspection from python. These bindings also feature cross-FFI support with the python z3 bindings, allowing
-constraints to be expressed as python functions or `lambda` expressions returning Python Z3 `BoolRef` instances.
+`crackers` is available to use as a command-line tool, as a Rust crate, or as a Python package.
 
 ### This software is still in alpha and may change at any time
 
-## CLI Usage
+## How do I use it?
+
+You have three options:
+
+### Rust CLI Interface
+
+The simplest way to use it is through its CLI interface. You can install it from `crates.io` by running:
 
 ```sh
-cargo install --all-features --path . 
+cargo install --all-features crackers
 ```
 
-This will install the `crackers` binary in your path. `crackers` takes a single command line argument,
-pointing to a config file. An example file follows:
+You can then run
+
+```sh
+crackers new my_config.toml
+```
+
+To generate a new configuration for the tool at `my_config.toml`. This config file can be adjusted
+for your use-case and then used with
+
+```sh
+crackers synth my_config.toml
+```
+
+There's a lot of knobs to turn in this config file. An example file below:
 
 ```toml
 # location to find a ghidra installation. This is only used for
-# locating architecture definitions
+# SLEIGH architecture definitions
 [sleigh]
 ghidra_path = "/Applications/ghidra"
 
@@ -121,46 +191,25 @@ min = 0x7fffffffde00
 max = 0x7ffffffff000
 ```
 
-A successful synthesis will print out a listing of the gadgets were selected.
+Note that using the CLI, a successful synthesis will print out a listing of the gadgets that were selected,
+but not the memory model found in synthesis.
 
-## Library Usage
+### Rust Crate Usage
 
-`crackers` intended mode of use is as a library. All of the above settings from the config correspond
-to settings that can be set programmatically by API consumers.
+`crackers` is on `crates.io` and can be added to your project with:
 
-When using the API, rather than getting a listing of gadgets as an output, you get a model of the synthesized chain.
-This model of the chain includes information about what gadgets were selected as well as a Z3 `Model` representing the
-memory at all states of execution in the gadget chain. This model can be queried to derive the memory conditions
-necessary to execute the chain.
-
-### Constraints
-
-Constraints work a little differently with the API. Instead of specifying registers and register equality,
-`crackers` allows consumers to provide a closure of the following types:
-
-```rust
-pub type StateConstraintGenerator = dyn for<'a, 'b> Fn(&'a Context, &'b State<'a>) -> Result<Bool<'a>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
-pub type PointerConstraintGenerator = dyn for<'a, 'b> Fn(
-        &'a Context,
-        &'b ResolvedVarnode<'a>,
-        &'b State<'a>,
-    ) -> Result<Option<Bool<'a>>, CrackersError>
-    + Send
-    + Sync
-    + 'static;
+```sh
+cargo add crackers
 ```
 
-The first type is used for asserting initial and final space constraints. These functions take a z3 context, and a handle
-to the program state, returning a `Result<Bool>`. The decision procedure will automatically evaluate
-provided functions and assert the booleans they return.
+API documentation can be found on [docs.rs](https://docs.rs/crackers/latest/crackers/).
 
-The second type is used for asserting read/write invariants. These functions take in a handle to z3, as well as a struct containing
-the bitvector corresponding to the read/write address, as well as the state the read/write is being performed on. 
-Any time a chain reads or writes from memory, the procedure will automatically call these functions and assert the returned
-booleans. This can allow for setting safe/unsafe ranges of memory or even the register space.
+** The API is unstable and largely undocumented at this time. **
+
+### Python Package Usage
+
+`crackers` is on [pypi](https://pypi.org/project/crackers/)! For every release, we provide wheels for \[MacOS, Windows, Linux\] x \[3.10, 3.11, 3.12, 3.13\].
+
 
 # Research Paper
 
@@ -171,13 +220,11 @@ This work has been accepted to [Usenix Security 2025](https://www.usenix.org/con
 You can cite this work with the following BibTex:
 
 ```bibtex
-@inproceedings {denhoed2025synthesis,
-author = {Mark DenHoed and Thomas Melham},
-title = {Synthesis of Code-Reuse Attacks from p-code Programs},
-booktitle = {34th USENIX Security Symposium (USENIX Security 25)},
-year = {2025},
-address = {Seattle, WA},
-publisher = {USENIX Association},
-month = aug
+@inproceedings{denhoed2025synthesis,
+  title={Synthesis of $\{$Code-Reuse$\}$ Attacks from p-code Programs},
+  author={DenHoed, Mark and Melham, Tom},
+  booktitle={34th USENIX Security Symposium (USENIX Security 25)},
+  pages={395--411},
+  year={2025}
 }
 ```
