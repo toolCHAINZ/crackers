@@ -52,7 +52,57 @@ The easiest way to use crackers `crackers` is through the [pypi](https://pypi.or
 A simple usage looks like the following:
 
 ```python
-# todo: add python example
+import logging
+logging.basicConfig(level=logging.INFO)
+
+from z3 import BoolRef, BoolVal
+
+from crackers import State, ModeledBlock
+from crackers.config import MetaConfig, LibraryConfig, SleighConfig,
+    ReferenceProgramConfig, SynthesisConfig, ConstraintConfig, CrackersConfig
+from crackers.config.constraint import RegisterValuation,
+    RegisterStringValuation, MemoryValuation, PointerRange,
+    CustomStateConstraint, CustomTransitionConstraint, PointerRangeRole
+from crackers.config.log_level import LogLevel
+from crackers.config.synthesis import SynthesisStrategy
+
+# Custom state constraint example
+def my_constraint(s: State, _addr: int) -> BoolRef:
+    rdi = s.read_register("RDI")
+    rcx = s.read_register("RCX")
+    return rdi == (rcx ^ 0x5a5a5a5a5a5a5a5a)
+
+
+# Custom transition constraint example
+def my_transition_constraint(block: ModeledBlock) -> BoolRef:
+    # Dummy: always true
+    return BoolVal(True)
+
+
+meta = MetaConfig(log_level=LogLevel.INFO, seed=42)
+library = LibraryConfig(max_gadget_length=8, path="libz.so.1", sample_size=None,
+                        base_address=None)
+sleigh = SleighConfig(ghidra_path="/Applications/ghidra")
+reference_program = ReferenceProgramConfig(path="sample.o", max_instructions=8, base_address=library.base_address)
+synthesis = SynthesisConfig(strategy=SynthesisStrategy.SAT, max_candidates_per_slot=200, parallel=8, combine_instructions=True)
+constraint = ConstraintConfig(
+    precondition=[
+        RegisterValuation(name="rdi", value=0xdeadbeef),
+        MemoryValuation(space="ram", address=0x1000, size=4, value=0x41),
+        RegisterStringValuation(reg="rsi", value="/bin/sh"),
+        CustomStateConstraint(code=my_constraint)
+    ],
+    postcondition=[
+        RegisterValuation(name="rax", value=0x1337),
+        CustomStateConstraint(code=my_constraint)
+    ],
+    transition=[
+        PointerRange(role=PointerRangeRole.READ, min=0x2000, max=0x3000),
+        CustomTransitionConstraint(code=my_transition_constraint)
+    ]
+)
+config = CrackersConfig(meta=meta, library=library, sleigh=sleigh, specification=reference_program, synthesis=synthesis, constraint=constraint)
+config.run()
 ```
 
 ### Rust CLI Interface
@@ -175,11 +225,10 @@ API documentation can be found on [docs.rs](https://docs.rs/crackers/latest/crac
 
 # Research Paper
 
-`crackers` was developed in support of our research paper _Synthesis of Code-Reuse Attacks from `p-code` Programs_.
-You can find the author accepted manuscript [here](https://ora.ox.ac.uk/objects/uuid:906d32ca-407c-4cab-beab-b90200f81d65).
-This work has been accepted to [Usenix Security 2025](https://www.usenix.org/conference/usenixsecurity25/presentation/denhoed).
+`crackers` was initially developed in support of our research paper _Synthesis of Code-Reuse Attacks from `p-code` Programs_,
+presented at [Usenix Security 2025](https://www.usenix.org/conference/usenixsecurity25/presentation/denhoed).
 
-You can cite this work with the following BibTex:
+If you found the paper or the implementation useful, you can cite this with the following BibTex:
 
 ```bibtex
 @inproceedings{denhoed2025synthesis,
