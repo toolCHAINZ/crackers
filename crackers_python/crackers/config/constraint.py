@@ -4,7 +4,6 @@ from typing import Literal, Callable, Annotated, Union
 import z3
 from pydantic import BaseModel, Field, field_serializer, PrivateAttr
 
-from crackers.crackers import StateEqualityConstraint
 from crackers.jingle import State, ModeledBlock
 
 
