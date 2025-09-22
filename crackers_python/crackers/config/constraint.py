@@ -1,86 +1,138 @@
-from pydantic import BaseModel
+from enum import Enum
+from typing import Literal, Callable, Annotated, Union
+
+import z3
+from pydantic import BaseModel, Field
+
+from crackers.jingle_types import State, ModeledBlock
 
 
-class MemoryEqualityConstraintWrapper(BaseModel):
+class MemoryValuation(BaseModel):
     """
-    Generates a constraint that sets a region of memory to a fixed value; essentially a memset
+    Encodes a constraint that sets a region of memory to a fixed value (essentially a memset).
 
-    space: the space name, should almost always be "ram"
-    address: the start address of the buffer
-    size: the number of works (usually bytes) to set
-    value: the value to set them to; must be a 1-byte value
+    Attributes:
+        type (Literal["memory"]): Discriminator for this constraint type.
+        space (str): The space name, should almost always be "ram".
+        address (int): The start address of the buffer.
+        size (int): The number of words (usually bytes) to set.
+        value (int): The value to set them to; must be a 1-byte value.
     """
 
+    type: Literal["memory"]
     space: str
     address: int
     size: int
     value: int
 
 
-class RegMapping(BaseModel):
+class RegisterValuation(BaseModel):
+    """
+    Encodes a constraint that sets a register to a fixed integer value.
+
+    Attributes:
+        type (Literal["register_value"]): Discriminator for this constraint type.
+        name (str): The name of the register.
+        value (int): The value to set the register to.
+    """
+
+    type: Literal["register_value"]
     name: str
     value: int
 
 
-class PointerMapping(BaseModel):
+class RegisterStringValuation(BaseModel):
+    """
+    Encodes a constraint that sets a register to point to a buffer in memory
+    containing a zero-terminated ASCII copy of the given string.
+
+    Attributes:
+        type (Literal["register_string"]): Discriminator for this constraint type.
+        reg (str): The name of the register.
+        value (str): The string value the register encodes a pointer to.
+    """
+
+    type: Literal["register_string"]
     reg: str
     value: str
 
 
-class StateEqualityConstraintWrapper(BaseModel):
+class PointerRangeRole(Enum):
+    READ = "read"
+    WRITE = "write"
+
+
+class PointerRange(BaseModel):
     """
-    Allows for specifying several common types of state constraints.
+    Encodes a constraint on the usage of pointers in the ROP chain.
+    If multiple PointerRange constraints are given, they are combined
+    with a logical OR (e.g. the pointer must lie within _one_ of these areas).
 
-    reg: specify equality between registers and concrete values (e.g. eax = 1)
-         note that this does NOT support the instruction pointer (e.g. rip, pc)
-    pointer: specify that a register point to a null-terminated string (e.g. edx = 'hello')
-    memory: specifying that a range in memory is equal to a concrete value (e.g. ram[1000..1010] = 0x00)
+    Attributes:
+        type (Literal["pointer_range"]): Discriminator for this constraint type.
+        role (PointerRangeRole): Whether the pointer is used for reading or writing.
+        min (int): Minimum address in the range.
+        max (int): Maximum address in the range.
     """
 
-    reg: list[RegMapping]
-    pointer: list[PointerMapping]
-    memory: MemoryEqualityConstraintWrapper | None
-
-    def fixup(self) -> dict:
-        j = {}
-        if self.reg is not None:
-            j["register"] = {a.name: a.value for a in self.reg}
-        if self.pointer is not None:
-            j["pointer"] = {b.reg: int(b.value) for b in self.pointer}
-        if self.memory is not None:
-            j["memory"] = self.memory.model_dump_json()
-        print(j)
-        return j
-
-
-class PointerRangeWrapper(BaseModel):
+    type: Literal["pointer_range"]
+    role: PointerRangeRole
     min: int
     max: int
 
 
-class PointerRangeConstraintsWrapper(BaseModel):
+class CustomStateConstraint(BaseModel):
     """
-    Specifies allowable ranges in the 'ram' space for gadgets to read and write from
-    """
+    Custom constraint on a state, defined by a callable.
+    This should be used if the other constraint variants are unable to
+    encode the desired constraint. State constraints can be used
+    as either a precondition constraint (applied to the initial state before ROP)
+    or a postcondition constraint (applied to the final state of the ROP).
+    State constraints are applied to either the first or final state of a given gadget.
+    They take in a symbolic State and an optional second argument representing
+    the address of the gadget in memory. They must return a Z3 boolean expression,
+    with False indicating the constraint is not satisfied.
 
-    read: list[PointerRangeWrapper] | None
-    write: list[PointerRangeWrapper] | None
-
-
-class ConstraintConfigWrapper(BaseModel):
-    """
-    Allows for specifying several common types of constraints on chains. Any
-    constraint not expressed in this structure should be implemented separately via
-    a closure passed to the `SynthesisParams` structure.
-
-    precondition: state constraints on the initial state of the chain
-      (useful for encoding facts about the vulnerability and exploit)
-    postcondition: state constraints on the final state of the chain
-      (useful for enforcing semantics not represented in the reference program)
-    pointer: transition constraints restricting the available memory accessible by gadgets
-      (useful for enforcing that a gadget read only from controlled memory)
+    Attributes:
+        type (Literal["custom_state"]): Discriminator for this constraint type.
+        code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
     """
 
-    precondition: StateEqualityConstraintWrapper | None
-    postcondition: StateEqualityConstraintWrapper | None
-    pointer: PointerRangeConstraintsWrapper | None
+    type: Literal["custom_state"]
+    code: Callable[[State, int], z3.BoolRef]
+
+
+class CustomTransitionConstraint(BaseModel):
+    """
+    Custom constraint on the transition, defined by a callable.
+    This should be used if the other constraint variants are unable to
+    encode the desired constraint. Transition constraints are applied
+    to every gadget in the ROP chain. They take in a symbolic ModeledBlock
+    (which contains both the starting and ending states as well as metadata about the gadget)
+    and return a Z3 boolean expression, with False indicating the constraint is not satisfied.
+
+    Attributes:
+        type (Literal["custom_transition"]): Discriminator for this constraint type.
+        code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
+    """
+
+    type: Literal["custom_transition"]
+    code: Callable[[ModeledBlock, int], z3.BoolRef]
+
+
+StateConstraint = Annotated[Union[MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(discriminator='type')]
+TransitionConstraint = Annotated[Union[PointerRange, CustomTransitionConstraint], Field(discriminator='type')]
+
+class ConstraintConfig(BaseModel):
+    """
+    Configuration for constraints applied to the synthesis process.
+
+    Attributes:
+        precondition (list[StateConstraint] | None): Constraints on the initial state.
+        postcondition (list[StateConstraint] | None): Constraints on the final state.
+        transition (list[TransitionConstraint] | None): Constraints on the transitions between states.
+    """
+
+    precondition: list[StateConstraint] | None
+    postcondition: list[StateConstraint] | None
+    transition: list[TransitionConstraint] | None

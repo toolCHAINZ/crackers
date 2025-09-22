@@ -3,29 +3,31 @@ from enum import Enum
 from pydantic import BaseModel
 
 
-class SynthesisSelectionStrategyWrapper(str, Enum):
+class SynthesisStrategy(str, Enum):
     """
     Determines the encoding used for gadget selection.
 
-    Sat is the "default" and should generally be used.
-    Optimize uses an alternative encoding which biases the
-    algorithm to try to select shorter gadgets. This can have a
-    negative performance impact on the synthesis loop.
+    Members:
+        Sat: The default strategy; should generally be used.
+        Optimize: Uses an alternative encoding that biases the algorithm to select shorter gadgets, which may negatively impact synthesis performance.
     """
 
     Sat = "sat"
     Optimize = "optimize"
 
 
-class SynthesisConfigWrapper(BaseModel):
+class SynthesisConfig(BaseModel):
     """
-    strategy: the gadget selection strategy to use
-    max_candidates_per_slot: the number of gadgets to collect for each step of the reference program. A higher number gives more choices but increases algorithm runtime.
-    parallel: the number of worker threads to use for evaluating candidate chains
-    combine_instructions: whether to allow synthesis of shorter gadget chains
+    Configuration for synthesis algorithm parameters.
+
+    Attributes:
+        strategy (SynthesisStrategy): The gadget selection strategy to use.
+        max_candidates_per_slot (int): Number of gadgets to collect for each step of the reference program. Higher values provide more choices but increase runtime.
+        parallel (int): Number of worker threads for evaluating candidate chains.
+        combine_instructions (bool): Whether to allow synthesis of shorter gadget chains.
     """
 
-    strategy: SynthesisSelectionStrategyWrapper
+    strategy: SynthesisStrategy
     max_candidates_per_slot: int
     parallel: int
     combine_instructions: bool

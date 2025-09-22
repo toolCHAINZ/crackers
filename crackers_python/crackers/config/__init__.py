@@ -3,20 +3,20 @@ import json
 from pydantic import BaseModel
 
 from crackers.config.constraint import ConstraintConfigWrapper
-from crackers.config.library import GadgetLibraryConfigWrapper
-from crackers.config.meta import MetaConfigWrapper
-from crackers.config.sleigh import SleighConfigWrapper
-from crackers.config.specification import SpecificationConfigWrapper
-from crackers.config.synthesis import SynthesisConfigWrapper
+from crackers.config.library import LibraryConfig
+from crackers.config.meta import MetaConfig
+from crackers.config.sleigh import SleighConfig
+from crackers.config.specification import ReferenceProgramConfig
+from crackers.config.synthesis import SynthesisConfig
 from crackers.crackers_types import CrackersConfig
 
 
 class CrackersConfigWrapper(BaseModel):
-    meta: MetaConfigWrapper
-    library: GadgetLibraryConfigWrapper
-    sleigh: SleighConfigWrapper
-    specification: SpecificationConfigWrapper
-    synthesis: SynthesisConfigWrapper
+    meta: MetaConfig
+    library: LibraryConfig
+    sleigh: SleighConfig
+    specification: ReferenceProgramConfig
+    synthesis: SynthesisConfig
     constraint: ConstraintConfigWrapper
 
     def translate(self):

@@ -1,13 +1,17 @@
 from pydantic import BaseModel
 
-from crackers.config.log_level import CrackersLogLevelWrapper
+from crackers.config.log_level import LogLevel
 
 
-class MetaConfigWrapper(BaseModel):
+class MetaConfig(BaseModel):
     """
-    log_level: the level of logging to use in crackers
-    seed: the random seed to use when randomly selecting gadgets
+    Overall settings for the synthesis algorithm that don't
+    effect its actual operation.
+
+    Attributes:
+        log_level (LogLevel): The logging level to use for the application.
+        seed (int): The random seed for reproducibility. Used in gadget sampling.
     """
 
-    log_level: CrackersLogLevelWrapper
+    log_level: LogLevel
     seed: int

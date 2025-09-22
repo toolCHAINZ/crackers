@@ -1,12 +1,16 @@
 from pydantic import BaseModel
 
 
-class SpecificationConfigWrapper(BaseModel):
+class ReferenceProgramConfig(BaseModel):
     """
-    path: the location of the compiled reference program. The chain program must
-    be located in the binary with a symbol named 'entry'
-    max_instructions: a debugging field for truncating reference programs: set this to a large number
-    base_address: the base address to re-base the reference program to
+    Configuration for the Reference Program representing the ROP chain's goal.
+    This should be a simple program with no branches ending in either
+    a function call or a system call. The code should be at a symbol named
+    "_start".
+    Attributes:
+        path (str): Filesystem path to the reference program binary. This should be an ELF/PE with a symbol named "_start".
+        max_instructions (int): Maximum number of instructions to use.
+        base_address (int): Base address for loading the reference program.
     """
 
     path: str
