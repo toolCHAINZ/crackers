@@ -28,8 +28,7 @@ class CrackersConfig(BaseModel):
     constraint: ConstraintConfig
 
     def run(self):
-        j = self.model_dump_json(indent=2)
-        print(j)
+        j = self.model_dump_json()
         config = _internal.crackers.CrackersConfig.from_json(j)
         resolved = config.resolve_config()
 
