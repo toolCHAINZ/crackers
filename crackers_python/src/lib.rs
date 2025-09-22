@@ -1,7 +1,7 @@
 mod config;
 mod decision;
-mod synthesis;
 mod python_logger_layer;
+mod synthesis;
 
 use crate::config::PythonCrackersConfig;
 use crate::decision::PythonDecisionResult;

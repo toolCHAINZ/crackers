@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 // PythonLoggerLayer: tracing subscriber layer for forwarding Rust logs to Python logging
-use pyo3::types::PyModule;
 use pyo3::Python;
+use pyo3::types::PyModule;
 use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::layer::{Context, Layer};
 
@@ -16,11 +16,7 @@ where
             message: Option<String>,
         }
         impl tracing_subscriber::field::Visit for MessageVisitor {
-            fn record_debug(
-                &mut self,
-                field: &tracing::field::Field,
-                value: &dyn std::fmt::Debug,
-            ) {
+            fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
                 if field.name() == "message" {
                     self.message = Some(format!("{:?}", value));
                 }
@@ -49,4 +45,3 @@ where
         });
     }
 }
-

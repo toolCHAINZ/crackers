@@ -140,6 +140,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Copy README for sdist
+        run: cp README.md crackers_python/README.md
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
