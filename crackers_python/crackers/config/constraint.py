@@ -4,6 +4,7 @@ from typing import Literal, Callable, Annotated, Union
 import z3
 from pydantic import BaseModel, Field, field_serializer
 
+from crackers.crackers import StateEqualityConstraint
 from crackers.jingle_types import State, ModeledBlock
 
 
@@ -138,8 +139,14 @@ class ConstraintConfig(BaseModel):
     transition: list[TransitionConstraint] | None = None
 
     @field_serializer('precondition')
-    def skip_custom_state_constraints(value, _info):
-        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+    def seralize_preconditions(value, _info):
+        filtered = [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+        transformed: StateEqualityConstraint = {
+            'register': {v.name: v.value for v in filtered if isinstance(v, RegisterValuation)},
+            'memory': [(v.space, v.address, v.size, v.value) for v in filtered if isinstance(v, MemoryValuation)],
+            'pointer': {v.reg: v.value for v in filtered if isinstance(v, RegisterStringValuation)},
+        }
+        return transformed
 
     @field_serializer('postcondition')
     def skip_custom_state_constraints_post(value, _info):
