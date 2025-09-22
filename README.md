@@ -10,24 +10,23 @@
 [![Build](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml/badge.svg)](https://github.com/toolCHAINZ/crackers/actions/workflows/build.yml)
 [![docs.rs](https://docs.rs/crackers/badge.svg)](https://docs.rs/crackers)
 
-
-This repo contains the source code of `crackers`, a procedure for synthesizing
-code-reuse attacks (e.g. ROP) build around the Z3 SMT Solver and Ghidra's SLEIGH code translator.
+This repository contains the source code for `crackers`, a tool for synthesizing
+code-reuse attacks (e.g., ROP) built around the Z3 SMT Solver and Ghidra's SLEIGH code translator.
 
 ## How does it work?
 
-`crackers` takes as input a "reference program", usually
+`crackers` takes as input a "reference program," usually
 written in an assembly language, a binary (of the same architecture) in which to look
 for gadgets, and user-provided constraints to enforce on synthesized chains. It will always
-return an answer (though there is no strict bound to runtime), reporting either that the problem
-is UNSAT, or providing an assignment of gadgets that meet all constraints, and a model
+return an answer (though there is no strict bound on runtime), reporting either that the problem
+is UNSAT or providing an assignment of gadgets that meet all constraints, along with a model
 of the memory state of the PCODE virtual machine at every step in the chain. This memory model can
 then be used to derive the inputs necessary to realize the ROP chain.
 
 `crackers` itself makes _no_ assumptions about the layout of memory in the target program, nor the extent of an attacker's
 control over it: it assumes that _all_ system state is usable unless explicitly prohibited through a constraint.
-This approach allows for using it with more practical vulnerablities, with the drawback of requiring more human-guided
-configuration that many other ROP tools.
+This approach increases flexibility, with the drawback of requiring more human-guided
+configuration than many other ROP tools.
 
 To validate chains, `crackers` builds a mathematical model of the execution of a candidate chain and makes assertions on it
 against a model generated from a specification (itself expressed as a sequence of PCODE operations). When this verification
@@ -35,7 +34,7 @@ returns SAT, `crackers` returns the Z3 model of the memory state of the chain at
 memory model may be used to derive the contents of memory needed to invoke the chain, and transitively the input needed to
 provide to the program to realize it.
 
-`crackers` is available to use as a command-line tool, as a Rust crate, or as a Python package.
+`crackers` is available as a command-line tool, a Rust crate, or a Python package.
 
 ### This software is still in alpha and may change at any time
 
@@ -47,7 +46,7 @@ You have three options:
 
 [![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
 
-The easiest way to use crackers `crackers` is through the [pypi](https://pypi.org/project/crackers/) package. For every release, we provide wheels for `[MacOS, Windows, Linux] x [3.10, 3.11, 3.12, 3.13]`.
+The easiest way to use `crackers` is through the [PyPI](https://pypi.org/project/crackers/) package. For every release, we provide wheels for `[MacOS, Windows, Linux] x [3.10, 3.11, 3.12, 3.13]`.
 
 A simple usage looks like the following:
 
@@ -113,23 +112,23 @@ You can install the `crackers` CLI from `crates.io` by running:
 cargo install --all-features crackers
 ```
 
-You can then run
+You can then run:
 
 ```sh
 crackers new my_config.toml
 ```
 
-To generate a new configuration for the tool at `my_config.toml`. This config file can be adjusted
-for your use-case and then used with
+to generate a new configuration for the tool at `my_config.toml`. This config file can be adjusted
+for your use case and then used with:
 
 ```sh
 crackers synth my_config.toml
 ```
 
-There's a lot of knobs to turn in this config file. An example file below:
+There are many options to configure in this file. An example is below:
 
 ```toml
-# location to find a ghidra installation. This is only used for
+# Location to find a Ghidra installation. This is only used for
 # SLEIGH architecture definitions
 [sleigh]
 ghidra_path = "/Applications/ghidra"
@@ -141,34 +140,34 @@ ghidra_path = "/Applications/ghidra"
 # * "optimize" is a weighted SAT problem, giving preference to shorter gadgets
 # Optimize tends to perform better when only one validation worker is present and SAT scales better with more workers
 strategy = "sat"
-# the maximum number of candidates that are considered for each sub-slice of the specification
-# if you don't want to cap this, just set it arbitrarily high. Might make it optional later
+# The maximum number of candidates considered for each sub-slice of the specification
+# If you don't want to cap this, just set it arbitrarily high. Might make it optional later
 max_candidates_per_slot = 50
 # The number of chain validation workers to use
 parallel = 8
 
 # crackers works by taking in an "example" computation and synthesizing a compatible chain
-# right now, it does not support specifications with controlflow
+# Right now, it does not support specifications with control flow
 [specification]
-# the path at which to find the raw binary containing the bytes of the specification computation
+# The path at which to find the raw binary containing the bytes of the specification computation
 path = "bin/execve_instrs.bin"
-# the number of assembly instructions in the specification
+# The number of assembly instructions in the specification
 max_instructions = 5
 
-# settings involving the file from which to pull gadgets
+# Settings involving the file from which to pull gadgets
 [library]
-# the path to the file. It can be any type of object file that gimli_object can parse (e.g. ELF, PE)
+# The path to the file. It can be any type of object file that gimli_object can parse (e.g., ELF, PE)
 path = "bin/libc_wrapper"
-# the maximum length of gadget to extract. Raising this number increases both the complexity of the gadgets
+# The maximum length of gadget to extract. Raising this number increases both the complexity of the gadgets
 # that are reasoned about and the total number of found gadgets
 max_gadget_length = 4
-# optionally randomly sample the set of parsed gadgets to a given size
+# Optionally randomly sample the set of parsed gadgets to a given size
 random_sample_size = 20000
-# optionally use a set seed for gadget selection
+# Optionally use a set seed for gadget selection
 # random_sample_seed = 0x234
 
-# from this point on are constraints that we put on the synthesis
-# these are fairly self-explanatory
+# From this point on are constraints that we put on the synthesis
+# These are fairly self-explanatory
 [constraint.precondition.register]
 RAX = 0
 RCX = 0x440f30
@@ -194,13 +193,13 @@ RAX = 0x3b
 RSI = 0
 RDX = 0
 
-# this constraint enforces that the value pointed to by this register
+# This constraint enforces that the value pointed to by this register
 # must be equal to the given string
 [constraint.postcondition.pointer]
 RDI = "/bin/sh"
 
-# ANY pointer access, read or write must fall in this range
-# might separate read/write later
+# ANY pointer access, read or write, must fall in this range
+# Might separate read/write later
 [constraint.pointer]
 min = 0x7fffffffde00
 max = 0x7ffffffff000
@@ -225,14 +224,14 @@ API documentation can be found on [docs.rs](https://docs.rs/crackers/latest/crac
 
 # Research Paper
 
-`crackers` was initially developed in support of our research paper _Synthesis of Code-Reuse Attacks from `p-code` Programs_,
+`crackers` was initially developed in support of our research paper, _Synthesis of Code-Reuse Attacks from `p-code` Programs_,
 presented at [Usenix Security 2025](https://www.usenix.org/conference/usenixsecurity25/presentation/denhoed).
 
-If you found the paper or the implementation useful, you can cite this with the following BibTex:
+If you found the paper or the implementation useful, you can cite it with the following BibTeX:
 
 ```bibtex
 @inproceedings{denhoed2025synthesis,
-  title={Synthesis of $\{$Code-Reuse$\}$ Attacks from p-code Programs},
+  title={Synthesis of ${Code-Reuse}$ Attacks from p-code Programs},
   author={DenHoed, Mark and Melham, Tom},
   booktitle={34th USENIX Security Symposium (USENIX Security 25)},
   pages={395--411},
