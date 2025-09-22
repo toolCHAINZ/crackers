@@ -43,7 +43,7 @@ provide to the program to realize it.
 
 You have three options:
 
-### Python Package Usage
+### Python Package
 
 [![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
 
@@ -105,7 +105,7 @@ config = CrackersConfig(meta=meta, library=library, sleigh=sleigh, specification
 config.run()
 ```
 
-### Rust CLI Interface
+### Rust CLI
 
 You can install the `crackers` CLI from `crates.io` by running:
 
@@ -209,7 +209,7 @@ max = 0x7ffffffff000
 Note that using the CLI, a successful synthesis will print out a listing of the gadgets that were selected,
 but not the memory model found in synthesis.
 
-### Rust Crate Usage
+### Rust Crate
 
 [![Crates.io](https://img.shields.io/crates/v/crackers.svg)](https://crates.io/crates/crackers)
 

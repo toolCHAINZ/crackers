@@ -19,7 +19,7 @@ dependencies = [
     "pydantic>=2.10.6",
     "z3-solver==4.15.3.0",
 ]
-readme = "../README.md"
+readme = "PYTHON_README.md"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
