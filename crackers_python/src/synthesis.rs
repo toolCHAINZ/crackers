@@ -10,15 +10,15 @@ use jingle::python::modeled_block::PythonModeledBlock;
 use jingle::python::state::PythonState;
 use jingle::python::z3::ast::PythonAst;
 use lazy_static::lazy_static;
+use pyo3::types::PyAnyMethods;
+use pyo3::types::PyModule;
 use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use std::sync::{Arc, Mutex};
-use z3::ast::Bool;
 use tracing::{Event, Level, Subscriber};
-use tracing_subscriber::layer::{Context, Layer};
 use tracing_subscriber::Registry;
+use tracing_subscriber::layer::{Context, Layer};
 use tracing_subscriber::prelude::*;
-use pyo3::types::PyModule;
-use pyo3::types::PyAnyMethods;
+use z3::ast::Bool;
 
 lazy_static! {
     static ref MUTEX: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
@@ -40,10 +40,30 @@ impl PythonSynthesisParams {
             S: Subscriber,
         {
             fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
+                struct MessageVisitor {
+                    message: Option<String>,
+                }
+                impl tracing_subscriber::field::Visit for MessageVisitor {
+                    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+                        if field.name() == "message" {
+                            self.message = Some(format!("{:?}", value));
+                        }
+                    }
+                }
                 Python::attach(|py| {
                     if let Ok(logging) = PyModule::import(py, "logging") {
-                        let level = event.metadata().level();
-                        let msg = format!("{:?}", event);
+                        let meta = event.metadata();
+                        let module_path = meta.module_path().unwrap_or("");
+                        let file = meta.file().unwrap_or("");
+                        let line = meta.line().map(|l| l.to_string()).unwrap_or_default();
+                        let level = meta.level();
+                        let mut visitor = MessageVisitor { message: None };
+                        event.record(&mut visitor);
+                        let message = visitor.message.unwrap_or_default();
+                        let msg = format!(
+                            "[{}:{}:{}] {}",
+                            module_path, file, line, message
+                        );
                         let py_level = match *level {
                             Level::ERROR => "error",
                             Level::WARN => "warning",

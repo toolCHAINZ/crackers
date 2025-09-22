@@ -118,7 +118,7 @@ class CustomTransitionConstraint(BaseModel):
     """
 
     type: Literal["custom_transition"] = "custom_transition"
-    code: Callable[[ModeledBlock, int], z3.BoolRef]
+    code: Callable[[ModeledBlock], z3.BoolRef]
 
 
 StateConstraint = Annotated[Union[MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(discriminator='type')]

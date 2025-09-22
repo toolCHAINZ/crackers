@@ -51,10 +51,6 @@ class CrackersConfig(BaseModel):
                 c for c in self.constraint.transition if getattr(c, 'type', None) == 'custom_transition'
             ]
 
-        print("Precondition State Constraints:", precondition_state_constraints)
-        print("Postcondition State Constraints:", postcondition_state_constraints)
-        print("Custom Transition Constraints:", custom_transition_constraints)
-        # TODO: If the Rust-native config supports adding these, do so here
         for c in precondition_state_constraints:
             resolved.add_precondition(c.code)
         for c in postcondition_state_constraints:
