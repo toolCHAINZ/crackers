@@ -44,7 +44,11 @@ impl PythonSynthesisParams {
                     message: Option<String>,
                 }
                 impl tracing_subscriber::field::Visit for MessageVisitor {
-                    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+                    fn record_debug(
+                        &mut self,
+                        field: &tracing::field::Field,
+                        value: &dyn std::fmt::Debug,
+                    ) {
                         if field.name() == "message" {
                             self.message = Some(format!("{:?}", value));
                         }
@@ -60,10 +64,7 @@ impl PythonSynthesisParams {
                         let mut visitor = MessageVisitor { message: None };
                         event.record(&mut visitor);
                         let message = visitor.message.unwrap_or_default();
-                        let msg = format!(
-                            "[{}:{}:{}] {}",
-                            module_path, file, line, message
-                        );
+                        let msg = format!("[{}:{}:{}] {}", module_path, file, line, message);
                         let py_level = match *level {
                             Level::ERROR => "error",
                             Level::WARN => "warning",
