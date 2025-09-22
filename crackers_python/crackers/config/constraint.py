@@ -162,12 +162,12 @@ class ConstraintConfig(BaseModel):
     Attributes:
         precondition (list[StateConstraint] | None): Constraints on the initial state.
         postcondition (list[StateConstraint] | None): Constraints on the final state.
-        transition (list[TransitionConstraint] | None): Constraints on the transitions between states.
+        pointer (list[TransitionConstraint] | None): Constraints on the transitions between states (named 'pointer' for compatibility reasons, but can express any transition constraint)
     """
 
     precondition: list[StateConstraint] | None = None
     postcondition: list[StateConstraint] | None = None
-    transition: list[TransitionConstraint] | None = None
+    pointer: list[TransitionConstraint] | None = None
 
     @field_serializer("precondition", "postcondition")
     def serialize_state_constraints(value, _info):
@@ -190,7 +190,7 @@ class ConstraintConfig(BaseModel):
                 "size": mem.size,
                 "value": mem.value,
             }
-        transformed: StateEqualityConstraint = {
+        transformed = {
             "register": {
                 v.name: v.value for v in filtered if isinstance(v, RegisterValuation)
             },
@@ -203,8 +203,18 @@ class ConstraintConfig(BaseModel):
         }
         return transformed
 
-    @field_serializer("transition")
-    def skip_custom_transition_constraints(value, _info):
-        return [
+    @field_serializer("pointer")
+    def serialize_transition_constraints(value, _info):
+        filtered = [
             v for v in value or [] if getattr(v, "type", None) != "custom_transition"
         ]
+        read_ranges = []
+        write_ranges = []
+        for v in filtered:
+            if isinstance(v, PointerRange):
+                range_dict = {"min": v.min, "max": v.max}
+                if v.role == PointerRangeRole.READ:
+                    read_ranges.append(range_dict)
+                elif v.role == PointerRangeRole.WRITE:
+                    write_ranges.append(range_dict)
+        return {"read": read_ranges, "write": write_ranges}
