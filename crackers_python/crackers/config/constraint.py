@@ -103,11 +103,17 @@ class CustomStateConstraint(BaseModel):
 
     Attributes:
         type (Literal["custom_state"]): Discriminator for this constraint type.
-        code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
+        _code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
     """
 
     type: Literal["custom_state"] = "custom_state"
-    code: Callable[[State, int], z3.BoolRef] = PrivateAttr()
+    _code: Callable[[State, int], z3.BoolRef] = PrivateAttr()
+
+    @classmethod
+    def from_callable(cls, code: Callable[[State, int], z3.BoolRef], **kwargs):
+        obj = cls(**kwargs)
+        obj._code = code
+        return obj
 
 
 class CustomTransitionConstraint(BaseModel):
@@ -130,6 +136,12 @@ class CustomTransitionConstraint(BaseModel):
 
     type: Literal["custom_transition"] = "custom_transition"
     _code: Callable[[ModeledBlock], z3.BoolRef] = PrivateAttr()
+
+    @classmethod
+    def from_callable(cls, code: Callable[[ModeledBlock], z3.BoolRef], **kwargs):
+        obj = cls(**kwargs)
+        obj._code = code
+        return obj
 
 
 StateConstraint = Annotated[Union[

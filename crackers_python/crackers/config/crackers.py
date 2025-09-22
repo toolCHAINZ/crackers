@@ -50,10 +50,10 @@ class CrackersConfig(BaseModel):
             ]
 
         for c in precondition_state_constraints:
-            resolved.add_precondition(c.code)
+            resolved.add_precondition(c._code)
         for c in postcondition_state_constraints:
-            resolved.add_postcondition(c.code)
+            resolved.add_postcondition(c._code)
         for c in custom_transition_constraints:
-            resolved.add_transition_constraint(c.code)
+            resolved.add_transition_constraint(c._code)
 
         print(resolved.run())
