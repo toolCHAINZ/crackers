@@ -1,3 +1,4 @@
+
 from enum import Enum
 from typing import Literal, Callable, Annotated, Union
 
@@ -7,6 +8,9 @@ from pydantic import BaseModel, Field, field_serializer
 from crackers.crackers import StateEqualityConstraint
 from crackers.jingle import State, ModeledBlock
 
+# Override JSON schema generation to exclude custom constraints
+from pydantic import GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
 
 class MemoryValuation(BaseModel):
     """
@@ -121,8 +125,40 @@ class CustomTransitionConstraint(BaseModel):
     code: Callable[[ModeledBlock], z3.BoolRef]
 
 
-StateConstraint = Annotated[Union[MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(discriminator='type')]
-TransitionConstraint = Annotated[Union[PointerRange, CustomTransitionConstraint], Field(discriminator='type')]
+StateConstraint = Annotated[Union[
+    MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(
+    discriminator='type')]
+TransitionConstraint = Annotated[
+    Union[PointerRange, CustomTransitionConstraint], Field(
+        discriminator='type')]
+
+
+def state_constraint_json_schema(cls,
+                                 handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+    allowed_types = [MemoryValuation, RegisterValuation,
+                     RegisterStringValuation]
+    schemas = [handler.resolve_schema(type_) for type_ in allowed_types]
+    return {
+        "anyOf": schemas,
+        "discriminator": {"propertyName": "type"}
+    }
+
+
+def transition_constraint_json_schema(cls,
+                                      handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+    allowed_types = [PointerRange]
+    schemas = [handler.resolve_schema(type_) for type_ in allowed_types]
+    return {
+        "anyOf": schemas,
+        "discriminator": {"propertyName": "type"}
+    }
+
+
+StateConstraint.__get_pydantic_json_schema__ = classmethod(
+    state_constraint_json_schema)
+TransitionConstraint.__get_pydantic_json_schema__ = classmethod(
+    transition_constraint_json_schema)
+
 
 class ConstraintConfig(BaseModel):
     """
@@ -140,13 +176,15 @@ class ConstraintConfig(BaseModel):
 
     @field_serializer('precondition', 'postcondition')
     def serialize_preconditions(value, _info):
-        filtered = [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+        filtered = [v for v in value or [] if
+                    getattr(v, 'type', None) != 'custom_state']
         memory_vals = [v for v in filtered if isinstance(v, MemoryValuation)]
         memory_dict = None
         if memory_vals:
             if len(memory_vals) > 1:
                 import warnings
-                warnings.warn("Multiple memory constraints found; only the first will be serialized.")
+                warnings.warn(
+                    "Multiple memory constraints found; only the first will be serialized.")
             mem = memory_vals[0]
             memory_dict = {
                 'space': mem.space,
@@ -155,12 +193,15 @@ class ConstraintConfig(BaseModel):
                 'value': mem.value
             }
         transformed: StateEqualityConstraint = {
-            'register': {v.name: v.value for v in filtered if isinstance(v, RegisterValuation)},
+            'register': {v.name: v.value for v in filtered if
+                         isinstance(v, RegisterValuation)},
             'memory': memory_dict,
-            'pointer': {v.reg: v.value for v in filtered if isinstance(v, RegisterStringValuation)},
+            'pointer': {v.reg: v.value for v in filtered if
+                        isinstance(v, RegisterStringValuation)},
         }
         return transformed
 
     @field_serializer('transition')
     def skip_custom_transition_constraints(value, _info):
-        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_transition']
+        return [v for v in value or [] if
+                getattr(v, 'type', None) != 'custom_transition']
