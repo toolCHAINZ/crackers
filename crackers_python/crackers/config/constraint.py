@@ -2,9 +2,8 @@ from enum import Enum
 from typing import Literal, Callable, Annotated, Union
 
 import z3
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, PrivateAttr
 
-from crackers.crackers import StateEqualityConstraint
 from crackers.jingle import State, ModeledBlock
 
 
@@ -85,44 +84,75 @@ class PointerRange(BaseModel):
 class CustomStateConstraint(BaseModel):
     """
     Custom constraint on a state, defined by a callable.
-    This should be used if the other constraint variants are unable to
-    encode the desired constraint. State constraints can be used
-    as either a precondition constraint (applied to the initial state before ROP)
-    or a postcondition constraint (applied to the final state of the ROP).
-    State constraints are applied to either the first or final state of a given gadget.
-    They take in a symbolic State and an optional second argument representing
-    the address of the gadget in memory. They must return a Z3 boolean expression,
-    with False indicating the constraint is not satisfied.
+
+    This constraint type is used when other constraint variants cannot encode the desired logic. State constraints can be applied as either preconditions (to the initial state before ROP) or postconditions (to the final state after ROP). They are applied to the first or final state of a given gadget.
+
+    The callable provided must accept a symbolic `State` and an optional integer representing the address of the gadget in memory, and must return a `z3.BoolRef` (with `False` indicating the constraint is not satisfied).
+
+    Note:
+        - This constraint cannot be produced by deserializing a Pydantic model or JSON schema, as it requires a Python callable.
+        - It must be constructed programmatically using `CustomStateConstraint.from_callable`.
 
     Attributes:
         type (Literal["custom_state"]): Discriminator for this constraint type.
-        code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
+        _code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
     """
 
     type: Literal["custom_state"] = "custom_state"
-    code: Callable[[State, int], z3.BoolRef]
+    _code: Callable[[State, int], z3.BoolRef] = PrivateAttr()
+
+    @classmethod
+    def from_callable(cls, code: Callable[[State, int], z3.BoolRef], **kwargs):
+        obj = cls(**kwargs)
+        obj._code = code
+        return obj
 
 
 class CustomTransitionConstraint(BaseModel):
     """
-    Custom constraint on the transition, defined by a callable.
-    This should be used if the other constraint variants are unable to
-    encode the desired constraint. Transition constraints are applied
-    to every gadget in the ROP chain. They take in a symbolic ModeledBlock
-    (which contains both the starting and ending states as well as metadata about the gadget)
-    and return a Z3 boolean expression, with False indicating the constraint is not satisfied.
+    Custom constraint on a transition, defined by a callable.
+
+    This constraint type is used when other constraint variants cannot encode the desired logic. T
+    ransition constraints are applied to every gadget in the ROP chain.
+    The callable must accept a symbolic `ModeledBlock`
+    (containing both the starting and ending states, as well as metadata about the gadget)
+    and an optional integer, and must return a `z3.BoolRef`
+    (with `False` indicating the constraint is not satisfied).
+
+    Note:
+        - This constraint cannot be produced by deserializing a Pydantic model or
+          JSON schema, as it requires a Python callable.
+        - It must be constructed programmatically using `CustomTransitionConstraint.from_callable`.
 
     Attributes:
         type (Literal["custom_transition"]): Discriminator for this constraint type.
-        code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
+        _code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
     """
 
     type: Literal["custom_transition"] = "custom_transition"
-    code: Callable[[ModeledBlock], z3.BoolRef]
+    _code: Callable[[ModeledBlock], z3.BoolRef] = PrivateAttr()
+
+    @classmethod
+    def from_callable(cls, code: Callable[[ModeledBlock], z3.BoolRef], **kwargs):
+        obj = cls(**kwargs)
+        obj._code = code
+        return obj
 
 
-StateConstraint = Annotated[Union[MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(discriminator='type')]
-TransitionConstraint = Annotated[Union[PointerRange, CustomTransitionConstraint], Field(discriminator='type')]
+StateConstraint = Annotated[
+    Union[
+        MemoryValuation,
+        RegisterValuation,
+        RegisterStringValuation,
+        CustomStateConstraint,
+    ],
+    Field(discriminator="type"),
+]
+
+TransitionConstraint = Annotated[
+    Union[PointerRange, CustomTransitionConstraint], Field(discriminator="type")
+]
+
 
 class ConstraintConfig(BaseModel):
     """
@@ -131,36 +161,59 @@ class ConstraintConfig(BaseModel):
     Attributes:
         precondition (list[StateConstraint] | None): Constraints on the initial state.
         postcondition (list[StateConstraint] | None): Constraints on the final state.
-        transition (list[TransitionConstraint] | None): Constraints on the transitions between states.
+        pointer (list[TransitionConstraint] | None): Constraints on the transitions between states (named 'pointer' for compatibility reasons, but can express any transition constraint)
     """
 
     precondition: list[StateConstraint] | None = None
     postcondition: list[StateConstraint] | None = None
-    transition: list[TransitionConstraint] | None = None
+    pointer: list[TransitionConstraint] | None = None
 
-    @field_serializer('precondition', 'postcondition')
-    def serialize_preconditions(value, _info):
-        filtered = [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+    @field_serializer("precondition", "postcondition")
+    def serialize_state_constraints(value, _info):
+        filtered = [
+            v for v in value or [] if getattr(v, "type", None) != "custom_state"
+        ]
         memory_vals = [v for v in filtered if isinstance(v, MemoryValuation)]
         memory_dict = None
         if memory_vals:
             if len(memory_vals) > 1:
                 import warnings
-                warnings.warn("Multiple memory constraints found; only the first will be serialized.")
+
+                warnings.warn(
+                    "Multiple memory constraints found; only the first will be serialized."
+                )
             mem = memory_vals[0]
             memory_dict = {
-                'space': mem.space,
-                'address': mem.address,
-                'size': mem.size,
-                'value': mem.value
+                "space": mem.space,
+                "address": mem.address,
+                "size": mem.size,
+                "value": mem.value,
             }
-        transformed: StateEqualityConstraint = {
-            'register': {v.name: v.value for v in filtered if isinstance(v, RegisterValuation)},
-            'memory': memory_dict,
-            'pointer': {v.reg: v.value for v in filtered if isinstance(v, RegisterStringValuation)},
+        transformed = {
+            "register": {
+                v.name: v.value for v in filtered if isinstance(v, RegisterValuation)
+            },
+            "memory": memory_dict,
+            "pointer": {
+                v.reg: v.value
+                for v in filtered
+                if isinstance(v, RegisterStringValuation)
+            },
         }
         return transformed
 
-    @field_serializer('transition')
-    def skip_custom_transition_constraints(value, _info):
-        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_transition']
+    @field_serializer("pointer")
+    def serialize_transition_constraints(value, _info):
+        filtered = [
+            v for v in value or [] if getattr(v, "type", None) != "custom_transition"
+        ]
+        read_ranges = []
+        write_ranges = []
+        for v in filtered:
+            if isinstance(v, PointerRange):
+                range_dict = {"min": v.min, "max": v.max}
+                if v.role == PointerRangeRole.READ:
+                    read_ranges.append(range_dict)
+                elif v.role == PointerRangeRole.WRITE:
+                    write_ranges.append(range_dict)
+        return {"read": read_ranges, "write": write_ranges}
