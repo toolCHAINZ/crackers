@@ -1,9 +1,8 @@
-
 from enum import Enum
 from typing import Literal, Callable, Annotated, Union
 
 import z3
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, PrivateAttr
 
 from crackers.crackers import StateEqualityConstraint
 from crackers.jingle import State, ModeledBlock
@@ -98,13 +97,17 @@ class CustomStateConstraint(BaseModel):
     the address of the gadget in memory. They must return a Z3 boolean expression,
     with False indicating the constraint is not satisfied.
 
+    This type of constraint _cannot_ be produced by deserializing a pydantic model
+    or JSON schema, as it requires a callable. It can only be constructed
+    programmatically by giving an actual handle to the python function to be invoked.
+
     Attributes:
         type (Literal["custom_state"]): Discriminator for this constraint type.
         code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
     """
 
     type: Literal["custom_state"] = "custom_state"
-    code: Callable[[State, int], z3.BoolRef]
+    code: Callable[[State, int], z3.BoolRef] = PrivateAttr()
 
 
 class CustomTransitionConstraint(BaseModel):
@@ -116,49 +119,26 @@ class CustomTransitionConstraint(BaseModel):
     (which contains both the starting and ending states as well as metadata about the gadget)
     and return a Z3 boolean expression, with False indicating the constraint is not satisfied.
 
+    This type of constraint _cannot_ be produced by deserializing a pydantic model
+    or JSON schema, as it requires a callable. It can only be constructed
+    programmatically by giving an actual handle to the python function to be invoked.
+
     Attributes:
         type (Literal["custom_transition"]): Discriminator for this constraint type.
-        code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
+        _code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
     """
 
     type: Literal["custom_transition"] = "custom_transition"
-    code: Callable[[ModeledBlock], z3.BoolRef]
+    _code: Callable[[ModeledBlock], z3.BoolRef] = PrivateAttr()
 
 
 StateConstraint = Annotated[Union[
     MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(
     discriminator='type')]
+
 TransitionConstraint = Annotated[
     Union[PointerRange, CustomTransitionConstraint], Field(
         discriminator='type')]
-
-
-def state_constraint_json_schema(cls,
-                                 handler: GetJsonSchemaHandler) -> JsonSchemaValue:
-    allowed_types = [MemoryValuation, RegisterValuation,
-                     RegisterStringValuation]
-    schemas = [handler.resolve_schema(type_) for type_ in allowed_types]
-    return {
-        "anyOf": schemas,
-        "discriminator": {"propertyName": "type"}
-    }
-
-
-def transition_constraint_json_schema(cls,
-                                      handler: GetJsonSchemaHandler) -> JsonSchemaValue:
-    allowed_types = [PointerRange]
-    schemas = [handler.resolve_schema(type_) for type_ in allowed_types]
-    return {
-        "anyOf": schemas,
-        "discriminator": {"propertyName": "type"}
-    }
-
-
-StateConstraint.__get_pydantic_json_schema__ = classmethod(
-    state_constraint_json_schema)
-TransitionConstraint.__get_pydantic_json_schema__ = classmethod(
-    transition_constraint_json_schema)
-
 
 class ConstraintConfig(BaseModel):
     """
@@ -175,7 +155,7 @@ class ConstraintConfig(BaseModel):
     transition: list[TransitionConstraint] | None = None
 
     @field_serializer('precondition', 'postcondition')
-    def serialize_preconditions(value, _info):
+    def serialize_state_constraints(value, _info):
         filtered = [v for v in value or [] if
                     getattr(v, 'type', None) != 'custom_state']
         memory_vals = [v for v in filtered if isinstance(v, MemoryValuation)]
