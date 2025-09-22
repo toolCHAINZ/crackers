@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class LogLevel(Enum):
     """
     Represents the available logging levels for the application.
@@ -11,6 +12,7 @@ class LogLevel(Enum):
         ERROR: Due to a more serious problem, the software has not been able to perform some function.
         CRITICAL: A serious error, indicating that the program itself may be unable to continue running.
     """
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"

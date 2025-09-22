@@ -7,9 +7,6 @@ from pydantic import BaseModel, Field, field_serializer, PrivateAttr
 from crackers.crackers import StateEqualityConstraint
 from crackers.jingle import State, ModeledBlock
 
-# Override JSON schema generation to exclude custom constraints
-from pydantic import GetJsonSchemaHandler
-from pydantic.json_schema import JsonSchemaValue
 
 class MemoryValuation(BaseModel):
     """
@@ -88,18 +85,14 @@ class PointerRange(BaseModel):
 class CustomStateConstraint(BaseModel):
     """
     Custom constraint on a state, defined by a callable.
-    This should be used if the other constraint variants are unable to
-    encode the desired constraint. State constraints can be used
-    as either a precondition constraint (applied to the initial state before ROP)
-    or a postcondition constraint (applied to the final state of the ROP).
-    State constraints are applied to either the first or final state of a given gadget.
-    They take in a symbolic State and an optional second argument representing
-    the address of the gadget in memory. They must return a Z3 boolean expression,
-    with False indicating the constraint is not satisfied.
 
-    This type of constraint _cannot_ be produced by deserializing a pydantic model
-    or JSON schema, as it requires a callable. It can only be constructed
-    programmatically by giving an actual handle to the python function to be invoked.
+    This constraint type is used when other constraint variants cannot encode the desired logic. State constraints can be applied as either preconditions (to the initial state before ROP) or postconditions (to the final state after ROP). They are applied to the first or final state of a given gadget.
+
+    The callable provided must accept a symbolic `State` and an optional integer representing the address of the gadget in memory, and must return a `z3.BoolRef` (with `False` indicating the constraint is not satisfied).
+
+    Note:
+        - This constraint cannot be produced by deserializing a Pydantic model or JSON schema, as it requires a Python callable.
+        - It must be constructed programmatically using `CustomStateConstraint.from_callable`.
 
     Attributes:
         type (Literal["custom_state"]): Discriminator for this constraint type.
@@ -118,16 +111,19 @@ class CustomStateConstraint(BaseModel):
 
 class CustomTransitionConstraint(BaseModel):
     """
-    Custom constraint on the transition, defined by a callable.
-    This should be used if the other constraint variants are unable to
-    encode the desired constraint. Transition constraints are applied
-    to every gadget in the ROP chain. They take in a symbolic ModeledBlock
-    (which contains both the starting and ending states as well as metadata about the gadget)
-    and return a Z3 boolean expression, with False indicating the constraint is not satisfied.
+    Custom constraint on a transition, defined by a callable.
 
-    This type of constraint _cannot_ be produced by deserializing a pydantic model
-    or JSON schema, as it requires a callable. It can only be constructed
-    programmatically by giving an actual handle to the python function to be invoked.
+    This constraint type is used when other constraint variants cannot encode the desired logic. T
+    ransition constraints are applied to every gadget in the ROP chain.
+    The callable must accept a symbolic `ModeledBlock`
+    (containing both the starting and ending states, as well as metadata about the gadget)
+    and an optional integer, and must return a `z3.BoolRef`
+    (with `False` indicating the constraint is not satisfied).
+
+    Note:
+        - This constraint cannot be produced by deserializing a Pydantic model or
+          JSON schema, as it requires a Python callable.
+        - It must be constructed programmatically using `CustomTransitionConstraint.from_callable`.
 
     Attributes:
         type (Literal["custom_transition"]): Discriminator for this constraint type.
@@ -144,13 +140,20 @@ class CustomTransitionConstraint(BaseModel):
         return obj
 
 
-StateConstraint = Annotated[Union[
-    MemoryValuation, RegisterValuation, RegisterStringValuation, CustomStateConstraint], Field(
-    discriminator='type')]
+StateConstraint = Annotated[
+    Union[
+        MemoryValuation,
+        RegisterValuation,
+        RegisterStringValuation,
+        CustomStateConstraint,
+    ],
+    Field(discriminator="type"),
+]
 
 TransitionConstraint = Annotated[
-    Union[PointerRange, CustomTransitionConstraint], Field(
-        discriminator='type')]
+    Union[PointerRange, CustomTransitionConstraint], Field(discriminator="type")
+]
+
 
 class ConstraintConfig(BaseModel):
     """
@@ -166,34 +169,42 @@ class ConstraintConfig(BaseModel):
     postcondition: list[StateConstraint] | None = None
     transition: list[TransitionConstraint] | None = None
 
-    @field_serializer('precondition', 'postcondition')
+    @field_serializer("precondition", "postcondition")
     def serialize_state_constraints(value, _info):
-        filtered = [v for v in value or [] if
-                    getattr(v, 'type', None) != 'custom_state']
+        filtered = [
+            v for v in value or [] if getattr(v, "type", None) != "custom_state"
+        ]
         memory_vals = [v for v in filtered if isinstance(v, MemoryValuation)]
         memory_dict = None
         if memory_vals:
             if len(memory_vals) > 1:
                 import warnings
+
                 warnings.warn(
-                    "Multiple memory constraints found; only the first will be serialized.")
+                    "Multiple memory constraints found; only the first will be serialized."
+                )
             mem = memory_vals[0]
             memory_dict = {
-                'space': mem.space,
-                'address': mem.address,
-                'size': mem.size,
-                'value': mem.value
+                "space": mem.space,
+                "address": mem.address,
+                "size": mem.size,
+                "value": mem.value,
             }
         transformed: StateEqualityConstraint = {
-            'register': {v.name: v.value for v in filtered if
-                         isinstance(v, RegisterValuation)},
-            'memory': memory_dict,
-            'pointer': {v.reg: v.value for v in filtered if
-                        isinstance(v, RegisterStringValuation)},
+            "register": {
+                v.name: v.value for v in filtered if isinstance(v, RegisterValuation)
+            },
+            "memory": memory_dict,
+            "pointer": {
+                v.reg: v.value
+                for v in filtered
+                if isinstance(v, RegisterStringValuation)
+            },
         }
         return transformed
 
-    @field_serializer('transition')
+    @field_serializer("transition")
     def skip_custom_transition_constraints(value, _info):
-        return [v for v in value or [] if
-                getattr(v, 'type', None) != 'custom_transition']
+        return [
+            v for v in value or [] if getattr(v, "type", None) != "custom_transition"
+        ]

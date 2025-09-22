@@ -7,6 +7,7 @@ from crackers.config.specification import ReferenceProgramConfig
 from crackers.config.synthesis import SynthesisConfig
 from crackers import _internal
 
+
 class CrackersConfig(BaseModel):
     """
     Top-level configuration for the Crackers application.
@@ -19,6 +20,7 @@ class CrackersConfig(BaseModel):
         synthesis (SynthesisConfig): Synthesis algorithm configuration.
         constraint (ConstraintConfig): Constraints for synthesis.
     """
+
     meta: MetaConfig
     library: LibraryConfig
     sleigh: SleighConfig
@@ -36,17 +38,23 @@ class CrackersConfig(BaseModel):
         postcondition_state_constraints = []
         if self.constraint.precondition:
             precondition_state_constraints = [
-                c for c in self.constraint.precondition if getattr(c, 'type', None) == 'custom_state'
+                c
+                for c in self.constraint.precondition
+                if getattr(c, "type", None) == "custom_state"
             ]
         if self.constraint.postcondition:
             postcondition_state_constraints = [
-                c for c in self.constraint.postcondition if getattr(c, 'type', None) == 'custom_state'
+                c
+                for c in self.constraint.postcondition
+                if getattr(c, "type", None) == "custom_state"
             ]
 
         custom_transition_constraints = []
         if self.constraint.transition:
             custom_transition_constraints = [
-                c for c in self.constraint.transition if getattr(c, 'type', None) == 'custom_transition'
+                c
+                for c in self.constraint.transition
+                if getattr(c, "type", None) == "custom_transition"
             ]
 
         for c in precondition_state_constraints:
