@@ -13,6 +13,12 @@ use lazy_static::lazy_static;
 use pyo3::{Py, PyAny, PyResult, Python, pyclass, pymethods};
 use std::sync::{Arc, Mutex};
 use z3::ast::Bool;
+use tracing::{Event, Level, Subscriber};
+use tracing_subscriber::layer::{Context, Layer};
+use tracing_subscriber::Registry;
+use tracing_subscriber::prelude::*;
+use pyo3::types::PyModule;
+use pyo3::types::PyAnyMethods;
 
 lazy_static! {
     static ref MUTEX: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
@@ -27,6 +33,32 @@ pub struct PythonSynthesisParams {
 #[pymethods]
 impl PythonSynthesisParams {
     pub fn run(&self) -> PyResult<PythonDecisionResult> {
+        // Register tracing to Python logging
+        struct PythonLoggerLayer;
+        impl<S> Layer<S> for PythonLoggerLayer
+        where
+            S: Subscriber,
+        {
+            fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
+                Python::attach(|py| {
+                    if let Ok(logging) = PyModule::import(py, "logging") {
+                        let level = event.metadata().level();
+                        let msg = format!("{:?}", event);
+                        let py_level = match *level {
+                            Level::ERROR => "error",
+                            Level::WARN => "warning",
+                            Level::INFO => "info",
+                            Level::DEBUG => "debug",
+                            Level::TRACE => "debug",
+                        };
+                        let _ = logging.call_method1(py_level, (msg,));
+                    }
+                });
+            }
+        }
+        let subscriber = Registry::default().with(PythonLoggerLayer);
+        let _ = tracing::subscriber::set_global_default(subscriber);
+
         let res = Python::attach(|py| {
             py.detach(|| match self.inner.combine_instructions {
                 false => self.inner.build_single()?.decide(),

@@ -128,8 +128,8 @@ DecisionResultType = Union[
     "PythonDecisionResult_AssignmentFound", "PythonDecisionResult_Unsat"
 ]
 
-StateConstraintGenerator = Callable[[State, int], z3.BitVecRef]
-TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BitVecRef]
+StateConstraintGenerator = Callable[[State, int], z3.BoolRef]
+TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BoolRef]
 
 class SynthesisParams:
     def run(self) -> "DecisionResultType": ...

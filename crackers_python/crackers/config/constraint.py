@@ -138,19 +138,28 @@ class ConstraintConfig(BaseModel):
     postcondition: list[StateConstraint] | None = None
     transition: list[TransitionConstraint] | None = None
 
-    @field_serializer('precondition')
-    def seralize_preconditions(value, _info):
+    @field_serializer('precondition', 'postcondition')
+    def serialize_preconditions(value, _info):
         filtered = [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+        memory_vals = [v for v in filtered if isinstance(v, MemoryValuation)]
+        memory_dict = None
+        if memory_vals:
+            if len(memory_vals) > 1:
+                import warnings
+                warnings.warn("Multiple memory constraints found; only the first will be serialized.")
+            mem = memory_vals[0]
+            memory_dict = {
+                'space': mem.space,
+                'address': mem.address,
+                'size': mem.size,
+                'value': mem.value
+            }
         transformed: StateEqualityConstraint = {
             'register': {v.name: v.value for v in filtered if isinstance(v, RegisterValuation)},
-            'memory': [(v.space, v.address, v.size, v.value) for v in filtered if isinstance(v, MemoryValuation)],
+            'memory': memory_dict,
             'pointer': {v.reg: v.value for v in filtered if isinstance(v, RegisterStringValuation)},
         }
         return transformed
-
-    @field_serializer('postcondition')
-    def skip_custom_state_constraints_post(value, _info):
-        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
 
     @field_serializer('transition')
     def skip_custom_transition_constraints(value, _info):

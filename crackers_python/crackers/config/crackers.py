@@ -1,5 +1,5 @@
 import json
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from crackers.config.constraint import ConstraintConfig
 from crackers.config.library import LibraryConfig
 from crackers.config.meta import MetaConfig
@@ -16,19 +16,50 @@ class CrackersConfig(BaseModel):
         meta (MetaConfig): Metadata configuration.
         library (LibraryConfig): Binary library configuration.
         sleigh (SleighConfig): Sleigh decompiler configuration.
-        reference_program (ReferenceProgramConfig): Reference program configuration.
+        specification (ReferenceProgramConfig): Reference program configuration.
         synthesis (SynthesisConfig): Synthesis algorithm configuration.
         constraint (ConstraintConfig): Constraints for synthesis.
     """
     meta: MetaConfig
     library: LibraryConfig
     sleigh: SleighConfig
-    reference_program: ReferenceProgramConfig
+    specification: ReferenceProgramConfig
     synthesis: SynthesisConfig
     constraint: ConstraintConfig
 
     def run(self):
         j = self.model_dump_json(indent=2)
-        print(j, )
-        _internal.crackers.CrackersConfig.from_json(j)
+        print(j)
+        config = _internal.crackers.CrackersConfig.from_json(j)
+        resolved = config.resolve_config()
 
+        # Separate custom state constraints into precondition and postcondition
+        precondition_state_constraints = []
+        postcondition_state_constraints = []
+        if self.constraint.precondition:
+            precondition_state_constraints = [
+                c for c in self.constraint.precondition if getattr(c, 'type', None) == 'custom_state'
+            ]
+        if self.constraint.postcondition:
+            postcondition_state_constraints = [
+                c for c in self.constraint.postcondition if getattr(c, 'type', None) == 'custom_state'
+            ]
+
+        custom_transition_constraints = []
+        if self.constraint.transition:
+            custom_transition_constraints = [
+                c for c in self.constraint.transition if getattr(c, 'type', None) == 'custom_transition'
+            ]
+
+        print("Precondition State Constraints:", precondition_state_constraints)
+        print("Postcondition State Constraints:", postcondition_state_constraints)
+        print("Custom Transition Constraints:", custom_transition_constraints)
+        # TODO: If the Rust-native config supports adding these, do so here
+        for c in precondition_state_constraints:
+            resolved.add_precondition(c.code)
+        for c in postcondition_state_constraints:
+            resolved.add_postcondition(c.code)
+        for c in custom_transition_constraints:
+            resolved.add_transition_constraint(c.code)
+
+        print(resolved.run())
