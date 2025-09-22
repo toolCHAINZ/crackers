@@ -12,8 +12,13 @@ class LogLevel(Enum):
         ERROR: Due to a more serious problem, the software has not been able to perform some function.
         CRITICAL: A serious error, indicating that the program itself may be unable to continue running.
     """
-    DEBUG = logging.DEBUG
-    INFO = logging.INFO
-    WARNING = logging.WARNING
-    ERROR = logging.ERROR
-    CRITICAL = logging.CRITICAL
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+    def __str__(self):
+        return self.value
+
+    def __json__(self):
+        return self.value

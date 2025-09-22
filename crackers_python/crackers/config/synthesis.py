@@ -12,8 +12,8 @@ class SynthesisStrategy(str, Enum):
         Optimize: Uses an alternative encoding that biases the algorithm to select shorter gadgets, which may negatively impact synthesis performance.
     """
 
-    Sat = "sat"
-    Optimize = "optimize"
+    SAT = "sat"
+    OPTIMIZE = "optimize"
 
 
 class SynthesisConfig(BaseModel):

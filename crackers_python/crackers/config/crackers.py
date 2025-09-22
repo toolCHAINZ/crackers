@@ -6,6 +6,7 @@ from crackers.config.meta import MetaConfig
 from crackers.config.sleigh import SleighConfig
 from crackers.config.specification import ReferenceProgramConfig
 from crackers.config.synthesis import SynthesisConfig
+from crackers import _internal
 
 class CrackersConfig(BaseModel):
     """
@@ -15,24 +16,19 @@ class CrackersConfig(BaseModel):
         meta (MetaConfig): Metadata configuration.
         library (LibraryConfig): Binary library configuration.
         sleigh (SleighConfig): Sleigh decompiler configuration.
-        specification (ReferenceProgramConfig): Reference program configuration.
+        reference_program (ReferenceProgramConfig): Reference program configuration.
         synthesis (SynthesisConfig): Synthesis algorithm configuration.
         constraint (ConstraintConfig): Constraints for synthesis.
     """
     meta: MetaConfig
     library: LibraryConfig
     sleigh: SleighConfig
-    specification: ReferenceProgramConfig
+    reference_program: ReferenceProgramConfig
     synthesis: SynthesisConfig
     constraint: ConstraintConfig
 
-    def translate(self):
-        j = self.model_dump()
-        if self.constraint.precondition is not None:
-            precondition_fixup = self.constraint.precondition.fixup()
-            j["constraint"]["precondition"] = precondition_fixup
-        if self.constraint.postcondition is not None:
-            postcondition_fixup = self.constraint.postcondition.fixup()
-            j["constraint"]["postcondition"] = postcondition_fixup
-        return CrackersConfig.from_json(json.dumps(j))
+    def run(self):
+        j = self.model_dump_json(indent=2)
+        print(j, )
+        _internal.crackers.CrackersConfig.from_json(j)
 

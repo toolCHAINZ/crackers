@@ -15,3 +15,9 @@ class MetaConfig(BaseModel):
 
     log_level: LogLevel
     seed: int
+
+    model_config = {
+        "json_encoders": {
+            LogLevel: lambda v: v.value
+        }
+    }

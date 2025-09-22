@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Literal, Callable, Annotated, Union
 
 import z3
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from crackers.jingle_types import State, ModeledBlock
 
@@ -19,7 +19,7 @@ class MemoryValuation(BaseModel):
         value (int): The value to set them to; must be a 1-byte value.
     """
 
-    type: Literal["memory"]
+    type: Literal["memory"] = "memory"
     space: str
     address: int
     size: int
@@ -36,7 +36,7 @@ class RegisterValuation(BaseModel):
         value (int): The value to set the register to.
     """
 
-    type: Literal["register_value"]
+    type: Literal["register_value"] = "register_value"
     name: str
     value: int
 
@@ -52,7 +52,7 @@ class RegisterStringValuation(BaseModel):
         value (str): The string value the register encodes a pointer to.
     """
 
-    type: Literal["register_string"]
+    type: Literal["register_string"] = "register_string"
     reg: str
     value: str
 
@@ -75,7 +75,7 @@ class PointerRange(BaseModel):
         max (int): Maximum address in the range.
     """
 
-    type: Literal["pointer_range"]
+    type: Literal["pointer_range"] = "pointer_range"
     role: PointerRangeRole
     min: int
     max: int
@@ -98,7 +98,7 @@ class CustomStateConstraint(BaseModel):
         code (Callable[[State, int], z3.BoolRef]): Function that generates a z3 constraint for the state.
     """
 
-    type: Literal["custom_state"]
+    type: Literal["custom_state"] = "custom_state"
     code: Callable[[State, int], z3.BoolRef]
 
 
@@ -116,7 +116,7 @@ class CustomTransitionConstraint(BaseModel):
         code (Callable[[ModeledBlock, int], z3.BoolRef]): Function that generates a z3 constraint for the transition.
     """
 
-    type: Literal["custom_transition"]
+    type: Literal["custom_transition"] = "custom_transition"
     code: Callable[[ModeledBlock, int], z3.BoolRef]
 
 
@@ -133,6 +133,18 @@ class ConstraintConfig(BaseModel):
         transition (list[TransitionConstraint] | None): Constraints on the transitions between states.
     """
 
-    precondition: list[StateConstraint] | None
-    postcondition: list[StateConstraint] | None
-    transition: list[TransitionConstraint] | None
+    precondition: list[StateConstraint] | None = None
+    postcondition: list[StateConstraint] | None = None
+    transition: list[TransitionConstraint] | None = None
+
+    @field_serializer('precondition')
+    def skip_custom_state_constraints(value, _info):
+        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+
+    @field_serializer('postcondition')
+    def skip_custom_state_constraints_post(value, _info):
+        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_state']
+
+    @field_serializer('transition')
+    def skip_custom_transition_constraints(value, _info):
+        return [v for v in value or [] if getattr(v, 'type', None) != 'custom_transition']

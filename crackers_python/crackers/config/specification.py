@@ -15,4 +15,4 @@ class ReferenceProgramConfig(BaseModel):
 
     path: str
     max_instructions: int
-    base_address: int
+    base_address: int | None

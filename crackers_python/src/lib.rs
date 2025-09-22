@@ -39,6 +39,7 @@ fn jingle(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 #[pymodule]
+#[pyo3(submodule)]
 fn crackers(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PythonCrackersConfig>()?;
     m.add_class::<PythonDecisionResult>()?;
@@ -68,5 +69,14 @@ fn _internal(m: &Bound<'_, PyModule>) -> PyResult<()> {
     let c = PyModule::new(m.py(), "crackers")?;
     crackers(&c)?;
     m.add_submodule(&c)?;
+    Python::attach(|py| {
+        py.import("sys")?
+            .getattr("modules")?
+            .set_item("_internal.jingle", j)?;
+        py.import("sys")?
+            .getattr("modules")?
+            .set_item("_internal.crackers", c)
+    })?;
+
     Ok(())
 }

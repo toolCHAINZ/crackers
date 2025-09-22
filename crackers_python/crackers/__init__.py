@@ -1,6 +1,5 @@
 from z3 import z3  # necessary to ensure z3 is loaded on macOS # noqa
-from . import _internal
+from ._internal import jingle, crackers
 
-State = _internal.jingle.State
-print(dir(_internal.jingle))
-ResolvedVarNode = _internal.jingle.ResolvedVarNode
+State = jingle.State
+ResolvedVarNode = jingle.ResolvedVarNode
