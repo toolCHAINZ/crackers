@@ -1,5 +1,5 @@
 from typing import Optional, Union, Callable, Iterable
-from .jingle_types import State, ModeledBlock, ResolvedVarNode
+from .jingle import State, ModeledBlock, ResolvedVarNode
 from z3 import z3  # type: ignore
 
 __all__ = [

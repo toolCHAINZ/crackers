@@ -5,7 +5,7 @@ import z3
 from pydantic import BaseModel, Field, field_serializer
 
 from crackers.crackers import StateEqualityConstraint
-from crackers.jingle_types import State, ModeledBlock
+from crackers.jingle import State, ModeledBlock
 
 
 class MemoryValuation(BaseModel):

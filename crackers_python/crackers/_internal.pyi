@@ -1,4 +1,4 @@
-from .crackers_types import (
+from .crackers import (
     AssignmentModel,
     ConstraintConfig,
     CrackersConfig,
@@ -16,7 +16,7 @@ from .crackers_types import (
     SynthesisParams,
     SynthesisSelectionStrategy,
 )
-from .jingle_types import (
+from .jingle import (
     Instruction,
     ModeledBlock,
     ModeledInstruction,
