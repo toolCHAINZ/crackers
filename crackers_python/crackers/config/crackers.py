@@ -1,7 +1,5 @@
 import json
-
 from pydantic import BaseModel
-
 from crackers.config.constraint import ConstraintConfig
 from crackers.config.library import LibraryConfig
 from crackers.config.meta import MetaConfig
@@ -9,8 +7,18 @@ from crackers.config.sleigh import SleighConfig
 from crackers.config.specification import ReferenceProgramConfig
 from crackers.config.synthesis import SynthesisConfig
 
-
 class CrackersConfig(BaseModel):
+    """
+    Top-level configuration for the Crackers application.
+
+    Attributes:
+        meta (MetaConfig): Metadata configuration.
+        library (LibraryConfig): Binary library configuration.
+        sleigh (SleighConfig): Sleigh decompiler configuration.
+        specification (ReferenceProgramConfig): Reference program configuration.
+        synthesis (SynthesisConfig): Synthesis algorithm configuration.
+        constraint (ConstraintConfig): Constraints for synthesis.
+    """
     meta: MetaConfig
     library: LibraryConfig
     sleigh: SleighConfig
@@ -27,3 +35,4 @@ class CrackersConfig(BaseModel):
             postcondition_fixup = self.constraint.postcondition.fixup()
             j["constraint"]["postcondition"] = postcondition_fixup
         return CrackersConfig.from_json(json.dumps(j))
+
