@@ -1,5 +1,3 @@
-import sys
-import os
 import sysconfig
 
 # Get the virtual environment's lib directory
