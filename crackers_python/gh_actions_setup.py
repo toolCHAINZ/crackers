@@ -50,8 +50,8 @@ def write_env_file(z3_header_path, z3_lib_path):
         f.write(
             f"export RUSTFLAGS='-L native={z3_lib_path} -C link-arg=-Wl,-rpath,$ORIGIN/../z3/lib'"
         )
-    print(f"\n✅ Z3 environment variables written to `{ENV_FILE}`.")
-    print(f"👉 To load them into your shell, run:\n")
+    print("\n✅ Z3 environment variables written to `{ENV_FILE}`.")
+    print("👉 To load them into your shell, run:\n")
     print(f"    source ./{ENV_FILE}\n")
 
 

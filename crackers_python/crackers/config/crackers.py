@@ -1,5 +1,4 @@
-import json
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from crackers.config.constraint import ConstraintConfig
 from crackers.config.library import LibraryConfig
 from crackers.config.meta import MetaConfig
