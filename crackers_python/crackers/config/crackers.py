@@ -1,6 +1,9 @@
 from pydantic import BaseModel
-from crackers.config.constraint import ConstraintConfig, CustomStateConstraint, \
-    CustomTransitionConstraint
+from crackers.config.constraint import (
+    ConstraintConfig,
+    CustomStateConstraint,
+    CustomTransitionConstraint,
+)
 from crackers.config.library import LibraryConfig
 from crackers.config.meta import MetaConfig
 from crackers.config.sleigh import SleighConfig
