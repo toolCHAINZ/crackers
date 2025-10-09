@@ -189,10 +189,17 @@ class ConstraintConfig(BaseModel):
                 "size": mem.size,
                 "value": mem.value,
             }
+        register_valuations = [v for v in filtered if isinstance(v, RegisterValuation)]
+        if register_valuations:
+            keys = [reg.name for reg in register_valuations]
+            if len(keys) > len(set(keys)):
+                import warnings
+
+                warnings.warn(
+                    "Multiple register valuation constraints found for a single register; only the last will be serialized."
+                )
         transformed = {
-            "register": {
-                v.name: v.value for v in filtered if isinstance(v, RegisterValuation)
-            },
+            "register": {v.name: v.value for v in register_valuations},
             "memory": memory_dict,
             "pointer": {
                 v.reg: v.value
