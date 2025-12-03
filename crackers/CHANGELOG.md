@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.6.3...crackers-v0.6.4) - 2025-12-03
+
+### Fixed
+
+- prevent unnecessary pyo3 build step and fix cargo workspace build ([#85](https://github.com/toolCHAINZ/crackers/pull/85))
+
+### Other
+
+- Revise BibTeX citation in PYTHON_README.md ([#88](https://github.com/toolCHAINZ/crackers/pull/88))
+- Update BibTeX citation in README.md ([#87](https://github.com/toolCHAINZ/crackers/pull/87))
+
 ## [0.6.3](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.6.2...crackers-v0.6.3) - 2025-10-09
 
 ## [0.6.2](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.6.1...crackers-v0.6.2) - 2025-09-26
