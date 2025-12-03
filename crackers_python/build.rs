@@ -17,6 +17,19 @@ fn main() {
             std::env::set_var("Z3_PATH", z3_python_lib);
         }
     }
+
+    // For pyo3 extension-modules on macOS, allow undefined symbols to be resolved
+    // dynamically by the Python interpreter at load time. This avoids linker errors
+    // when building a cdylib that depends on the Python C API (pyo3).
+    //
+    // We only add these flags on macOS to avoid affecting other platforms.
+    if cfg!(target_os = "macos") {
+        // Preferred form for passing to the linker; some toolchains accept either
+        // -Wl,-undefined,dynamic_lookup or two separate args. Using -Wl,... is more
+        // explicit and portable across macOS linker invocations.
+        println!("cargo:rustc-link-arg=-Wl,-undefined,dynamic_lookup");
+    }
+
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=Z3_PATH")
 }

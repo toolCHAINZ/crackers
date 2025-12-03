@@ -24,7 +24,7 @@ toml = ["dep:toml_edit"]
 z3-gh-release = ["z3/gh-release"]
 
 [dependencies]
-jingle = { version = "0.3.2", features = ["gimli"] }
+jingle = { version = "0.3.6", features = ["gimli"] }
 z3 = "0.19.0"
 serde = { version = "1.0.203", features = ["derive"] }
 thiserror = "2.0"
@@ -38,4 +38,4 @@ rand = "0.9.2"
 derive_builder = "0.20"
 anyhow = { version = "1.0", optional = true }
 tracing-indicatif = { version = "0.3", optional = true }
-pyo3 = { version = "0", optional = true }
+pyo3 = { version = "0.27.2", optional = true, default-features = false, features = ["macros"] }

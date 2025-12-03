@@ -6,13 +6,13 @@ edition = "2024"
 description = "pyo3 bindings for crackers"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "crackers"
+name = "crackers_python"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26", features = ["extension-module", "py-clone"] }
+pyo3 = { version = "0.27.2", features = ["extension-module", "py-clone"] }
 crackers = {path = "../crackers", features = ["pyo3"], version = "0.6.3" }
-jingle = { version = "0.3.2", features = ["pyo3"]}
+jingle = { version = "0.3.6", features = ["pyo3"]}
 toml_edit = { version = "0.23.4", features = ["serde"] }
 z3 = "0.19.0"
 serde_json = "1.0.140"

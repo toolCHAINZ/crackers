@@ -18,7 +18,7 @@ For more details, please refer to the [GitHub project](https://github.com/toolCH
 
 [![PyPI](https://img.shields.io/pypi/v/crackers)](https://pypi.org/project/crackers/)
 
-The easiest way to use `crackers` is through the [PyPI](https://pypi.org/project/crackers/) package. For every release, we provide wheels for `[MacOS, Windows, Linux] x [3.10, 3.11, 3.12, 3.13]`.
+The easiest way to use `crackers` is through the [PyPI](https://pypi.org/project/crackers/) package. For every release, we provide wheels for `[MacOS, Windows, Linux] x [3.11, 3.12, 3.13, 3.14]`.
 
 A simple usage looks like the following:
 
