@@ -6,7 +6,7 @@ edition = "2024"
 description = "pyo3 bindings for crackers"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "crackers"
+name = "crackers_python"
 crate-type = ["cdylib"]
 
 [dependencies]
