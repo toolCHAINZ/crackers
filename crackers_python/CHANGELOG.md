@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.2...crackers_python-v0.6.3) - 2025-10-09
+
+### Added
+
+- warn on duplicate register constraint ([#82](https://github.com/toolCHAINZ/crackers/pull/82))
+
 ## [0.6.2](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.1...crackers_python-v0.6.2) - 2025-09-26
 
 ### Added
