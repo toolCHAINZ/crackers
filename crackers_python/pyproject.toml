@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "maturin>=1.8,<2.0",
-    "z3-solver==4.15.3.0",
+    "z3-solver==4.15.4.0",
 
 ]
 build-backend = "maturin"

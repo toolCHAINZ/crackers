@@ -14,15 +14,22 @@ use crate::config::sleigh::SleighConfig;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "pyo3", pyclass(get_all, set_all))]
-pub struct SpecificationConfig {
+pub struct BinaryFileSpecification {
     pub path: String,
     pub max_instructions: usize,
     pub base_address: Option<u64>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "pyo3", pyclass)]
+pub enum SpecificationConfig {
+    BinaryFile(BinaryFileSpecification),
+    RawPcode(String),
+}
+
 #[cfg(feature = "pyo3")]
 #[pymethods]
-impl SpecificationConfig {
+impl BinaryFileSpecification {
     #[new]
     fn new(path: String, max_instructions: usize, base_address: Option<u64>) -> Self {
         Self {
@@ -63,7 +70,7 @@ impl SpecificationConfig {
     }
 }
 
-impl SpecificationConfig {
+impl BinaryFileSpecification {
     fn load_sleigh<'a>(
         &self,
         sleigh_config: &'a SleighConfig,

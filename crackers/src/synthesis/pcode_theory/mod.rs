@@ -11,7 +11,7 @@ use conflict_clause::ConflictClause;
 
 use crate::error::CrackersError;
 use crate::error::CrackersError::TheoryTimeout;
-use crate::reference_program::MemoryValuation;
+use crate::reference_program::valuation::MemoryValuation;
 use crate::synthesis::Decision;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 use crate::synthesis::pcode_theory::pcode_assignment::{

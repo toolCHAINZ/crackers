@@ -19,6 +19,7 @@ pub mod image;
 pub struct GadgetLibrary {
     pub(crate) gadgets: Vec<Gadget>,
     arch_info: SleighArchInfo,
+    pub(crate) language_id: String,
 }
 
 impl AsRef<SleighArchInfo> for GadgetLibrary {
@@ -52,6 +53,7 @@ impl GadgetLibrary {
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
             arch_info: sleigh.arch_info().clone(),
+            language_id: sleigh.get_language_id().to_string(),
         };
         event!(Level::INFO, "Loading gadgets from sleigh");
         for section in sleigh.get_sections().filter(|s| s.perms.exec) {
