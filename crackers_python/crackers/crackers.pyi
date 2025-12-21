@@ -1,6 +1,8 @@
-from typing import Optional, Union, Callable, Iterable
-from .jingle import State, ModeledBlock, ResolvedVarNode
+from typing import Callable, Iterable, Optional, Union
+
 from z3 import z3  # type: ignore
+
+from .jingle import ModeledBlock, ResolvedVarNode, State
 
 __all__ = [
     "AssignmentModel",
@@ -89,10 +91,27 @@ class PointerRangeConstraints:
 class SleighConfig:
     ghidra_path: str
 
-class SpecificationConfig:
+# New: represent the two possible shapes of the specification
+class BinaryFileSpecification:
+    """
+    Represents the binary-file variant of the specification.
+    Mirrors the Rust `BinaryFileSpecification` shape.
+    """
+
     path: str
     max_instructions: int
     base_address: Optional[int]
+
+class RawPcodeSpecification:
+    """
+    Represents the raw p-code variant of the specification.
+    Mirrors the Rust `SpecificationConfig::RawPcode(String)` variant.
+    """
+
+    raw_pcode: str
+
+# SpecificationConfig is now a discriminated union of the two variants above.
+SpecificationConfig = Union[BinaryFileSpecification, RawPcodeSpecification]
 
 class StateEqualityConstraint:
     register: Optional[dict[str, int]]

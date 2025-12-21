@@ -5,7 +5,7 @@ use z3::ast::Bool;
 use z3::{SatResult, Solver};
 
 use crate::error::CrackersError;
-use crate::reference_program::MemoryValuation;
+use crate::reference_program::valuation::MemoryValuation;
 use crate::synthesis::assignment_model::AssignmentModel;
 use crate::synthesis::builder::{StateConstraintGenerator, TransitionConstraintGenerator};
 

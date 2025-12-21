@@ -44,12 +44,7 @@ impl AssignmentModelBuilder {
             .map(|i| i.model(jingle).map_err(CrackersError::from))
             .collect();
         let modeled_spec = modeled_spec?;
-        let modeled_gadgets: Result<_, _> = self
-            .gadgets
-            .iter()
-            .cloned()
-            .map(|i| i.model(jingle))
-            .collect();
+        let modeled_gadgets: Result<_, _> = self.gadgets.iter().map(|i| i.model(jingle)).collect();
         let modeled_gadgets = modeled_gadgets?;
         Ok(PcodeAssignment::new(
             self.templates.initial_memory().clone(),

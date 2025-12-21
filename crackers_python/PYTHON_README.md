@@ -33,24 +33,26 @@ logging.basicConfig(level=logging.INFO)
 from z3 import BoolRef, BoolVal, simplify
 
 from crackers.config import (
-    MetaConfig,
-    LibraryConfig,
-    SleighConfig,
-    ReferenceProgramConfig,
-    SynthesisConfig,
+    BinaryFileSpecification,
     ConstraintConfig,
     CrackersConfig,
+    LibraryConfig,
+    MetaConfig,
+    ReferenceProgramConfig,
+    SleighConfig,
+    SynthesisConfig,
 )
 from crackers.config.constraint import (
-    RegisterValuation,
-    RegisterStringValuation,
-    MemoryValuation,
-    PointerRange,
     CustomStateConstraint,
     CustomTransitionConstraint,
+    MemoryValuation,
+    PointerRange,
     PointerRangeRole,
+    RegisterStringValuation,
+    RegisterValuation,
 )
 from crackers.config.log_level import LogLevel
+from crackers.config.specification import BinaryFileSpecification, RawPcodeSpecification
 from crackers.config.synthesis import SynthesisStrategy
 
 
@@ -67,14 +69,17 @@ def my_transition_constraint(block: ModeledBlock) -> BoolRef:
     return BoolVal(True)
 
 
-meta = MetaConfig(log_level=LogLevel.INFO, seed=42)
+pcode = """
+RBX = COPY 0x1337:8
+BRANCH *[ram]0xdeadbeef:8
+"""
+
+meta = MetaConfig(log_level=LogLevel.DEBUG, seed=42)
 library = LibraryConfig(
-    max_gadget_length=8, path="libz.so.1", sample_size=None, base_address=None
+    max_gadget_length=8, path="libnscgi.so", sample_size=None, base_address=None
 )
 sleigh = SleighConfig(ghidra_path="/Applications/ghidra")
-reference_program = ReferenceProgramConfig(
-    path="sample.o", max_instructions=8, base_address=library.base_address
-)
+reference_program = RawPcodeSpecification(raw_pcode=pcode)
 synthesis = SynthesisConfig(
     strategy=SynthesisStrategy.SAT,
     max_candidates_per_slot=200,
@@ -113,7 +118,7 @@ match r:
                 print(i.disassembly)
             print()
         for name, bv in a.input_summary(True):
-            print(f"{name} = {simplify(bv)}")
+            print(f"{name} = {hex(simplify(bv).as_long())}")
 ```
 
 # Research Paper

@@ -35,6 +35,7 @@ pub struct CrackersConfig {
 impl CrackersConfig {
     pub fn resolve(&self) -> Result<SynthesisParams, CrackersError> {
         let library = self.library.build(&self.sleigh)?;
+        let lang_id = library.language_id.clone();
         let mut b = SynthesisParamsBuilder::default();
         if let Some(c) = &self.constraint {
             b.preconditions(c.get_preconditions(&library.arch_info()).collect());
@@ -47,6 +48,7 @@ impl CrackersConfig {
                 &self.specification,
                 &self.sleigh,
                 &self.library.operation_blacklist,
+                &lang_id,
             )?);
         b.selection_strategy(self.synthesis.strategy);
         b.combine_instructions(self.synthesis.combine_instructions);

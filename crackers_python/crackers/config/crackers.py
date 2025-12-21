@@ -1,4 +1,8 @@
+import json
+
 from pydantic import BaseModel
+
+from crackers import _internal
 from crackers.config.constraint import (
     ConstraintConfig,
     CustomStateConstraint,
@@ -9,7 +13,6 @@ from crackers.config.meta import MetaConfig
 from crackers.config.sleigh import SleighConfig
 from crackers.config.specification import ReferenceProgramConfig
 from crackers.config.synthesis import SynthesisConfig
-from crackers import _internal
 from crackers.crackers import DecisionResult
 
 
@@ -34,7 +37,28 @@ class CrackersConfig(BaseModel):
     constraint: ConstraintConfig
 
     def run(self) -> DecisionResult:
-        j = self.model_dump_json()
+        # Dump to a Python dict so we can transform the `specification` into
+        # the enum-shaped representation the Rust side expects (serde enum).
+        data = self.model_dump(mode="json")
+        spec = data.get("specification")
+        if spec is not None and isinstance(spec, dict):
+            # Our Python discriminated union uses `type` == "binary" | "raw".
+            # Rust expects the enum to be represented as {"BinaryFile": {...}} or
+            # {"RawPcode": "<string>"} in the JSON that `from_json` consumes.
+            t = spec.get("type")
+            if t == "binary":
+                data["specification"] = {
+                    "BinaryFile": {
+                        "path": spec.get("path"),
+                        "max_instructions": spec.get("max_instructions"),
+                        "base_address": spec.get("base_address"),
+                    }
+                }
+            elif t == "raw":
+                data["specification"] = {"RawPcode": spec.get("raw_pcode")}
+            else:
+                raise ValueError(f"Unknown specification type: {t!r}")
+        j = json.dumps(data)
         config = _internal.crackers.CrackersConfig.from_json(j)
         resolved = config.resolve_config()
 
