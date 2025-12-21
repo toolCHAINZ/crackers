@@ -22,7 +22,7 @@ pub enum CrackersConfigError {
         "Unable to determine the architecture of the provided object file. This is a config file limitation and not a sleigh limitation."
     )]
     UnrecognizedArchitecture(String),
-    #[error("An error initializing sleigh for a file specified in the config")]
+    #[error("An error initializing sleigh for a file specified in the config: {0}")]
     Sleigh(#[from] JingleError),
 }
 
