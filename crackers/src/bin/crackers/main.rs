@@ -54,11 +54,16 @@ fn main() {
 fn new(path: PathBuf) -> anyhow::Result<()> {
     let config = CrackersConfig {
         meta: Default::default(),
-        specification: SpecificationConfig {
-            path: "spec.o".to_string(),
-            max_instructions: 1,
-            base_address: None,
-        },
+        specification: SpecificationConfig::RawPcode(
+            r"
+                MOV RDI, 0xdeadbeef:8
+                MOV RSI, 0x40:8
+                MOV RDX, 0x7b:8
+                MOV RAX, 0xfacefeed:8
+                BRANCH 0xdeadbeef:8
+                "
+            .to_string(),
+        ),
         library: Default::default(),
         sleigh: SleighConfig {
             ghidra_path: "/Applications/ghidra".to_string(),
