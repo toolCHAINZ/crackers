@@ -24,7 +24,7 @@ toml = ["dep:toml_edit"]
 z3-gh-release = ["z3/gh-release"]
 
 [dependencies]
-jingle = { version = "0.4.0", features = ["gimli"] }
+jingle = { version = "0.4.2", features = ["gimli"] }
 z3 = "0.19.0"
 serde = { version = "1.0.203", features = ["derive"] }
 thiserror = "2.0"
