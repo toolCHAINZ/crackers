@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.4...crackers_python-v0.7.0) - 2025-12-21
+
+### Added
+
+- [**breaking**] Allow providing reference programs as raw pcode ([#89](https://github.com/toolCHAINZ/crackers/pull/89))
+
+### Other
+
+- release v0.6.4 ([#86](https://github.com/toolCHAINZ/crackers/pull/86))
+
 ## [0.6.4](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.3...crackers_python-v0.6.4) - 2025-12-03
 
 ### Fixed
