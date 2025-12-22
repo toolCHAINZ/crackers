@@ -109,11 +109,11 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
         meta: Default::default(),
         specification: SpecificationConfig::RawPcode(
             r"
-              RDI = COPY 0xdeadbeef:8
-              RSI = COPY 0x40:8
-              RDX = COPY 0x7b:8
-              RAX = COPY 0xfacefeed:8
-              BRANCH 0xdeadbeef:8
+              EDI = COPY 0xdeadbeef:4
+              ESI = COPY 0x40:4
+              EDX = COPY 0x7b:4
+              EAX = COPY 0xfacefeed:4
+              BRANCH 0xdeadbeef:1
               "
             .to_string(),
         ),
@@ -129,7 +129,7 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
         },
         constraint: Some(ConstraintConfig {
             precondition: Some(StateEqualityConstraint {
-                register: Some(HashMap::from([("RSP".to_string(), 0x8000_0000)])),
+                register: Some(HashMap::from([("ESP".to_string(), 0x8000_0000)])),
                 memory: None,
                 pointer: None,
             }),
@@ -140,12 +140,12 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
             }),
             pointer: Some(PointerRangeConstraints {
                 read: Some(vec![PointerRange {
-                    max: 0x7fff_ff80,
-                    min: 0x8000_0080,
+                    min: 0x7fff_ff80,
+                    max: 0x8000_0080,
                 }]),
                 write: Some(vec![PointerRange {
-                    max: 0x7fff_ff80,
-                    min: 0x8000_0080,
+                    min: 0x7fff_ff80,
+                    max: 0x8000_0080,
                 }]),
             }),
         }),
