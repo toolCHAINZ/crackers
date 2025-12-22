@@ -9,61 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.7.0...crackers_python-v0.8.0) - 2025-12-22
 
-### Added
-
-- [**breaking**] Allow providing reference programs as raw pcode ([#89](https://github.com/toolCHAINZ/crackers/pull/89))
-- python package refactor ([#75](https://github.com/toolCHAINZ/crackers/pull/75))
-- use release-plz ([#45](https://github.com/toolCHAINZ/crackers/pull/45))
-
-### Fixed
-
-- prevent unnecessary pyo3 build step and fix cargo workspace build ([#85](https://github.com/toolCHAINZ/crackers/pull/85))
-- tweak some schemas and serializations ([#77](https://github.com/toolCHAINZ/crackers/pull/77))
-- threading changes ([#62](https://github.com/toolCHAINZ/crackers/pull/62))
-- revert to single threaded ([#61](https://github.com/toolCHAINZ/crackers/pull/61))
-- verify reference program operations against blacklist ([#51](https://github.com/toolCHAINZ/crackers/pull/51))
-
 ### Other
 
 - add GitHub PAT support for API requests in CI setup ([#94](https://github.com/toolCHAINZ/crackers/pull/94))
 - release v0.7.0 ([#90](https://github.com/toolCHAINZ/crackers/pull/90))
-- release v0.6.4 ([#86](https://github.com/toolCHAINZ/crackers/pull/86))
-- Revise BibTeX citation in PYTHON_README.md ([#88](https://github.com/toolCHAINZ/crackers/pull/88))
-- release v0.6.3 ([#84](https://github.com/toolCHAINZ/crackers/pull/84))
-- warn on duplicate register constraint ([#82](https://github.com/toolCHAINZ/crackers/pull/82))
-- release v0.6.2 ([#81](https://github.com/toolCHAINZ/crackers/pull/81))
-- bump z3 ([#80](https://github.com/toolCHAINZ/crackers/pull/80))
-- release v0.6.1 ([#78](https://github.com/toolCHAINZ/crackers/pull/78))
-- release v0.6.0 ([#73](https://github.com/toolCHAINZ/crackers/pull/73))
-- update jingle APIs ([#72](https://github.com/toolCHAINZ/crackers/pull/72))
-- release v0.5.4 ([#71](https://github.com/toolCHAINZ/crackers/pull/71))
-- bump pyo3 ([#69](https://github.com/toolCHAINZ/crackers/pull/69))
-- release v0.5.3 ([#67](https://github.com/toolCHAINZ/crackers/pull/67))
-- bump deps ([#66](https://github.com/toolCHAINZ/crackers/pull/66))
-- release v0.5.2 ([#65](https://github.com/toolCHAINZ/crackers/pull/65))
-- bump z3 and jingle ([#64](https://github.com/toolCHAINZ/crackers/pull/64))
-- release v0.5.1 ([#63](https://github.com/toolCHAINZ/crackers/pull/63))
-- release v0.5.0 ([#60](https://github.com/toolCHAINZ/crackers/pull/60))
-- bump z3 ([#59](https://github.com/toolCHAINZ/crackers/pull/59))
-- release v0.4.0 ([#58](https://github.com/toolCHAINZ/crackers/pull/58))
-- bump deps ([#57](https://github.com/toolCHAINZ/crackers/pull/57))
-- release v0.3.0 ([#56](https://github.com/toolCHAINZ/crackers/pull/56))
-- [**breaking**] bump jingle and z3 ([#55](https://github.com/toolCHAINZ/crackers/pull/55))
-- release v0.2.1 ([#54](https://github.com/toolCHAINZ/crackers/pull/54))
-- release v0.2.0 ([#52](https://github.com/toolCHAINZ/crackers/pull/52))
-- release v0.1.3 ([#50](https://github.com/toolCHAINZ/crackers/pull/50))
-- release ([#46](https://github.com/toolCHAINZ/crackers/pull/46))
-- Update refs ([#41](https://github.com/toolCHAINZ/crackers/pull/41))
-- Add import for mac OS wheel ([#40](https://github.com/toolCHAINZ/crackers/pull/40))
-- Fix Linux Z3 Dynamic Linking ([#38](https://github.com/toolCHAINZ/crackers/pull/38))
-- Re-enable ARM linux wheel ([#37](https://github.com/toolCHAINZ/crackers/pull/37))
-- Add JSON de/serialization to python ([#36](https://github.com/toolCHAINZ/crackers/pull/36))
-- Update Python Type Annotations ([#35](https://github.com/toolCHAINZ/crackers/pull/35))
-- Add Python Type Annotations ([#34](https://github.com/toolCHAINZ/crackers/pull/34))
-- Enhanced Python Constraint Support ([#27](https://github.com/toolCHAINZ/crackers/pull/27))
-- Rust 2024 Edition ([#26](https://github.com/toolCHAINZ/crackers/pull/26))
-- Add Python CI ([#25](https://github.com/toolCHAINZ/crackers/pull/25))
-- pyo3 bindings ([#21](https://github.com/toolCHAINZ/crackers/pull/21))
 
 ## [0.7.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.4...crackers_python-v0.7.0) - 2025-12-21
 
