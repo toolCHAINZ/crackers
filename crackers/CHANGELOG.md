@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.7.0...crackers-v0.8.0) - 2025-12-22
+
+### Added
+
+- add simple model printing to CLI ([#91](https://github.com/toolCHAINZ/crackers/pull/91))
+
+### Other
+
+- update readme ([#95](https://github.com/toolCHAINZ/crackers/pull/95))
+- revert readme to libc example ([#92](https://github.com/toolCHAINZ/crackers/pull/92))
+
 ## [0.7.0](https://github.com/toolCHAINZ/crackers/compare/crackers-v0.6.4...crackers-v0.7.0) - 2025-12-21
 
 ### Added

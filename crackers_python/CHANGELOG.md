@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.7.0...crackers_python-v0.8.0) - 2025-12-22
+
+### Other
+
+- add GitHub PAT support for API requests in CI setup ([#94](https://github.com/toolCHAINZ/crackers/pull/94))
+- release v0.7.0 ([#90](https://github.com/toolCHAINZ/crackers/pull/90))
+
 ## [0.7.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.6.4...crackers_python-v0.7.0) - 2025-12-21
 
 ### Added
