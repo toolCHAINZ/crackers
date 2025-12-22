@@ -49,7 +49,7 @@ impl ReferenceProgram {
             }
             SpecificationConfig::RawPcode(s) => {
                 let sleigh = sleigh_config.context_builder()?.build(lang_id)?;
-                ReferenceProgram::try_load_parsed_pcode(&sleigh, blacklist, s)
+                ReferenceProgram::try_load_parsed_pcode(&sleigh, s)
             }
         }
     }

@@ -16,9 +16,9 @@ pub struct SynthesisConfig {
 impl Default for SynthesisConfig {
     fn default() -> Self {
         SynthesisConfig {
-            strategy: SynthesisSelectionStrategy::OptimizeStrategy,
-            max_candidates_per_slot: 50,
-            parallel: 4,
+            strategy: SynthesisSelectionStrategy::SatStrategy,
+            max_candidates_per_slot: 200,
+            parallel: 6,
             combine_instructions: true,
         }
     }

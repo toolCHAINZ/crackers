@@ -171,88 +171,63 @@ for your use case and then used with:
 crackers synth my_config.toml
 ```
 
-There are many options to configure in this file. An example is below:
+There are many options to configure in this file. An example (created with `crackers new`) is below:
 
 ```toml
-# Location to find a Ghidra installation. This is only used for
-# SLEIGH architecture definitions
+[meta]
+seed = -6067361534454702534
+log_level = "INFO"
+
+[specification]
+RawPcode = """
+              EDI = COPY 0xdeadbeef:4
+              ESI = COPY 0x40:4
+              EDX = COPY 0x7b:4
+              EAX = COPY 0xfacefeed:4
+              BRANCH 0xdeadbeef:1
+              """
+
+[library]
+max_gadget_length = 5
+path = "csaw_diary"
+
 [sleigh]
 ghidra_path = "/Applications/ghidra"
 
 [synthesis]
-# crackers separates the ROP chain synthesis problem into a gadget assignment and gadget validation problem.
-# This field determines the strategy used for the assignment problem:
-# * "sat" is a simple boolean SAT problem encoding gadget assignments
-# * "optimize" is a weighted SAT problem, giving preference to shorter gadgets
-# Optimize tends to perform better when only one validation worker is present and SAT scales better with more workers
 strategy = "sat"
-# The maximum number of candidates considered for each sub-slice of the specification
-# If you don't want to cap this, just set it arbitrarily high. Might make it optional later
-max_candidates_per_slot = 50
-# The number of chain validation workers to use
-parallel = 8
+max_candidates_per_slot = 200
+parallel = 6
+combine_instructions = true
 
-# crackers works by taking in an "example" computation and synthesizing a compatible chain
-# Right now, it does not support specifications with control flow
-[specification]
-# The path at which to find the raw binary containing the bytes of the specification computation
-path = "bin/execve_instrs.bin"
-# The number of assembly instructions in the specification
-max_instructions = 5
-
-# Settings involving the file from which to pull gadgets
-[library]
-# The path to the file. It can be any type of object file that gimli_object can parse (e.g., ELF, PE)
-path = "bin/libc_wrapper"
-# The maximum length of gadget to extract. Raising this number increases both the complexity of the gadgets
-# that are reasoned about and the total number of found gadgets
-max_gadget_length = 4
-# Optionally randomly sample the set of parsed gadgets to a given size
-random_sample_size = 20000
-# Optionally use a set seed for gadget selection
-# random_sample_seed = 0x234
-
-# From this point on are constraints that we put on the synthesis
-# These are fairly self-explanatory
 [constraint.precondition.register]
-RAX = 0
-RCX = 0x440f30
-RDX = 0x7fffffffe608
-RBX = 0x400538
-RSP = 0x7fffffffe3b8
-RBP = 0x403af0
-RSI = 0x7fffffffe5f8
-RDI = 1
-R8 = 0
-R9 = 6
-R10 = 0x36f8
-R11 = 0x206
-R12 = 0x403b90
-R13 = 0x0
-R14 = 0x4ae018
-R15 = 0x400538
-GS = 0
-FS = 0
+RSP = 0x80000000
 
-[constraint.postcondition.register]
-RAX = 0x3b
-RSI = 0
-RDX = 0
+[constraint.postcondition]
 
-# This constraint enforces that the value pointed to by this register
-# must be equal to the given string
-[constraint.postcondition.pointer]
-RDI = "/bin/sh"
+[[constraint.pointer.read]]
+min = 0x7fffff80
+max = 0x80000080
 
-# ANY pointer access, read or write, must fall in this range
-# Might separate read/write later
-[constraint.pointer]
-min = 0x7fffffffde00
-max = 0x7ffffffff000
+[[constraint.pointer.write]]
+min = 0x7fffff80
+max = 0x80000080
+
 ```
 
-Note that using the CLI, a successful synthesis will print out a listing of the gadgets that were selected,
-but not the memory model found in synthesis.
+#### CLI Output
+
+When synthesis succeeds, the CLI will print:
+
+1. **A listing of selected gadgets** - The assembly instructions for each gadget in the chain
+2. **Assignment Model Details** - A detailed breakdown including:
+   - **Inputs (Locations Read)** - All register and memory locations read by each gadget, along with their evaluated values from the model
+   - **Outputs (Locations Written)** - All register and memory locations written by each gadget, along with their evaluated values at the end of the chain
+   - **Final Branch Destination** - The program counter value after the final gadget (if determinable)
+
+_Note: The models produced through the CLI only represent the transitions within a chain. They do not constrain the 
+system state to redirect execution to the chain. 
+If you need to encode constraints for redirecting execution to your chain, consider using the Rust or Python API._
 
 ### Rust Crate
 
