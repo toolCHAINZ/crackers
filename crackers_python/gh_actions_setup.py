@@ -63,7 +63,15 @@ def install_z3_glibc(target_platform):
 
     # GitHub API to fetch the latest release
     api_url = "https://api.github.com/repos/Z3Prover/z3/releases/latest"
-    with urllib.request.urlopen(api_url) as response:
+
+    # Check for GitHub PAT to avoid rate limiting
+    request = urllib.request.Request(api_url)
+    github_token = os.environ.get("READ_ONLY_GITHUB_TOKEN")
+    if github_token:
+        request.add_header("Authorization", f"Bearer {github_token}")
+        print("Using GitHub PAT from READ_ONLY_GITHUB_TOKEN for API authentication.", file=sys.stderr)
+
+    with urllib.request.urlopen(request) as response:
         data = json.loads(response.read().decode())
 
     assets = data.get("assets", [])

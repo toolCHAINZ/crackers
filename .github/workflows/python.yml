@@ -36,11 +36,14 @@ jobs:
           submodules: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+          READ_ONLY_GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter python3.11 python3.12 python3.13 python3.14 python3.13t python3.14t --auditwheel skip
           working-directory: crackers_python
           manylinux: manylinux2_28
+          docker-options: "--env READ_ONLY_GITHUB_TOKEN"
           before-script-linux: |
             curl -LsSf https://astral.sh/uv/install.sh | sh
             uv venv
