@@ -189,7 +189,7 @@ RawPcode = """
 
 [library]
 max_gadget_length = 5
-path = "csaw_diary"
+path = "libc.so.6"
 
 [sleigh]
 ghidra_path = "/Applications/ghidra"
