@@ -11,7 +11,6 @@ use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crackers::bench::{BenchCommand, bench};
 use crackers::config::CrackersConfig;
 use crackers::config::constraint::{
     ConstraintConfig, PointerRange, PointerRangeConstraints, StateEqualityConstraint,
@@ -34,15 +33,16 @@ struct Arguments {
 
 #[derive(Debug, Clone, Subcommand)]
 pub enum CrackersCommands {
+    /// Create a new crackers configuration file, optionally with a target library
     New {
         config: Option<PathBuf>,
         #[arg(short, long)]
         library: Option<PathBuf>,
     },
+    /// Attempt to synthesize a code-reuse attack based on the provided configuration file
     Synth {
         config: PathBuf,
-    },
-    Bench(BenchCommand),
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -68,11 +68,6 @@ fn main() {
         CrackersCommands::Synth { config } => {
             // Synth initializes its own logging with config
             synthesize(config.clone())
-        }
-        CrackersCommands::Bench(cmd) => {
-            init_basic_logging();
-            event!(Level::INFO, "Running benchmark");
-            bench(cmd.clone())
         }
     };
 
@@ -273,7 +268,7 @@ fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
     println!(
         "If you need this, consider using the rust or python API to encode your constraint.\n"
     );
-    
+
     // Collect all inputs and their valuations
     println!("--- Inputs (Locations Read) ---");
     let mut inputs_set: BTreeSet<String> = BTreeSet::new();
