@@ -40,9 +40,7 @@ pub enum CrackersCommands {
         library: Option<PathBuf>,
     },
     /// Attempt to synthesize a code-reuse attack based on the provided configuration file
-    Synth {
-        config: PathBuf,
-    }
+    Synth { config: PathBuf },
 }
 
 #[derive(Parser, Debug)]
