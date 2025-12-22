@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
 use jingle::{
     display::JingleDisplayable,
     sleigh::{
-        Disassembly, Instruction, OpCode, PcodeOperation, SleighArchInfo, context::SleighContext,
+        Disassembly, Instruction, PcodeOperation, SleighArchInfo, context::SleighContext,
     },
 };
 
@@ -15,13 +13,11 @@ use crate::{
 impl ReferenceProgram {
     pub fn try_load_parsed_pcode(
         sleigh: &SleighContext,
-        blacklist: &HashSet<OpCode>,
         pcode: &str,
     ) -> Result<Self, CrackersConfigError> {
         let ops = sleigh.parse_pcode_listing(pcode)?;
         let instrs: Vec<Step> = ops
             .into_iter()
-            .filter(|f| !blacklist.contains(&f.opcode()))
             .enumerate()
             .map(|(i, o)| Step::from_instr(op_to_instr(o, sleigh.arch_info(), i as u64)))
             .collect();

@@ -20,7 +20,13 @@ use crackers::config::constraint::{
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
 use crackers::gadget::library::builder::GadgetLibraryConfig;
+use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::DecisionResult;
+use jingle::modeling::ModelingContext;
+use jingle::display::JingleDisplayable;
+use jingle::sleigh::SpaceType;
+use jingle::varnode::ResolvedVarnode;
+use std::collections::BTreeSet;
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -102,7 +108,8 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
     let config = CrackersConfig {
         meta: Default::default(),
         specification: SpecificationConfig::RawPcode(
-            r"RDI = COPY 0xdeadbeef:8
+            r"
+              RDI = COPY 0xdeadbeef:8
               RSI = COPY 0x40:8
               RDX = COPY 0x7b:8
               RAX = COPY 0xfacefeed:8
@@ -198,7 +205,8 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
                 event!(Level::DEBUG, "Building assignment result");
                 let a = a.build()?;
                 event!(Level::INFO, "Synthesis successful :)");
-                event!(Level::INFO, "{}", a)
+                event!(Level::INFO, "{}", a);
+                print_assignment_details(&a);
             }
             DecisionResult::Unsat(a) => {
                 event!(Level::ERROR, "Synthesis unsuccessful: {:?}", a);
@@ -210,3 +218,105 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+fn format_resolved_varnode<T: ModelingContext>(vn: &ResolvedVarnode, model: &AssignmentModel<T>) -> String {
+    match vn {
+        ResolvedVarnode::Direct(d) => {
+            format!("{}", d.display(&model.arch_info))
+        }
+        ResolvedVarnode::Indirect(i) => {
+            let space_name = model.arch_info.get_space(i.pointer_space_idx).map(|s| s.name.as_str()).unwrap_or("unknown");
+            let access_size = i.access_size_bytes;
+            if let Some(pointer_value) = model.model().eval(&i.pointer, true) {
+                format!("{space_name}[{pointer_value}]:{access_size:x}")
+            } else {
+                format!("{space_name}[?]:{access_size:x}")
+            }
+        }
+    }
+}
+
+fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
+    println!("\n========== Assignment Model Details ==========\n");
+
+    println!("Note: models produced through the CLI only represent the transitions within a chain.");
+    println!("They do not constrain the system state to redirect execution to the chain.");
+    println!("If you need this, consider using the rust or python API to encode your constraint.\n");
+    // Collect all inputs and their valuations
+    println!("--- Inputs (Locations Read) ---");
+    let mut inputs_set: BTreeSet<String> = BTreeSet::new();
+
+    for (gadget_idx, gadget) in model.gadgets.iter().enumerate() {
+        println!("Gadget {}:", gadget_idx);
+        for input in gadget.get_inputs() {
+            // Filter out unique space variables (keep only IPTR_PROCESSOR)
+            let should_print = match &input {
+                ResolvedVarnode::Direct(d) => {
+                    model.arch_info.get_space(d.space_index)
+                        .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
+                        .unwrap_or(false)
+                }
+                ResolvedVarnode::Indirect(_) => true,
+            };
+
+            if !should_print {
+                continue;
+            }
+
+            let input_desc = format_resolved_varnode(&input, model);
+
+            // Try to read the value from the initial state of this gadget
+            if let Ok(bv) = gadget.get_original_state().read_resolved(&input) {
+                if let Some(val) = model.model().eval(&bv, true) {
+                    println!("  {} = {}", input_desc, val);
+                    inputs_set.insert(input_desc);
+                } else {
+                    println!("  {} = <unable to evaluate>", input_desc);
+                }
+            } else {
+                println!("  {} = <unable to read>", input_desc);
+            }
+        }
+    }
+    println!();
+
+    // Collect all outputs and their valuations at the end of the chain
+    println!("--- Outputs (Locations Written) ---");
+    let mut outputs_set: BTreeSet<String> = BTreeSet::new();
+
+    for (gadget_idx, gadget) in model.gadgets.iter().enumerate() {
+        println!("Gadget {}:", gadget_idx);
+        for output in gadget.get_outputs() {
+            // Filter out unique space variables (keep only IPTR_PROCESSOR)
+            let should_print = match &output {
+                ResolvedVarnode::Direct(d) => {
+                    model.arch_info.get_space(d.space_index)
+                        .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
+                        .unwrap_or(false)
+                }
+                ResolvedVarnode::Indirect(_) => true,
+            };
+
+            if !should_print {
+                continue;
+            }
+
+            let output_desc = format_resolved_varnode(&output, model);
+
+            // Read the value from the final state of this gadget
+            if let Ok(bv) = gadget.get_final_state().read_resolved(&output) {
+                if let Some(val) = model.model().eval(&bv, true) {
+                    println!("  {} = {}", output_desc, val);
+                    outputs_set.insert(output_desc);
+                } else {
+                    println!("  {} = <unable to evaluate>", output_desc);
+                }
+            } else {
+                println!("  {} = <unable to read>", output_desc);
+            }
+        }
+    }
+
+    println!("\n==============================================\n");
+}
+
