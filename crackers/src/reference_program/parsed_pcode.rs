@@ -1,8 +1,6 @@
 use jingle::{
     display::JingleDisplayable,
-    sleigh::{
-        Disassembly, Instruction, PcodeOperation, SleighArchInfo, context::SleighContext,
-    },
+    sleigh::{Disassembly, Instruction, PcodeOperation, SleighArchInfo, context::SleighContext},
 };
 
 use crate::{

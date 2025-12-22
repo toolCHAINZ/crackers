@@ -14,16 +14,15 @@ use tracing_subscriber::util::SubscriberInitExt;
 use crackers::bench::{BenchCommand, bench};
 use crackers::config::CrackersConfig;
 use crackers::config::constraint::{
-    ConstraintConfig, PointerRange, PointerRangeConstraints,
-    StateEqualityConstraint,
+    ConstraintConfig, PointerRange, PointerRangeConstraints, StateEqualityConstraint,
 };
 use crackers::config::sleigh::SleighConfig;
 use crackers::config::specification::SpecificationConfig;
 use crackers::gadget::library::builder::GadgetLibraryConfig;
-use crackers::synthesis::assignment_model::AssignmentModel;
 use crackers::synthesis::DecisionResult;
-use jingle::modeling::ModelingContext;
+use crackers::synthesis::assignment_model::AssignmentModel;
 use jingle::display::JingleDisplayable;
+use jingle::modeling::ModelingContext;
 use jingle::sleigh::SpaceType;
 use jingle::varnode::ResolvedVarnode;
 use std::collections::BTreeSet;
@@ -40,7 +39,9 @@ pub enum CrackersCommands {
         #[arg(short, long)]
         library: Option<PathBuf>,
     },
-    Synth { config: PathBuf },
+    Synth {
+        config: PathBuf,
+    },
     Bench(BenchCommand),
 }
 
@@ -61,7 +62,7 @@ fn main() {
             event!(Level::INFO, "Creating new config file");
             new(
                 config.clone().unwrap_or(PathBuf::from("./crackers.toml")),
-                library.clone()
+                library.clone(),
             )
         }
         CrackersCommands::Synth { config } => {
@@ -95,13 +96,20 @@ fn init_basic_logging() {
 }
 
 fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
-    event!(Level::INFO, "Generating new configuration file at: {}", path.display());
+    event!(
+        Level::INFO,
+        "Generating new configuration file at: {}",
+        path.display()
+    );
 
     let library_path = if let Some(lib_path) = library {
         event!(Level::INFO, "Using library path: {}", lib_path.display());
         lib_path.to_string_lossy().to_string()
     } else {
-        event!(Level::DEBUG, "No library path provided, using empty default");
+        event!(
+            Level::DEBUG,
+            "No library path provided, using empty default"
+        );
         String::new()
     };
 
@@ -158,12 +166,20 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
     event!(Level::DEBUG, "Writing configuration to file");
     fs::write(&path, toml_content)?;
 
-    event!(Level::INFO, "Successfully created configuration file at: {}", path.display());
+    event!(
+        Level::INFO,
+        "Successfully created configuration file at: {}",
+        path.display()
+    );
     Ok(())
 }
 
 fn synthesize(config: PathBuf) -> anyhow::Result<()> {
-    event!(Level::INFO, "Loading configuration from: {}", config.display());
+    event!(
+        Level::INFO,
+        "Loading configuration from: {}",
+        config.display()
+    );
     let cfg_bytes = fs::read(&config)?;
     let s = String::from_utf8(cfg_bytes)?;
 
@@ -187,7 +203,11 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     event!(Level::INFO, "Resolving configuration parameters");
     let params = p.resolve()?;
 
-    event!(Level::INFO, "Starting synthesis (combine_instructions: {})", params.combine_instructions);
+    event!(
+        Level::INFO,
+        "Starting synthesis (combine_instructions: {})",
+        params.combine_instructions
+    );
     let result = match params.combine_instructions {
         true => {
             event!(Level::DEBUG, "Building combined synthesis");
@@ -219,13 +239,20 @@ fn synthesize(config: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn format_resolved_varnode<T: ModelingContext>(vn: &ResolvedVarnode, model: &AssignmentModel<T>) -> String {
+fn format_resolved_varnode<T: ModelingContext>(
+    vn: &ResolvedVarnode,
+    model: &AssignmentModel<T>,
+) -> String {
     match vn {
         ResolvedVarnode::Direct(d) => {
             format!("{}", d.display(&model.arch_info))
         }
         ResolvedVarnode::Indirect(i) => {
-            let space_name = model.arch_info.get_space(i.pointer_space_idx).map(|s| s.name.as_str()).unwrap_or("unknown");
+            let space_name = model
+                .arch_info
+                .get_space(i.pointer_space_idx)
+                .map(|s| s.name.as_str())
+                .unwrap_or("unknown");
             let access_size = i.access_size_bytes;
             if let Some(pointer_value) = model.model().eval(&i.pointer, true) {
                 format!("{space_name}[{pointer_value}]:{access_size:x}")
@@ -239,9 +266,14 @@ fn format_resolved_varnode<T: ModelingContext>(vn: &ResolvedVarnode, model: &Ass
 fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
     println!("\n========== Assignment Model Details ==========\n");
 
-    println!("Note: models produced through the CLI only represent the transitions within a chain.");
+    println!(
+        "Note: models produced through the CLI only represent the transitions within a chain."
+    );
     println!("They do not constrain the system state to redirect execution to the chain.");
-    println!("If you need this, consider using the rust or python API to encode your constraint.\n");
+    println!(
+        "If you need this, consider using the rust or python API to encode your constraint.\n"
+    );
+    
     // Collect all inputs and their valuations
     println!("--- Inputs (Locations Read) ---");
     let mut inputs_set: BTreeSet<String> = BTreeSet::new();
@@ -251,11 +283,11 @@ fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
         for input in gadget.get_inputs() {
             // Filter out unique space variables (keep only IPTR_PROCESSOR)
             let should_print = match &input {
-                ResolvedVarnode::Direct(d) => {
-                    model.arch_info.get_space(d.space_index)
-                        .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
-                        .unwrap_or(false)
-                }
+                ResolvedVarnode::Direct(d) => model
+                    .arch_info
+                    .get_space(d.space_index)
+                    .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
+                    .unwrap_or(false),
                 ResolvedVarnode::Indirect(_) => true,
             };
 
@@ -289,11 +321,11 @@ fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
         for output in gadget.get_outputs() {
             // Filter out unique space variables (keep only IPTR_PROCESSOR)
             let should_print = match &output {
-                ResolvedVarnode::Direct(d) => {
-                    model.arch_info.get_space(d.space_index)
-                        .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
-                        .unwrap_or(false)
-                }
+                ResolvedVarnode::Direct(d) => model
+                    .arch_info
+                    .get_space(d.space_index)
+                    .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
+                    .unwrap_or(false),
                 ResolvedVarnode::Indirect(_) => true,
             };
 
@@ -319,4 +351,3 @@ fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
 
     println!("\n==============================================\n");
 }
-
