@@ -223,7 +223,6 @@ When synthesis succeeds, the CLI will print:
 2. **Assignment Model Details** - A detailed breakdown including:
    - **Inputs (Locations Read)** - All register and memory locations read by each gadget, along with their evaluated values from the model
    - **Outputs (Locations Written)** - All register and memory locations written by each gadget, along with their evaluated values at the end of the chain
-   - **Final Branch Destination** - The program counter value after the final gadget (if determinable)
 
 _Note: The models produced through the CLI only represent the transitions within a chain. They do not constrain the 
 system state to redirect execution to the chain. 
