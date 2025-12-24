@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use jingle::analysis::varnode::VarNodeSet;
 use toml_edit::ser::to_string_pretty;
 use tracing::{Level, event};
 use tracing_indicatif::IndicatifLayer;
@@ -22,7 +23,7 @@ use crackers::synthesis::DecisionResult;
 use crackers::synthesis::assignment_model::AssignmentModel;
 use jingle::display::JingleDisplayable;
 use jingle::modeling::ModelingContext;
-use jingle::sleigh::SpaceType;
+use jingle::sleigh::{SpaceType, VarNode};
 use jingle::varnode::ResolvedVarnode;
 use std::collections::BTreeSet;
 
@@ -58,10 +59,31 @@ fn main() {
         CrackersCommands::New { config, library } => {
             init_basic_logging();
             event!(Level::INFO, "Creating new config file");
-            new(
-                config.clone().unwrap_or(PathBuf::from("./crackers.toml")),
-                library.clone(),
-            )
+            // If the user explicitly provided a config path, refuse to overwrite an existing file.
+            if let Some(cfg_path) = config {
+                if cfg_path.exists() {
+                    event!(
+                        Level::WARN,
+                        "Refusing to create new config: file already exists: {}",
+                        cfg_path.display()
+                    );
+                    std::process::exit(1);
+                }
+                new(cfg_path.clone(), library.clone())
+            } else {
+                // If the user did not specify a config path, check the default file and
+                // refuse to overwrite it as well.
+                let default_path = PathBuf::from("./crackers.toml");
+                if default_path.exists() {
+                    event!(
+                        Level::WARN,
+                        "Refusing to create new config: default file already exists: {}",
+                        default_path.display()
+                    );
+                    std::process::exit(1);
+                }
+                new(default_path, library.clone())
+            }
         }
         CrackersCommands::Synth { config } => {
             // Synth initializes its own logging with config
@@ -114,7 +136,7 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
               ESI = COPY 0x40:4
               EDX = COPY 0x7b:4
               EAX = COPY 0xfacefeed:4
-              BRANCH 0xdeadbeef:1
+              BRANCH 0xdeadbeef:8
               "
             .to_string(),
         ),
@@ -256,6 +278,104 @@ fn format_resolved_varnode<T: ModelingContext>(
     }
 }
 
+/// Shared helper to collect varnodes (registers and iptr-style) from the model.
+///
+/// - `collect_inputs`: if true, collects gadget inputs; otherwise collects outputs.
+/// - `use_original_state`: if true, reads values from the chain's original state; otherwise final state.
+///
+/// Returns: (register_vector, varnode_set, iptr_description_set)
+fn collect_varnodes<T: ModelingContext>(
+    model: &AssignmentModel<T>,
+    collect_inputs: bool,
+    use_original_state: bool,
+) -> (Vec<(String, String)>, VarNodeSet, BTreeSet<String>) {
+    let mut reg_vec: Vec<(String, String)> = Vec::new();
+    let mut reg_seen: BTreeSet<String> = BTreeSet::new();
+
+    let mut iptr_vn_set: VarNodeSet = VarNodeSet::default();
+    let mut iptr_descs: BTreeSet<String> = BTreeSet::new();
+
+    for gadget in model.gadgets.iter() {
+        let iter = if collect_inputs {
+            gadget.get_inputs()
+        } else {
+            gadget.get_outputs()
+        };
+
+        for vn in iter {
+            match &vn {
+                ResolvedVarnode::Direct(d) => {
+                    let space_info = model.arch_info.get_space(d.space_index);
+                    let is_register = space_info.map(|s| s.name == "register").unwrap_or(false);
+                    let is_iptr = space_info
+                        .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
+                        .unwrap_or(false);
+
+                    let desc = format_resolved_varnode(&vn, model);
+
+                    // choose state to read from
+                    let read_result = if use_original_state {
+                        gadget.get_original_state().read_resolved(&vn)
+                    } else {
+                        gadget.get_final_state().read_resolved(&vn)
+                    };
+
+                    let val_str = match read_result {
+                        Ok(bv) => match model.model().eval(&bv, true) {
+                            Some(v) => format!("{}", v),
+                            None => "<unable to evaluate>".to_string(),
+                        },
+                        Err(_) => "<unable to read>".to_string(),
+                    };
+
+                    if is_register {
+                        if !reg_seen.contains(&desc) {
+                            reg_seen.insert(desc.clone());
+                            reg_vec.push((desc, val_str));
+                        }
+                    } else if is_iptr {
+                        // convert Direct resolved varnode into VarNode and insert
+                        let vn_struct = VarNode {
+                            size: d.size,
+                            space_index: d.space_index,
+                            offset: d.offset,
+                        };
+                        iptr_vn_set.insert(&vn_struct);
+                        iptr_descs.insert(format!("{} = {}", desc, val_str));
+                    }
+                }
+                ResolvedVarnode::Indirect(i) => {
+                    // insert the pointer_location varnode into set
+                    let ptr_loc = &i.pointer_location;
+                    let vn_struct = VarNode {
+                        size: ptr_loc.size,
+                        space_index: ptr_loc.space_index,
+                        offset: ptr_loc.offset,
+                    };
+                    iptr_vn_set.insert(&vn_struct);
+
+                    let desc = format_resolved_varnode(&vn, model);
+                    let read_result = if use_original_state {
+                        gadget.get_original_state().read_resolved(&vn)
+                    } else {
+                        gadget.get_final_state().read_resolved(&vn)
+                    };
+                    let val_str = match read_result {
+                        Ok(bv) => match model.model().eval(&bv, true) {
+                            Some(v) => format!("{}", v),
+                            None => "<unable to evaluate>".to_string(),
+                        },
+                        Err(_) => "<unable to read>".to_string(),
+                    };
+                    iptr_descs.insert(format!("{} = {}", desc, val_str));
+                }
+            }
+        }
+    }
+
+    (reg_vec, iptr_vn_set, iptr_descs)
+}
+
 fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
     println!("\n========== Assignment Model Details ==========\n");
 
@@ -267,79 +387,34 @@ fn print_assignment_details<T: ModelingContext>(model: &AssignmentModel<T>) {
         "If you need this, consider using the rust or python API to encode your constraint.\n"
     );
 
-    // Collect all inputs and their valuations
-    println!("--- Inputs (Locations Read) ---");
-    let mut inputs_set: BTreeSet<String> = BTreeSet::new();
+    // Inputs (read values from original state)
+    println!("--- Inputs (Locations Read) ---\n");
+    let (mut reg_vec, _iptr_vn_set, iptr_descs) = collect_varnodes(model, true, true);
 
-    for (gadget_idx, gadget) in model.gadgets.iter().enumerate() {
-        println!("Gadget {}:", gadget_idx);
-        for input in gadget.get_inputs() {
-            // Filter out unique space variables (keep only IPTR_PROCESSOR)
-            let should_print = match &input {
-                ResolvedVarnode::Direct(d) => model
-                    .arch_info
-                    .get_space(d.space_index)
-                    .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
-                    .unwrap_or(false),
-                ResolvedVarnode::Indirect(_) => true,
-            };
+    // sort alphabetically by register description
+    reg_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-            if !should_print {
-                continue;
-            }
-
-            let input_desc = format_resolved_varnode(&input, model);
-
-            // Try to read the value from the initial state of this gadget
-            if let Ok(bv) = gadget.get_original_state().read_resolved(&input) {
-                if let Some(val) = model.model().eval(&bv, true) {
-                    println!("  {} = {}", input_desc, val);
-                    inputs_set.insert(input_desc);
-                } else {
-                    println!("  {} = <unable to evaluate>", input_desc);
-                }
-            } else {
-                println!("  {} = <unable to read>", input_desc);
-            }
-        }
+    for (desc, val) in &reg_vec {
+        println!("  {} = {}", desc, val);
     }
+    for desc in &iptr_descs {
+        println!("  {}", desc);
+    }
+
     println!();
 
-    // Collect all outputs and their valuations at the end of the chain
-    println!("--- Outputs (Locations Written) ---");
-    let mut outputs_set: BTreeSet<String> = BTreeSet::new();
+    // Outputs (read values from final state)
+    println!("--- Outputs (Locations Written) ---\n");
+    let (mut out_reg_vec, _out_iptr_vn_set, out_iptr_descs) = collect_varnodes(model, false, false);
 
-    for (gadget_idx, gadget) in model.gadgets.iter().enumerate() {
-        println!("Gadget {}:", gadget_idx);
-        for output in gadget.get_outputs() {
-            // Filter out unique space variables (keep only IPTR_PROCESSOR)
-            let should_print = match &output {
-                ResolvedVarnode::Direct(d) => model
-                    .arch_info
-                    .get_space(d.space_index)
-                    .map(|s| s._type == SpaceType::IPTR_PROCESSOR)
-                    .unwrap_or(false),
-                ResolvedVarnode::Indirect(_) => true,
-            };
+    // sort alphabetically by register description
+    out_reg_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-            if !should_print {
-                continue;
-            }
-
-            let output_desc = format_resolved_varnode(&output, model);
-
-            // Read the value from the final state of this gadget
-            if let Ok(bv) = gadget.get_final_state().read_resolved(&output) {
-                if let Some(val) = model.model().eval(&bv, true) {
-                    println!("  {} = {}", output_desc, val);
-                    outputs_set.insert(output_desc);
-                } else {
-                    println!("  {} = <unable to evaluate>", output_desc);
-                }
-            } else {
-                println!("  {} = <unable to read>", output_desc);
-            }
-        }
+    for (desc, val) in &out_reg_vec {
+        println!("  {} = {}", desc, val);
+    }
+    for desc in &out_iptr_descs {
+        println!("  {}", desc);
     }
 
     println!("\n==============================================\n");
