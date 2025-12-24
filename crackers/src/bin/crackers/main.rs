@@ -59,10 +59,31 @@ fn main() {
         CrackersCommands::New { config, library } => {
             init_basic_logging();
             event!(Level::INFO, "Creating new config file");
-            new(
-                config.clone().unwrap_or(PathBuf::from("./crackers.toml")),
-                library.clone(),
-            )
+            // If the user explicitly provided a config path, refuse to overwrite an existing file.
+            if let Some(cfg_path) = config {
+                if cfg_path.exists() {
+                    event!(
+                        Level::WARN,
+                        "Refusing to create new config: file already exists: {}",
+                        cfg_path.display()
+                    );
+                    std::process::exit(1);
+                }
+                new(cfg_path.clone(), library.clone())
+            } else {
+                // If the user did not specify a config path, check the default file and
+                // refuse to overwrite it as well.
+                let default_path = PathBuf::from("./crackers.toml");
+                if default_path.exists() {
+                    event!(
+                        Level::WARN,
+                        "Refusing to create new config: default file already exists: {}",
+                        default_path.display()
+                    );
+                    std::process::exit(1);
+                }
+                new(default_path, library.clone())
+            }
         }
         CrackersCommands::Synth { config } => {
             // Synth initializes its own logging with config
