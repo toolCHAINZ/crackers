@@ -47,27 +47,34 @@ impl GadgetLibrary {
         TraceCandidateIterator::new(info, r, trace.to_vec())
     }
     pub(super) fn build_from_image(
-        sleigh: LoadedSleighContext,
+        sleighs: Vec<LoadedSleighContext>,
         builder: &GadgetLibraryConfig,
     ) -> Result<Self, JingleError> {
+        // We expect at least one sleigh (the primary library) to be provided.
+        // Use the first sleigh's arch info / language id as the library-wide info.
+        let mut iter = sleighs.into_iter();
+        let first = iter.next().unwrap();
         let mut lib: GadgetLibrary = GadgetLibrary {
             gadgets: vec![],
-            arch_info: sleigh.arch_info().clone(),
-            language_id: sleigh.get_language_id().to_string(),
+            arch_info: first.arch_info().clone(),
+            language_id: first.get_language_id().to_string(),
         };
-        event!(Level::INFO, "Loading gadgets from sleigh");
-        for section in sleigh.get_sections().filter(|s| s.perms.exec) {
+
+        event!(Level::INFO, "Loading gadgets from sleighs");
+
+        // process the first sleigh
+        for section in first.get_sections().filter(|s| s.perms.exec) {
             let start = section.base_address as u64;
             let end = start + section.data.len() as u64;
             let mut curr = start;
 
             while curr < end {
                 let instrs: Vec<Instruction> =
-                    sleigh.read(curr, builder.max_gadget_length).collect();
+                    first.read(curr, builder.max_gadget_length).collect();
                 if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
                     let gadget = Gadget {
-                        code_space_idx: sleigh.arch_info().default_code_space_index(),
-                        spaces: sleigh.arch_info().spaces().to_vec(),
+                        code_space_idx: first.arch_info().default_code_space_index(),
+                        spaces: first.arch_info().spaces().to_vec(),
                         instructions: instrs[0..=i].to_vec(),
                     };
                     if !gadget.has_blacklisted_op(&builder.operation_blacklist) {
@@ -78,6 +85,33 @@ impl GadgetLibrary {
             }
             event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
         }
+
+        // process remaining sleighs (additional loaded libraries)
+        for sleigh in iter {
+            for section in sleigh.get_sections().filter(|s| s.perms.exec) {
+                let start = section.base_address as u64;
+                let end = start + section.data.len() as u64;
+                let mut curr = start;
+
+                while curr < end {
+                    let instrs: Vec<Instruction> =
+                        sleigh.read(curr, builder.max_gadget_length).collect();
+                    if let Some(i) = instrs.iter().position(|b| b.terminates_basic_block()) {
+                        let gadget = Gadget {
+                            code_space_idx: sleigh.arch_info().default_code_space_index(),
+                            spaces: sleigh.arch_info().spaces().to_vec(),
+                            instructions: instrs[0..=i].to_vec(),
+                        };
+                        if !gadget.has_blacklisted_op(&builder.operation_blacklist) {
+                            lib.gadgets.push(gadget);
+                        }
+                    }
+                    curr += 1
+                }
+                event!(Level::INFO, "Found {} gadgets...", lib.gadgets.len());
+            }
+        }
+
         Ok(lib)
     }
 }
@@ -103,6 +137,7 @@ mod tests {
         let sleigh = builder.build("x86:LE:64:default").unwrap();
         let bin_sleigh = sleigh.initialize_with_image(file).unwrap();
         let _lib =
-            GadgetLibrary::build_from_image(bin_sleigh, &GadgetLibraryConfig::default()).unwrap();
+            GadgetLibrary::build_from_image(vec![bin_sleigh], &GadgetLibraryConfig::default())
+                .unwrap();
     }
 }

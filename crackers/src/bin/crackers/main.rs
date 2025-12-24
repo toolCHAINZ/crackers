@@ -146,6 +146,7 @@ fn new(path: PathBuf, library: Option<PathBuf>) -> anyhow::Result<()> {
             path: library_path,
             sample_size: None,
             base_address: None,
+            loaded_libraries: None,
         },
         sleigh: SleighConfig {
             ghidra_path: "/Applications/ghidra".to_string(),
