@@ -30,4 +30,4 @@ class LibraryConfig(BaseModel):
     path: str
     sample_size: int | None
     base_address: int | None
-    loaded_libraries: list[LoadedLibraryConfig] | None
+    loaded_libraries: list[LoadedLibraryConfig] | None = None
