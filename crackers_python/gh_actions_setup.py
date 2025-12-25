@@ -69,7 +69,10 @@ def install_z3_glibc(target_platform):
     github_token = os.environ.get("READ_ONLY_GITHUB_TOKEN")
     if github_token:
         request.add_header("Authorization", f"Bearer {github_token}")
-        print("Using GitHub PAT from READ_ONLY_GITHUB_TOKEN for API authentication.", file=sys.stderr)
+        print(
+            "Using GitHub PAT from READ_ONLY_GITHUB_TOKEN for API authentication.",
+            file=sys.stderr,
+        )
 
     with urllib.request.urlopen(request) as response:
         data = json.loads(response.read().decode())
