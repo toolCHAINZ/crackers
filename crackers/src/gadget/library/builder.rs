@@ -20,7 +20,7 @@ fn align_up(x: u64, align: u64) -> u64 {
     if align == 0 {
         return x;
     }
-    ((x + align - 1) / align) * align
+    x.div_ceil(align) * align
 }
 
 #[derive(Clone, Debug, Default, Builder, Deserialize, Serialize)]
