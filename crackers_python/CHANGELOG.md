@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.8.1...crackers_python-v0.9.0) - 2025-12-25
+
+### Added
+
+- search for gadgets in multiple libraries ([#98](https://github.com/toolCHAINZ/crackers/pull/98))
+
+### Other
+
+- release v0.8.1 ([#97](https://github.com/toolCHAINZ/crackers/pull/97))
+
 ## [0.8.1](https://github.com/toolCHAINZ/crackers/compare/crackers_python-v0.8.0...crackers_python-v0.8.1) - 2025-12-24
 
 ### Other
