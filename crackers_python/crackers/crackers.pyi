@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, List, Optional, Union
 
 from z3 import z3  # type: ignore
 
@@ -65,11 +65,16 @@ class CrackersLogLevel:
     Trace: int
     Warn: int
 
+class LoadedLibraryConfig:
+    path: str
+    base_address: Optional[int]
+
 class GadgetLibraryConfig:
     max_gadget_length: int
     path: str
     sample_size: Optional[int]
     base_address: Optional[int]
+    loaded_libraries: Optional[List[LoadedLibraryConfig]]
 
 class MemoryEqualityConstraint:
     space: str
@@ -91,7 +96,7 @@ class PointerRangeConstraints:
 class SleighConfig:
     ghidra_path: str
 
-# New: represent the two possible shapes of the specification
+# Represent the two possible shapes of the specification
 class BinaryFileSpecification:
     """
     Represents the binary-file variant of the specification.
@@ -110,7 +115,7 @@ class RawPcodeSpecification:
 
     raw_pcode: str
 
-# SpecificationConfig is now a discriminated union of the two variants above.
+# SpecificationConfig is a discriminated union of the two variants above.
 SpecificationConfig = Union[BinaryFileSpecification, RawPcodeSpecification]
 
 class StateEqualityConstraint:
@@ -137,7 +142,7 @@ class SelectionFailure:
 
 class PythonDecisionResult_Unsat(DecisionResult):
     _0: SelectionFailure
-    pass
+    __match_args__ = ("_0",)
 
 class DecisionResult:
     AssignmentFound: PythonDecisionResult_AssignmentFound
@@ -151,8 +156,7 @@ StateConstraintGenerator = Callable[[State, int], z3.BoolRef]
 TransitionConstraintGenerator = Callable[[ModeledBlock], z3.BoolRef]
 
 class SynthesisParams:
-    def run(self) -> "DecisionResultType": ...
-    def add_precondition(self, fn: StateConstraintGenerator): ...
-    def add_postcondition(self, fn: StateConstraintGenerator): ...
-    def add_transition_constraint(self, fn: TransitionConstraintGenerator): ...
-    pass
+    def run(self) -> DecisionResultType: ...
+    def add_precondition(self, fn: StateConstraintGenerator) -> None: ...
+    def add_postcondition(self, fn: StateConstraintGenerator) -> None: ...
+    def add_transition_constraint(self, fn: TransitionConstraintGenerator) -> None: ...

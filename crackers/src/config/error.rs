@@ -6,7 +6,7 @@ use thiserror::Error;
 pub enum CrackersConfigError {
     #[error("Invalid log level")]
     InvalidLogLevel,
-    #[error("An error reading a file referenced from the config")]
+    #[error("An error reading a file referenced from the config: {0}")]
     Io(#[from] std::io::Error),
     #[error("An error parsing a file with gimli object: {0}")]
     Gimli(#[from] object::Error),
